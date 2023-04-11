@@ -1,6 +1,6 @@
 # PhaseLLM
 
-Large language model evaluation and workflow framework from Phase AI.
+Large language model evaluation and workflow framework from [Phase AI](https://phaseai.com/).
 
 The coming months and years will bring thousands of new products and experienced powered by large language models (LLMs) like ChatGPT or its increasing number of variants. Whether you're using OpenAI's ChatGPT, Anthropic's Claude, or something else all together, you'll want to test how well your models and prompts perform against user needs. As more models are launched, you'll also have a bigger range of options.
 
