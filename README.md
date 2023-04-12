@@ -23,7 +23,8 @@ What's awesome with this approach is that (1) you can plug and play models and p
 
 So, time for the code... First, load your API keys.
 
-```import os
+```python
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -34,7 +35,8 @@ cohere_api_key = os.getenv("COHERE_API_KEY")
 
 We're going to set up the *Evaluator*, which takes two LLM model outputs and decides which one is better for the objective at hand.
 
-```import llms # The PhaseLLM module; a temporary name for now
+```python
+import llms # The PhaseLLM module; a temporary name for now
 
 # We'll use GPT-3.5 as the evaluator.
 e = llms.GPT35Evaluator(openai_api_key)
@@ -42,7 +44,8 @@ e = llms.GPT35Evaluator(openai_api_key)
 
 Now it's time to set up the experiment. In this case, we'll set up an `objective` which describes what we're trying to achieve with our chatbot. We'll also provide 5 examples of starting chats that we've seen with our users.
 
-```# Our objective.
+```python
+# Our objective.
 objective = "We're building a chatbot to discuss a user's travel preferences and provide advice."
 
 # Chats that have been launched by users.
@@ -57,13 +60,15 @@ travel_chat_starts = [
 
 Now we set up our Cohere and Claude models.
 
-```cohere_model = llms.CohereWrapper(cohere_api_key)
+```python
+cohere_model = llms.CohereWrapper(cohere_api_key)
 claude_model = llms.ClaudeWrapper(anthropic_api_key)
 ```
 
 Finally, we launch our test. We run an experiments where both models generate a chat response and then we have GPT-3.5 evaluate the response.
 
-```print("Running test. 1 = Cohere, and 2 = Claude.")
+```python
+print("Running test. 1 = Cohere, and 2 = Claude.")
 for tcs in travel_chat_starts:
 
     messages = [{"role":"system", "content":objective},
