@@ -9,7 +9,7 @@ This is exactly why we're building PhaseLLM.
 
 ## Using DollyWrapper in PhaseLLM
 
-We're keeping the wrapper code separate in [llmsdolly.py] for now, as we need to standardize our package. This code also uses `PyTorch` and `transformers` so we can appreciate why you might not use this right away (see our *next steps*, below).
+We're keeping the wrapper code separate in [[llmsdolly.py]] for now, as we need to standardize our package. This code also uses `PyTorch` and `transformers` so we can appreciate why you might not use this right away (see our *next steps*, below).
 
 Note that we were running this on a p3.8xlarge Ubuntu 22.04 EC2 instance.
 
@@ -27,7 +27,7 @@ dw.complete_chat(messages, 'assistant')
 dw.text_completion("The capital of Poland is")
 ```
 
-Now, let's use GPT-3.5 to evaluate whether Dolly performs better than Cohere in the travel task in our [README.md]. I've called out the new lines of code with `# NEW` comments.
+Now, let's use GPT-3.5 to evaluate whether Dolly performs better than Cohere in the travel task in our [[README.md]]. I've called out the new lines of code with `# NEW` comments.
 
 ```python
 import os
