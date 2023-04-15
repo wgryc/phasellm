@@ -16,7 +16,7 @@ Note that we were running this on a p3.8xlarge Ubuntu 22.04 EC2 instance.
 First, some simple code to show it all works nicely!
 
 ```python
-from llmsdolly import DollyWrapper
+from phasellm.llms import DollyWrapper
 dwl = DollyWrapper()
 
 # Testing chat capability.
@@ -38,10 +38,10 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 cohere_api_key = os.getenv("COHERE_API_KEY")
 
-import llms # The PhaseLLM module; a temporary name for now
+from phasellm.eval import GPT35Evaluator
 
 # We'll use GPT-3.5 as the evaluator.
-e = llms.GPT35Evaluator(openai_api_key)
+e = GPT35Evaluator(openai_api_key)
 
 # Our objective.
 objective = "We're building a chatbot to discuss a user's travel preferences and provide advice."
@@ -55,10 +55,11 @@ travel_chat_starts = [
     "I'm unsure I should visit Spain by flying via the UK or via France."
 ]
 
-from llmsdolly import DollyWrapper # NEW: importing the DollyWrapper...
+from phasellm.llms import CohereWrapper
+from phasellm.llms import DollyWrapper # NEW: importing the DollyWrapper...
 dwl = DollyWrapper() # NEW: ... and instantiating it.
 
-cohere_model = llms.CohereWrapper(cohere_api_key)
+cohere_model = CohereWrapper(cohere_api_key)
 
 print("Running test. 1 = Cohere, and 2 = Dolly.")
 for tcs in travel_chat_starts:

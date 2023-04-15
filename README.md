@@ -2,7 +2,18 @@
 
 Large language model evaluation and workflow framework from [Phase AI](https://phaseai.com/).
 
-[Follow us on Twitter](https://twitter.com/phasellm) for updates.
+- [Follow us on Twitter](https://twitter.com/phasellm) for updates.
+- [Star us on GitHub](https://github.com/wgryc/phasellm).
+
+## Installation
+
+You can install PhaseLLM via pip:
+
+```
+pip install phasellm
+```
+
+## Introduction
 
 The coming months and years will bring thousands of new products and experienced powered by large language models (LLMs) like ChatGPT or its increasing number of variants. Whether you're using OpenAI's ChatGPT, Anthropic's Claude, or something else all together, you'll want to test how well your models and prompts perform against user needs. As more models are launched, you'll also have a bigger range of options.
 
@@ -38,10 +49,10 @@ cohere_api_key = os.getenv("COHERE_API_KEY")
 We're going to set up the *Evaluator*, which takes two LLM model outputs and decides which one is better for the objective at hand.
 
 ```python
-import llms # The PhaseLLM module; a temporary name for now
+from phasellm.eval import GPT35Evaluator
 
 # We'll use GPT-3.5 as the evaluator.
-e = llms.GPT35Evaluator(openai_api_key)
+e = GPT35Evaluator(openai_api_key)
 ```
 
 Now it's time to set up the experiment. In this case, we'll set up an `objective` which describes what we're trying to achieve with our chatbot. We'll also provide 5 examples of starting chats that we've seen with our users.
@@ -63,8 +74,9 @@ travel_chat_starts = [
 Now we set up our Cohere and Claude models.
 
 ```python
-cohere_model = llms.CohereWrapper(cohere_api_key)
-claude_model = llms.ClaudeWrapper(anthropic_api_key)
+from phasellm.llms import CohereWrapper, ClaudeWrapper
+cohere_model = CohereWrapper(cohere_api_key)
+claude_model = ClaudeWrapper(anthropic_api_key)
 ```
 
 Finally, we launch our test. We run an experiments where both models generate a chat response and then we have GPT-3.5 evaluate the response.
