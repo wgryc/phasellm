@@ -93,6 +93,53 @@ class Prompt():
                 new_prompt = new_prompt.replace(m, kwargs[keyword])
         return new_prompt
 
+class BloomWrapper():
+    """
+    Wrapper for Hugging Face's BLOOM model. Requires access to Hugging Face's inference API.
+    """
+    def __init__(self, apikey):
+        self.apikey = apikey
+
+    def __repr__(self):
+        return f"BloomWrapper()"
+
+    def complete_chat(self, messages, append_role=None):
+        """
+        Mimicks a chat scenario with BLOOM, via a list of {"role": <str>, "content":<str>} objects.
+        """
+
+        prompt_preamble = "You are a friendly chat assistant. You are speaking to the 'user' below and will respond at the end, where it says 'assistant'.\n"
+        prompt_text = prompt_preamble + _clean_messages_to_prompt(messages)
+        if append_role is not None and len(append_role) > 0:
+            prompt_text += f"\n{append_role}:"
+
+        API_URL = "https://api-inference.huggingface.co/models/bigscience/bloom"
+        headers = {"Authorization": f"Bearer {self.apikey}"}
+
+        response = requests.post(API_URL, headers=headers, json={"inputs": prompt_text}).json()
+
+        all_text = response[0]['generated_text']
+        new_text = all_text[len(prompt_text):]
+
+        # We only return the first line of text.
+        newline_location = new_text.find("\n") 
+        if newline_location > 0:
+            new_text = new_text[:newline_location]
+
+        return new_text
+
+    def text_completion(self, prompt):
+        """
+        Completes text via BLOOM (Hugging Face).
+        """
+        API_URL = "https://api-inference.huggingface.co/models/bigscience/bloom"
+        headers = {"Authorization": f"Bearer {self.apikey}"}
+
+        response = requests.post(API_URL, headers=headers, json={"inputs": prompt}).json()
+        all_text = response[0]['generated_text']
+        new_text = all_text[len(prompt):]
+        return new_text
+
 class OpenAIGPTWrapper():
     """
     Wrapper for the OpenAI API. Supports all major text and chat completion models by OpenAI.
@@ -107,7 +154,7 @@ class OpenAIGPTWrapper():
     
     def complete_chat(self, messages, append_role=None):
         """
-        Completes chat with OpenAI. If using GPT 3.5 or 4, will simply send the list of {"role": <str>, "content":<str>} objects ot the API.
+        Completes chat with OpenAI. If using GPT 3.5 or 4, will simply send the list of {"role": <str>, "content":<str>} objects to the API.
 
         If using an older model, it will structure the messages list into a prompt first.
         """
