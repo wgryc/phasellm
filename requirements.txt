@@ -1,0 +1,5 @@
+requests
+openai
+cohere
+transformers
+torch>=1.0.0
