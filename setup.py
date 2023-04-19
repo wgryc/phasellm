@@ -1,6 +1,3 @@
-# TODO: what is find_packages
-# TODO: what is the right format for 'keywords'
-
 from setuptools import setup, find_packages
 
 VERSION = "0.0.1"
@@ -19,13 +16,13 @@ setup(
     license="MIT",
     packages=find_packages(),
     install_requires=[
-        "requests",
-        # TODO: make model packages optional installs?
-        # TODO: specify min versions
-        "openai",
-        "cohere",
-        "transformers",
-        "torch",
+        "Flask>=2.0.0",
+        "requests>=2.24.0",
+        "openai>=0.26.0",
+        "cohere>=4.0.0",
+        "transformers>=4.25.0",
+        "accelerate>=0.16.0",
+        "torch>=1.0.0",
     ],
     python_requires=">=3.7",
     keywords="llm, nlp, evaluation, ai",
