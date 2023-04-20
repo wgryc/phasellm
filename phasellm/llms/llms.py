@@ -357,8 +357,8 @@ class ChatBot():
         """
         Chats with the chatbot.
         """
-        self.append_message('user', message)
+        self._append_message('user', message)
         response = self.llm.complete_chat(self.messages, "assistant")
-        self.append_message('assistant', response)
+        self._append_message('assistant', response)
         return response
     
