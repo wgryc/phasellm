@@ -202,7 +202,6 @@ class ClaudeWrapper():
         r_headers = {"X-API-Key":self.apikey, "Accept":"application/json"}
         r_data = {"prompt": prompt,
                   "model": self.model,
-                  "max_tokens_to_sample": 300, 
                   "stop_sequences": stop_sequences
                 }
 
