@@ -7,3 +7,4 @@ This checklist is used prior to a new release, to ensure everything works proper
 - [ ] Publish final version to PyPI
 - [ ] Publish release in GitHub
 - [ ] Tweet about it
+- [ ] Update *Change Log* on site
