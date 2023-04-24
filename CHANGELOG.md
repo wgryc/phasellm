@@ -2,20 +2,22 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+
+
 # 0.0.2 (2023-04-24)
 
-## New Features
+### New Features
 
 - Dolly 2.0 wrapper
 - BLOOM wrapper
 
-## Fixes
+### Fixes
 
 - ChatBot bug where messages were erroring out.
 
 # 0.0.1 (🥳 First release!)
 
-## New Features
+### New Features
 
 - Model Support
   - GPT (3, 3.5, 4)
@@ -27,7 +29,7 @@ Have any questions? Need support? Please reach out on [Twitter (@phasellm](https
   - GPT 3.5 evaluator
   - Human evaluation
 
-## Fixes
+### Fixes
 
 Nothing, since this is a new release!
 
