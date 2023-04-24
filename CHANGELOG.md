@@ -2,9 +2,16 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
-# 0.0.2 (upcoming release)
+# 0.0.2 (2023-04-24)
 
-*Upcoming release -- aiming for 24 April 2023.*
+## New Features
+
+- Dolly 2.0 wrapper
+- BLOOM wrapper
+
+## Fixes
+
+- ChatBot bug where messages were erroring out.
 
 # 0.0.1 (🥳 First release!)
 
