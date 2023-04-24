@@ -232,6 +232,7 @@ class ClaudeWrapper():
 
         r_data = {"prompt": prompt_text,
                   "model": self.model,
+                  "max_tokens_to_sample": 500,
                   "stop_sequences": _get_stop_sequences_from_messages(messages)
                 }
 
@@ -248,6 +249,7 @@ class ClaudeWrapper():
         r_headers = {"X-API-Key":self.apikey, "Accept":"application/json"}
         r_data = {"prompt": prompt,
                   "model": self.model,
+                  "max_tokens_to_sample": 500,
                   "stop_sequences": stop_sequences
                 }
 
