@@ -232,7 +232,6 @@ class ClaudeWrapper():
 
         r_data = {"prompt": prompt_text,
                   "model": self.model,
-                  "max_tokens_to_sample": 300, 
                   "stop_sequences": _get_stop_sequences_from_messages(messages)
                 }
 
