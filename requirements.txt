@@ -1,0 +1,7 @@
+Flask>=2.0.0
+requests>=2.24.0
+openai>=0.26.0
+cohere>=4.0.0
+transformers>=4.25.0
+accelerate>=0.16.0
+torch>=1.0.0
