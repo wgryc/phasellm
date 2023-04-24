@@ -17,7 +17,7 @@ First, some simple code to show it all works nicely!
 
 ```python
 from phasellm.llms import DollyWrapper
-dwl = DollyWrapper()
+dw = DollyWrapper()
 
 # Testing chat capability.
 messages = [{"role":"user", "content":"What should I eat for lunch today?"}]
