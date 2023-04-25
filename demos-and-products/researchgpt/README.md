@@ -2,6 +2,11 @@
 
 An autonomous statistics helper that converts your natural language queries about a data set to insights.
 
+- Converts natural language questions to Python code
+- Runs code locally without sharing data with third parties (just shares metadata)
+- Interpets results
+- Provide access to underlying Python code for audit and review
+
 [2-minute demo below:](https://www.youtube.com/watch?v=-fzFCii6UoA)
 [![ResearchGPT screenshot](screenshot.png)](https://www.youtube.com/watch?v=-fzFCii6UoA)
 
@@ -11,3 +16,12 @@ This product will run LLM-generated Python code on your computer/server. We high
 
 ## Installation and Setup
 
+Clone the GitHub repository and navigate to the folder containing this README.md file. Install the relevant packages (including PhaseLLM):
+
+```
+pip install -r requirements.txt
+```
+
+## Sample Data Files and Credits
+
+The sample data set included in this project and in the demo video is from the 1994 US census. It was put together by Ron Kohavi and is [available on Kaggle](https://www.kaggle.com/datasets/uciml/adult-census-income?select=adult.csv).
