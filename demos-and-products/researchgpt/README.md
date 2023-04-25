@@ -24,6 +24,14 @@ Clone the GitHub repository and navigate to the folder containing this README.md
 pip install -r requirements.txt
 ```
 
+Next, make sure you edit the `researchgpt.py` file to include the proper API keys. You'll find these around line 19:
+```python
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+MODEL = ClaudeWrapper(ANTHROPIC_API_KEY)
+```
+
+You can change the model type from ClaudeWrapper to other PhaseLLM wrappers. Make sure to update your API key accordingly, either via an environment variable or directly in the code.
+
 ### Running With Sample Data
 
 Start a Python REPL (i.e, run `python` in the folder with all the files form this repo) and then type the following:
