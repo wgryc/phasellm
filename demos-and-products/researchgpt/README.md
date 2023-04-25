@@ -37,7 +37,29 @@ Running `run()` will launch the server on 127.0.0.1:5000 (i.e., the default Flas
 
 ### Running With Your Own Custom Data
 
+Running this with your own data only requires a few simple changes to `frontend.py`. Around Line 20, you'll see the following comments:
+```python
+##########################################################################
+#
+# DATA SET SETUP (START)
+# Please review the code below to set up your own data set for analysis.
+#
+```
 
+All the instructions are there, but we repeat them here for your convenience. You will have to update the two variables below:
+```python
+DATA_SETUP_INTRO = "I am researching the relationship between income and sociodemographic census info."
+DATA_FILE_LOC = "incomes.csv"
+```
+
+`DATA_SETUP_INTRO` should be one short sentence on the context of your data, while `DATA_FILE_LOC` is the location of the file you're loading.
+
+If you are *not* using a CSV file, you can also load the DataFrame via a few lines down:
+```python
+df = pd.read_csv(DATA_FILE_LOC)
+```
+
+Replace the line above with your custom loader (e.g., read_excel() or something else). The `df` variable needs to be a Pandas dataframe for this to work.
 
 ## Sample Data Files and Credits
 
