@@ -2,7 +2,6 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
-
 # 0.0.3 (2023-04-24)
 
 ### New Features
@@ -12,10 +11,6 @@ Have any questions? Need support? Please reach out on [Twitter (@phasellm](https
 ### Fixes
 
 - Added max # of tokens to ClaudeWrapper (required by Anthropic API)
-
-### Fixes
-
-- ChatBot bug where messages were erroring out.
 
 # 0.0.2 (2023-04-24)
 
