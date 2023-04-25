@@ -13,6 +13,8 @@ You can install PhaseLLM via pip:
 pip install phasellm
 ```
 
+Note that installing from PyPI does not download the sample demos and products in the `demos-and-products` folder. If you'd like to run those, please clone the repository and follow instructions in the `README.md` file in each product folder.
+
 ## Introduction
 
 The coming months and years will bring thousands of new products and experienced powered by large language models (LLMs) like ChatGPT or its increasing number of variants. Whether you're using OpenAI's ChatGPT, Anthropic's Claude, or something else all together, you'll want to test how well your models and prompts perform against user needs. As more models are launched, you'll also have a bigger range of options.
