@@ -1,6 +1,10 @@
-""" RUNNING...
-from frontend import *
-run('0.0.0.0', 80)
+"""
+A Flask frontend for ResearchGPT
+
+To run, start a Python REPL and in the same directory as this file and run the following:
+> from frontend import *
+> run() # Or, run('0.0.0.0', 80)
+
 """
 
 from researchgpt import *
@@ -11,11 +15,32 @@ import numpy as np
 
 APP = Flask(__name__)
 
-DATA_SETUP = [
-    {"intro": "I am researching car crashes in NYC.", "file-loc":"../nypd-motor-vehicle-collisions.csv"},
-    {"intro": "I am researching the relationship between income and sociodemographic census info.", "file-loc":"../incomes.csv"},
-]
-DATA_FIELD = 1
+##########################################################################
+#
+# DATA SET SETUP (START)
+# Please review the code below to set up your own data set for analysis.
+#
+
+# Data set to load and analyze.
+DATA_SETUP_INTRO = "I am researching the relationship between income and sociodemographic census info."
+DATA_FILE_LOC = "incomes.csv"
+
+#DATA_SETUP_INTRO = "I am researching car crashes in NYC."
+#DATA_FILE_LOC = "nypd-motor-vehicle-collisions.csv"
+
+# Want to analyze your own data set? Simply replace the two variables above:
+# DATA_SETUP_INTRO = "What are you researching? Please provide a short description.
+# DATA_FILE_LOC = "The location of the CSV file."
+# Note that you DO NOT have to provide metadata about the CSV file. This gets generated automatically.
+
+# Loads the CSV file.
+# If you want to load another file (e.g., Excel file), replace the code below with the relevant function (e.g., read_excel()).
+df = pd.read_csv(DATA_FILE_LOC)
+
+#
+# DATA SET SETUP (END)
+#
+##########################################################################
 
 def generateOverview(df):
     """
@@ -33,9 +58,18 @@ def generateOverview(df):
         description += col_description + "\n\n"
     return description.strip()
 
-df = pd.read_csv(DATA_SETUP[DATA_FIELD]['file-loc'])
-base_prompt = f"{DATA_SETUP[DATA_FIELD]['intro']} have imported Pandas as `pd`, Numpy as `np`, `scipy`, and `sklearn`, and have a dataframe called `df` loaded into Python. `df` contains the following variables and variable types:\n\n" + generateOverview(df) 
+# The prompt used to set up the entire chat session. This prompt is used regularly for analysis.
+base_prompt = f"{DATA_SETUP_INTRO} I have imported Pandas as `pd`, Numpy as `np`, `scipy`, and `sklearn`, and have a dataframe called `df` loaded into Python. `df` contains the following variables and variable types:\n\n" + generateOverview(df) 
+
+# Calls the researchgpt.py function to set the current dataframe as the main one for analysis.
 set_df(df)
+
+##########################################################################
+#
+# FLASK FUNCTIONS
+# Everything below manages the frontend.
+#
+##########################################################################
 
 @APP.route('/get_prompt')
 def get_prompt():
@@ -53,6 +87,11 @@ def index():
 
 @APP.route("/text_completion", methods = ['POST'])
 def analysis():
+    """
+    Calls the researchgpt.py code to request analysis and interpretation thereof.
+    
+    See run_analysis(message) in researchgpt.py for more information.
+    """
     text_to_complete = request.json["input"]
     new_request = base_prompt + text_to_complete
     response_object = run_analysis(new_request)
@@ -63,5 +102,4 @@ def run(host="127.0.0.1", port=5000):
     Launches a local web server for interfacing with PhaseLLM. This is meant to be for testing purposes only.
     """
     start_bi_session()
-    #run_analysis(prompt_2)
     APP.run(host=host, port=port)
