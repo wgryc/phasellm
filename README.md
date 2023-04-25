@@ -13,7 +13,7 @@ You can install PhaseLLM via pip:
 pip install phasellm
 ```
 
-Note that installing from PyPI does not download the sample demos and products in the `demos-and-products` folder. If you'd like to run those, please clone the repository and follow instructions in the `README.md` file in each product folder.
+Installing from PyPI does not download the sample demos and products in the `demos-and-products` folder. Clone this repository and follow instructions in the `README.md` file in each product folder to run those.
 
 ## Introduction
 
