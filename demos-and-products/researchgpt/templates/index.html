@@ -1,0 +1,311 @@
+<html>
+<head>
+<title>ResearchGPT</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
+
+<style>
+	
+* {
+	font-family: 'Open Sans', sans-serif;	
+	box-sizing: border-box;	
+}
+
+body {
+	margin:0;
+	padding:0;
+	overflow:hidden;
+}
+	
+form {
+	margin:0;
+	padding:0;
+}
+
+#everything-everywhere-all-at-once {
+	width:100vw;
+	height:100vh;
+	display: grid;
+	grid-template-columns: 33% 66%;	
+	overflow:hidden;
+}
+
+#container-chat-interface {
+	grid-column:1;
+	grid-row:1;
+	padding:25px;
+	background-color:rgb(248, 245, 228);
+}
+
+#container-chat-outputs {
+	grid-column:2;
+	grid-row: 1;
+	padding:25px;
+}
+
+#data-overview {
+	margin-top:30px;
+}
+
+h1 {
+	font-size:20px;
+	font-weight:600;
+}
+
+h2 {
+	font-size:15px;
+	font-weight:600;
+}
+	
+.interface-element {
+	font-size:15px;
+	font-family: 'Open Sans', sans-serif;	
+}
+	
+#chat-input {
+	padding:10px;
+	border-radius:8px;
+	border:1px solid rgb(230,230,230);
+	width:100%;
+}
+
+#chat-button {
+	padding:10px;
+	border-radius:8px;
+	border:1px solid rgb(230,230,230);
+	width:100%;
+	background:rgb(83, 145, 101);
+	color:rgb(248, 245, 228);
+	font-weight:800px;
+	margin-top:10px;
+	width:100px;
+	cursor:pointer;
+}
+
+#prompt-info {
+	max-height:calc(100vh - 300px);
+	font-size:11px;
+	font-weight:300;
+	font-family: 'Open Sans', sans-serif;	
+	overflow-x:auto;
+	overflow-y:auto;
+}
+
+#bi-output {
+	overflow-y:auto;
+	padding:10px;
+	border-radius:8px;
+	border:1px solid rgb(230,230,230);
+	width:100%;
+	margin-top:10px;
+	max-height:calc(100vh - 100px);
+}
+
+.chat-user {
+	background-color:rgb(63, 73, 127);
+	color:white;
+	border-radius:8px;
+	margin-left:50px;
+	padding:10px;
+	margin-top:10px;
+}
+
+.chat-bi {
+	background-color:rgb(248, 245, 228);
+	border-radius:8px;
+	margin-right:50px;
+	padding:10px;
+	margin-top:10px;
+}
+
+.debug_message_options {
+	text-align:right;
+	font-size:12px;
+	margin-top:6px;
+}
+
+.bi-icon {
+	height:12px;
+	position:relative;
+	top:1px;
+}
+
+.debug_link {
+	margin-right:5px;
+	cursor:pointer;
+}
+
+.debug_info {
+	font-size:12px;
+	margin-top:6px;
+	margin-bottom:6px;
+}
+
+.debug_info_title {
+	font-weight:600;
+	display:block;
+	font-size:12px;
+}
+
+#loading {
+	position:absolute;
+	bottom:0;
+	font-size:15px;
+	display:none;
+	padding:10px;
+	width:100vw;
+	background-color:white;
+	font-family: 'Open Sans', sans-serif;
+	font-weight:300;
+}
+
+</style>	
+	
+</head>
+<body>
+	
+<div id="everything-everywhere-all-at-once">
+	
+	<!-- Chat Interface -->
+	<div id="container-chat-interface">
+		<h1>ResearchGPT</h1>
+		<form>
+			<input type="text" class="interface-element" id="chat-input" placeholder="Ask a question! 😀">
+			<button type="button" class="interface-element" id="chat-button" onclick="javascript:callbi();">Submit</button>
+		</form>
+
+		<div id="data-overview">
+			<h1>Data Overview (Prompt)</h1>
+			<div id="prompt-info"></div>
+		</div>
+	</div>
+
+	<!-- Chat Outputs -->
+	<div id="container-chat-outputs">
+		<h1>Analysis Output</h1>
+		<div id="bi-output">
+		</div>
+
+	</div>
+	
+</div>	
+
+<div id="loading">... loading response; this could take a few minutes ...</div>
+
+<script>
+
+var msg_counter = 1;
+var all_messages = {};
+
+function scroll_bottom_bi_output() {
+	var output_div = document.getElementById("bi-output");
+	output_div.scrollTop = output_div.scrollHeight;
+}
+
+function append_bi_bot(msg, additional_data) {
+	var output_div = document.getElementById("bi-output");
+	all_messages[msg_counter] = additional_data;
+
+	var addtl_data_div = `
+	
+	<div class="debug_message_options">
+
+<a class='debug_link' onclick="javascript:append_debug_info('chat-bi-msg-${msg_counter}', 'code', ${msg_counter})">
+<svg class='bi-icon' xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-code-square" viewBox="0 0 16 16">
+  <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
+  <path d="M6.854 4.646a.5.5 0 0 1 0 .708L4.207 8l2.647 2.646a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 0 1 .708 0zm2.292 0a.5.5 0 0 0 0 .708L11.793 8l-2.647 2.646a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708 0z"/>
+</svg> Show Code</a>
+
+<a class='debug_link' onclick="javascript:append_debug_info('chat-bi-msg-${msg_counter}', 'code_output', ${msg_counter})">
+<svg class='bi-icon' xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-terminal" viewBox="0 0 16 16">
+  <path d="M6 9a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3A.5.5 0 0 1 6 9zM3.854 4.146a.5.5 0 1 0-.708.708L4.793 6.5 3.146 8.146a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2z"/>
+  <path d="M2 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2H2zm12 1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h12z"/>
+</svg> Show Python Output</a>
+
+<!-- Errors currently show up in Python output... -->
+<!-- <a class='debug_link' onclick="javascript:append_debug_info('chat-bi-msg-${msg_counter}', 'error', ${msg_counter})">
+<svg class='bi-icon' xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bug" viewBox="0 0 16 16">
+  <path d="M4.355.522a.5.5 0 0 1 .623.333l.291.956A4.979 4.979 0 0 1 8 1c1.007 0 1.946.298 2.731.811l.29-.956a.5.5 0 1 1 .957.29l-.41 1.352A4.985 4.985 0 0 1 13 6h.5a.5.5 0 0 0 .5-.5V5a.5.5 0 0 1 1 0v.5A1.5 1.5 0 0 1 13.5 7H13v1h1.5a.5.5 0 0 1 0 1H13v1h.5a1.5 1.5 0 0 1 1.5 1.5v.5a.5.5 0 1 1-1 0v-.5a.5.5 0 0 0-.5-.5H13a5 5 0 0 1-10 0h-.5a.5.5 0 0 0-.5.5v.5a.5.5 0 1 1-1 0v-.5A1.5 1.5 0 0 1 2.5 10H3V9H1.5a.5.5 0 0 1 0-1H3V7h-.5A1.5 1.5 0 0 1 1 5.5V5a.5.5 0 0 1 1 0v.5a.5.5 0 0 0 .5.5H3c0-1.364.547-2.601 1.432-3.503l-.41-1.352a.5.5 0 0 1 .333-.623zM4 7v4a4 4 0 0 0 3.5 3.97V7H4zm4.5 0v7.97A4 4 0 0 0 12 11V7H8.5zM12 6a3.989 3.989 0 0 0-1.334-2.982A3.983 3.983 0 0 0 8 2a3.983 3.983 0 0 0-2.667 1.018A3.989 3.989 0 0 0 4 6h8z"/>
+</svg> Show Errors</a> -->
+
+	</div>
+	`
+
+	output_div.innerHTML = output_div.innerHTML + `<div class="chat-bi" id="chat-bi-msg-${msg_counter}">${msg}${addtl_data_div}</div>`;	
+
+	msg_counter++;
+}
+	
+function append_bi_user(msg) {
+	var output_div = document.getElementById("bi-output");
+	output_div.innerHTML = output_div.innerHTML + `<div class="chat-user">${msg}</div>`;
+}
+	
+function callbi() {
+
+	var loading_div = document.getElementById("loading");
+	loading_div.style.display = "block";
+
+	var chat_message_box = document.getElementById("chat-input");
+	var msg_to_send = chat_message_box.value + "";
+	append_bi_user(msg_to_send);
+	chat_message_box.value = "";
+	
+    var data = {"input":msg_to_send};
+    const response = fetch("text_completion", {
+        method: "POST",
+        cache: "no-cache",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data),
+    })
+    .then(response=>response.json())
+    .then(data=>{
+		console.log(data);
+		console.log(`STATUS: ${data["status"]}`);
+		console.log(`CONTENT: ${data["content"]}`);
+		var new_content = data["content"].replace(/(?:\r\n|\r|\n)/g, '<br>');
+		append_bi_bot(new_content, data);
+		scroll_bottom_bi_output();
+		loading_div.style.display = "none";
+    })
+}
+
+function show_prompt() {
+    const response = fetch("get_prompt", {
+        method: "GET",
+        cache: "no-cache",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+    })
+    .then(response=>response.json())
+    .then(data=>{ 
+		var p = data["prompt"].replace(/(?:\r\n|\r|\n)/g, '<br>');
+		var prompt_pre = document.getElementById("prompt-info");
+		prompt_pre.innerHTML = p;
+    })
+}
+
+function append_debug_info(msg_div_id, msg_type, msg_info_id) {
+	var add_to_me = document.getElementById(msg_div_id);
+	var msg_data = all_messages[msg_info_id][msg_type].trim().replace(/(?:\r\n|\r|\n)/g, '<br>')
+	var additional_html = `<div class='debug_info'><span class='debug_info_title'>${msg_type}</span><pre><code>${msg_data}</code></pre></div>`;
+	add_to_me.innerHTML += additional_html;
+}
+
+show_prompt();
+
+var element = document.getElementById('chat-input');
+element.addEventListener('keypress', function(e){
+  if (e.keyCode == 13) {
+    callbi();
+	e.preventDefault(); 
+  }
+});
+
+</script>
+	
+</body>
+</html>
