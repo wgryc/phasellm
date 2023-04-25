@@ -16,11 +16,28 @@ This product will run LLM-generated Python code on your computer/server. We high
 
 ## Installation and Setup
 
+### Installation
+
 Clone the GitHub repository and navigate to the folder containing this README.md file. Install the relevant packages (including PhaseLLM):
 
 ```
 pip install -r requirements.txt
 ```
+
+### Running With Sample Data
+
+Start a Python REPL (i.e, run `python` in the folder with all the files form this repo) and then type the following:
+
+```
+from frontend import *
+run() # Or, run('0.0.0.0', 80) for a public server
+```
+
+Running `run()` will launch the server on 127.0.0.1:5000 (i.e., the default Flask setting).
+
+### Running With Your Own Custom Data
+
+
 
 ## Sample Data Files and Credits
 
