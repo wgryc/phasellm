@@ -25,3 +25,5 @@ pip install -r requirements.txt
 ## Sample Data Files and Credits
 
 The sample data set included in this project and in the demo video is from the 1994 US census. It was put together by Ron Kohavi and is [available on Kaggle](https://www.kaggle.com/datasets/uciml/adult-census-income?select=adult.csv).
+
+The other data set referenced in our code is [also on Kaggle](https://www.kaggle.com/datasets/new-york-city/nypd-motor-vehicle-collisions), focusing on traffic fatalities in New York City. We didn't include it in the repository as it's about 500MB in size.
