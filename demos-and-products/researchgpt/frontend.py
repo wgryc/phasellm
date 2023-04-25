@@ -25,6 +25,7 @@ APP = Flask(__name__)
 DATA_SETUP_INTRO = "I am researching the relationship between income and sociodemographic census info."
 DATA_FILE_LOC = "incomes.csv"
 
+# Another sample we explored.
 #DATA_SETUP_INTRO = "I am researching car crashes in NYC."
 #DATA_FILE_LOC = "nypd-motor-vehicle-collisions.csv"
 
