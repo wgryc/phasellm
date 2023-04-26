@@ -34,7 +34,7 @@ You can change the model type from ClaudeWrapper to other PhaseLLM wrappers. Mak
 
 ### Running With Sample Data
 
-Start a Python REPL (i.e, run `python` in the folder with all the files form this repo) and then type the following:
+Start a Python REPL (i.e, run `python` in the folder with all the files from this repo) and then type the following:
 
 ```
 from frontend import *
