@@ -9,7 +9,7 @@ This file specifically uses Claude (Anthropic's LLM) and was tested on Claude v1
 To see the full workflow, review the comments in the run_analysis() function.
 """
 
-from phasellm.llms import ChatBot, ClaudeWrapper, OpenAIGPTWrapper
+from phasellm.llms import ChatBot, ClaudeWrapper, OpenAIGPTWrapper, CohereWrapper
 from phasellm.exceptions import isAcceptableLLMResponse, LLMResponseException, LLMCodeException
 from phasellm.agents import CodeExecutionAgent
 
@@ -19,21 +19,24 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ClaudeWrapper if using Anthropic
-#MODEL_CLASS = ClaudeWrapper 
-#MODEL_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-#MODEL_NAME = None
+MODEL_CLASS = ClaudeWrapper 
+MODEL_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+MODEL_NAME = None
 
 # OpenAIWrapper if using GPT-3.5 or GPT-4. We don't recommend older models.
-MODEL_CLASS = OpenAIGPTWrapper
-MODEL_API_KEY = os.getenv("OPENAI_API_KEY")
+#MODEL_CLASS = OpenAIGPTWrapper
+#MODEL_API_KEY = os.getenv("OPENAI_API_KEY")
 #MODEL_NAME = "gpt-4"
-MODEL_NAME = "gpt-3.5-turbo"
+#MODEL_NAME = "gpt-3.5-turbo"
 
 # This is the ChatBot we'll be using and referncing throughout. It gets created using the class and API key above in start_bi_session()
 CHATBOT = None 
 
 # Used to print prompts and responses to screen
 DEBUG = True
+
+# We'll retry the prompt if there is an error in the code execution.
+RETRY_PROMPT_ON_ERROR = True
 
 # Imports made available to the LLM for data analysis
 # Pandas is also used to load data to a data frame
@@ -72,7 +75,7 @@ Do you understand? Please simply write "yes" if you do, and "no" with followup q
 
     attempts = 0
 
-    while not launched_llm and attempts <= num_attempts:
+    while not launched_llm and attempts < num_attempts:
 
         try:
             attempts += 1
@@ -99,7 +102,7 @@ Do you understand? Please simply write "yes" if you do, and "no" with followup q
             launched_llm = False
 
     if not launched_llm:
-        print("LLM did not understand instructions. You might want to reset the model.")
+        print("\n\n*****WARNING*****\nLLM did not understand instructions. You might want to reset the model and avoid running ResearchGPT with this model..\n\n")
     
 def ask_bi(msg):
     """
@@ -147,9 +150,9 @@ Could you please interpret this for me? Justify your answer by including the out
         print("Error occurred when executing code.")
         response = "An error occurred while executing the code."
 
-    return response, code_output
+    return response, code_output, is_error
     
-def run_analysis(message):
+def run_analysis(message, is_retry=False):
     """
     Takes a message (i.e., natural language query) and uses the ChatBot object in this file to analyze the data given the natural language query. The function then returns the 'response_object', which contains the generated code, the raw output from the code, and an interpretation of the results.
     
@@ -169,8 +172,22 @@ def run_analysis(message):
         response_object["error":"No code generated."]
     else:
         response_object["code"] = python_code
-        interpretation, code_output = ask_interpret(python_code)
+        interpretation, code_output, is_error = ask_interpret(python_code)
         response_object["interpretation"] = interpretation
         response_object["code_output"] = code_output
+
+        # We only retry once. We can probably try a few times, but we're being reasonable for now. :-)
+        # Another approach could be to try a different model.
+        if is_error and RETRY_PROMPT_ON_ERROR and not is_retry:
+
+            if DEBUG: print("Error on first attempt. Trying again...")
+
+            # One of the things we need to do is delete the last few messages of the ChatBot message history because the LLMs seem to get stuck on rewriting code they tried before. What we do is delete the last two messages in the ChatBot message history. These messages are the original prompt and the ChatBot's response.
+            CHATBOT.messages = CHATBOT.messages[:-2]
+
+            # We append the prior error to the prompt to try and avoid the error from taking place.
+            new_message = message + "\n\nPlease be sensitive to avoiding the following error:\n{code_output}"
+
+            return run_analysis(new_message, True)
         
     return response_object
