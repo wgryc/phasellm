@@ -23,6 +23,7 @@ setup(
         "transformers>=4.25.0",
         "accelerate>=0.16.0",
         "torch>=1.0.0",
+        "python-dotenv",
     ],
     python_requires=">=3.7",
     keywords="llm, nlp, evaluation, ai",
