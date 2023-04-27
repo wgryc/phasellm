@@ -2,9 +2,6 @@
 Abstract classes and wrappers for LLMs, chatbots, and prompts.
 """
 
-# TODO Make all prompts to text completion be strings, so people can fill prompts in. Or support both if need be...
-# TODO Add tests, etc... Make sure everything still works.
-
 import requests
 import json
 import re

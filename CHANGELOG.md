@@ -2,6 +2,23 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.4 (2024-04-27)
+
+### New Features
+
+- Added Exceptions submodule to track specific errors/issues with LLM workflows
+  - LLMCodeException for errors with LLM-generated code
+  - LLMResponseException to ensure an LLM responds properly (i.e., from a list of potential responses)
+- Added Agents submodule to enable autonomous agents and task execution
+  - CodeExecutionAgent for executing LLM-generated code
+
+### Fixes
+
+- ResearchGPT will retry requests if code generated causes an error
+- ResearchGPT code now includes examples for Claude and GPT-4
+- Added python-dotenv to requirements
+- Fixed folder structure in phasellm source code (removed subfolders for submodules)
+
 # 0.0.3 (2023-04-24)
 
 ### New Features
@@ -21,7 +38,7 @@ Have any questions? Need support? Please reach out on [Twitter (@phasellm](https
 
 ### Fixes
 
-- ChatBot bug where messages were erroring out.
+- ChatBot bug where messages were erroring out
 
 # 0.0.1 (🥳 First release!)
 
