@@ -5,13 +5,13 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('../phasellm'))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'PhaseLLM'
-copyright = '2023, Wojciech Gryc'
+copyright = '2023, Phase AI'
 author = 'Phase AI'
 release = '0.0.4'
 
