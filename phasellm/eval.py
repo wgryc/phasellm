@@ -4,7 +4,7 @@ Support for LLM evaluation.
 
 #TODO I don't like the way I'm structuring this stuff right now. I should actually run some experiments first.
 
-from ..llms import OpenAIGPTWrapper
+from .llms import OpenAIGPTWrapper
 
 import random
 

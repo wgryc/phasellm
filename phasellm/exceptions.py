@@ -1,3 +1,7 @@
+"""
+Exception classes and tests for prompts, LLMs, and workflows.
+"""
+
 def isAcceptableLLMResponse(response_given, acceptable_options):
     """
     Tests to confirm the response_given is in the list of acceptable_options. acceptable_options can also be a single string.
