@@ -8,3 +8,4 @@ This checklist is used prior to a new release, to ensure everything works proper
 - [ ] Publish release in GitHub
 - [ ] Tweet about it
 - [ ] Update *Change Log* on site
+- [ ] Updat docs at https://phasellm.com/docs 
