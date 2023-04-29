@@ -68,6 +68,16 @@ class EmailSenderAgent(Agent):
     """
 
     def __init__(self, sender_name, smtp, sender_address, password, port):
+        """
+        Initialize an EmailSenderAgent object.
+
+        Keyword arguments:
+        sender_name -- name of the sender (i.e., "Wojciech")
+        smtp -- the smtp server (e.g., smtp.gmail.com)
+        sender_address -- the sender's email address
+        password -- the password for the email account
+        port -- the port used by the SMTP server
+        """
         self.sender_name = sender_name
         self.smtp = smtp
         self.sender_address = sender_address 
@@ -78,14 +88,20 @@ class EmailSenderAgent(Agent):
         return f"EmailSenderAgent(name={self.name})"
     
     def sendPlainEmail(self, recipient_email, subject, content):
+        """
+        Sends an email encoded as plain text.
+
+        Keywords arguments:
+        recipient_email -- the person receiving the email
+        subject -- email subject
+        content -- the plain text context for the email
+        """
         s = smtplib.SMTP(host=self.smtp, port=self.port)
         s.ehlo()
         s.starttls()
         s.login(self.sender_address, self.password)
 
-
         message = MIMEMultipart()
-        
         message['From'] = f"{self.sender_name} <{self.sender_address}>"
         message['To'] = recipient_email
         message['Subject'] = subject
@@ -93,13 +109,15 @@ class EmailSenderAgent(Agent):
 
         s.send_message(message)
 
-
 class NewsSummaryAgent(Agent):
     """
-    newsapi.org agent. Takes a query, calls the API, and summarizes news articles.
+    newsapi.org agent. Takes a query, calls the API, and gets news articles.
     """
 
     def __init__(self, apikey=None, name=''):
+        """
+        Initializes the agent. Requires a newsapi.org API key.
+        """
         self.apikey = apikey 
         self.name = name
 
@@ -108,13 +126,13 @@ class NewsSummaryAgent(Agent):
     
     def getQuery(self, query, days_back=1, include_descriptions=True, max_articles=25):
         """
-        Gets all articles for a query for the # of days back.
+        Gets all articles for a query for the # of days back. Returns a String with all the information so that an LLM can summarize it. Note that obtaining too many articles will likely cause an issue with prompt length.
 
-        days_back: how far back we go with the query
-        
-        include_descriptions: will include article descriptions as well as titles; otherwise only titles 
-
-        Returns a String with all the information so that an LLM can summarize it.
+        Keyword arguments:
+        query -- what keyword to look for in news articles
+        days_back -- how far back we go with the query
+        include_descriptions -- will include article descriptions as well as titles; otherwise only titles 
+        max_articles -- how many articles to include in the summary
         """
 
         start_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
