@@ -4,6 +4,7 @@ Large language model evaluation and workflow framework from [Phase AI](https://p
 
 - [Follow us on Twitter](https://twitter.com/phasellm) for updates.
 - [Star us on GitHub](https://github.com/wgryc/phasellm).
+- [Read the Docs](https://phasellm.com/docs/) -- currently limited to the module reference. Tutorials and code examples are below.
 
 ## Installation
 
