@@ -9,6 +9,10 @@ import contextlib
 import requests
 from datetime import datetime, timedelta
 
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 from .exceptions import LLMCodeException
 
 class Agent():
@@ -57,6 +61,38 @@ class CodeExecutionAgent(Agent):
                 raise LLMCodeException(code, str(err))
 
         return s.getvalue()
+
+class EmailSenderAgent(Agent):
+    """
+    Send emails via an SMTP server.
+    """
+
+    def __init__(self, sender_name, smtp, sender_address, password, port):
+        self.sender_name = sender_name
+        self.smtp = smtp
+        self.sender_address = sender_address 
+        self.password = password
+        self.port = port 
+
+    def __repr__(self):
+        return f"EmailSenderAgent(name={self.name})"
+    
+    def sendPlainEmail(self, recipient_email, subject, content):
+        s = smtplib.SMTP(host=self.smtp, port=self.port)
+        s.ehlo()
+        s.starttls()
+        s.login(self.sender_address, self.password)
+
+
+        message = MIMEMultipart()
+        
+        message['From'] = f"{self.sender_name} <{self.sender_address}>"
+        message['To'] = recipient_email
+        message['Subject'] = subject
+        message.attach(MIMEText(content, 'plain'))
+
+        s.send_message(message)
+
 
 class NewsSummaryAgent(Agent):
     """

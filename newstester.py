@@ -1,4 +1,4 @@
-from phasellm.agents import * 
+from phasellm.agents import EmailSenderAgent, NewsSummaryAgent
 from phasellm.llms import OpenAIGPTWrapper
 
 import os
@@ -6,10 +6,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
-anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 news_api_api_key = os.getenv("NEWS_API_API_KEY")
 
-query = "elon musk"
+gmail_email = os.getenv("GMAIL_EMAIL")
+gmail_password = os.getenv("GMAIL_PASSWORD")
+
+query = "first republic bank"
 
 n = NewsSummaryAgent(news_api_api_key, name="tester agent")
 news_articles = n.getQuery(query, days_back=1, include_descriptions=True, max_articles=30)
@@ -21,4 +23,8 @@ user_prompt = f"The articles below are about '{query}'. Please summarize them in
 
 messages = [{"role":"system", "content":system}, {"role":"user", "content":user_prompt}]
 
-print(o.complete_chat(messages))
+news_message = o.complete_chat(messages)
+news_subject = f"News about: {query}"
+
+e = EmailSenderAgent('Wojciech Gryc', 'smtp.gmail.com', gmail_email, gmail_password, 587)
+e.sendPlainEmail('wgryc@fastmail.com', news_subject, news_message)
