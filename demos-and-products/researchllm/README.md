@@ -1,4 +1,4 @@
-# ResearchGPT
+# ResearchLLM
 
 An autonomous statistics helper that converts your natural language queries about a data set to insights.
 
@@ -8,9 +8,9 @@ An autonomous statistics helper that converts your natural language queries abou
 - Provide access to underlying Python code for audit and review
 
 [2-minute demo below:](https://www.youtube.com/watch?v=-fzFCii6UoA)
-[![ResearchGPT screenshot](screenshot.png)](https://www.youtube.com/watch?v=-fzFCii6UoA)
+[![ResearchLLM screenshot](screenshot.png)](https://www.youtube.com/watch?v=-fzFCii6UoA)
 
-Please note that we originally launched this as *ResearchGPT* and have since renamed the demo to *ResearchLLM*. Apologies for any confusion!
+Please note that we originally launched this as *ResearchLLM* and have since renamed the demo to *ResearchLLM*. Apologies for any confusion!
 
 ## 🚨🚨 WARNING: Runs LLM-Generated Python Code
 
@@ -26,7 +26,7 @@ Clone the GitHub repository and navigate to the folder containing this README.md
 pip install -r requirements.txt
 ```
 
-Next, make sure you edit the `researchgpt.py` file to include the proper API keys. You'll find these around line 19:
+Next, make sure you edit the `researchllm.py` file to include the proper API keys. You'll find these around line 19:
 ```python
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 MODEL = ClaudeWrapper(ANTHROPIC_API_KEY)
