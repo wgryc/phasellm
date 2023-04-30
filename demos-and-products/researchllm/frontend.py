@@ -1,5 +1,5 @@
 """
-A Flask frontend for ResearchGPT
+A Flask frontend for ResearchLLM
 
 To run, start a Python REPL and in the same directory as this file and run the following:
 > from frontend import *
@@ -7,7 +7,7 @@ To run, start a Python REPL and in the same directory as this file and run the f
 
 """
 
-from researchgpt import *
+from researchllm import *
 
 from flask import Flask, request, render_template
 import pandas as pd
@@ -62,7 +62,7 @@ def generateOverview(df):
 # The prompt used to set up the entire chat session. This prompt is used regularly for analysis.
 base_prompt = f"{DATA_SETUP_INTRO} I have imported Pandas as `pd`, Numpy as `np`, `scipy`, and `sklearn`, and have a dataframe called `df` loaded into Python. `df` contains the following variables and variable types:\n\n" + generateOverview(df) 
 
-# Calls the researchgpt.py function to set the current dataframe as the main one for analysis.
+# Calls the researchllm.py function to set the current dataframe as the main one for analysis.
 set_df(df)
 
 ##########################################################################
@@ -89,9 +89,9 @@ def index():
 @APP.route("/text_completion", methods = ['POST'])
 def analysis():
     """
-    Calls the researchgpt.py code to request analysis and interpretation thereof.
+    Calls the researchllm.py code to request analysis and interpretation thereof.
     
-    See run_analysis(message) in researchgpt.py for more information.
+    See run_analysis(message) in researchllm.py for more information.
     """
     text_to_complete = request.json["input"]
     new_request = base_prompt + text_to_complete

@@ -1,10 +1,8 @@
 """
-ResearchGPT, a demo by PhaseLLM
-See phasellm.com for more information
+ResearchLLM, a demo by PhaseLLM
+See phasellm.com/researchllm for more information
 
 The code below takes prompts uses a large language model (Claude, GPT-4, Cohere, etc.) to analyze your data and find insights.
-
-This file specifically uses Claude (Anthropic's LLM) and was tested on Claude v1.3.
 
 To see the full workflow, review the comments in the run_analysis() function.
 """
@@ -88,7 +86,7 @@ Do you understand? Please simply write "yes" if you do, and "no" with followup q
             else:
                 model = MODEL_CLASS(MODEL_API_KEY, MODEL_NAME)
 
-            print(f"Running ResearchGPT with {str(model)}")
+            print(f"Running ResearchLLM with {str(model)}")
 
             CHATBOT = ChatBot(model, prompt)
             response = CHATBOT.chat(prompt)
@@ -102,7 +100,7 @@ Do you understand? Please simply write "yes" if you do, and "no" with followup q
             launched_llm = False
 
     if not launched_llm:
-        print("\n\n*****WARNING*****\nLLM did not understand instructions. You might want to reset the model and avoid running ResearchGPT with this model..\n\n")
+        print("\n\n*****WARNING*****\nLLM did not understand instructions. You might want to reset the model and avoid running ResearchLLM with this model..\n\n")
     
 def ask_bi(msg):
     """
@@ -125,7 +123,7 @@ def ask_interpret(code):
     """
     This function takes Python code and executes it, saving the output to the 'code_output' variable. It then passes both the code and the output to an LLM to ask it to interpret the results.
     
-    ResearchGPT uses this to execute analysis on the dataframe 'df', and then asks the LLM to interpet the results.
+    ResearchLLM uses this to execute analysis on the dataframe 'df', and then asks the LLM to interpet the results.
     """
 
     is_error = False
