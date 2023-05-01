@@ -2,7 +2,22 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
-# 0.0.4 (2024-04-27)
+# 0.0.5 (2023-05-01)
+
+### New Features
+
+- New agents
+  - EmailSenderAgent for sending emails (tested on GMail)
+  - NewsSummaryAgent for newsapi.org; summarizes lists of news articles
+- Demo proejcts
+  - 'News Bot' demo that uses the new agents above to email daily summaries of news topics
+  - 'Chain of Thought' demo that generats a markdown file with plans for how to analyze a data set
+
+### Fixes
+
+_None_
+
+# 0.0.4 (2023-04-27)
 
 ### New Features
 
@@ -57,4 +72,3 @@ Have any questions? Need support? Please reach out on [Twitter (@phasellm](https
 ### Fixes
 
 Nothing, since this is a new release!
-
