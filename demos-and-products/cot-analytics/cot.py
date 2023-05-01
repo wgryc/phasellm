@@ -1,3 +1,7 @@
+"""
+Chain of Thought (CoT) analysis for a data set. Please see the README.md for more information.
+"""
+
 import os
 from dotenv import load_dotenv
 
