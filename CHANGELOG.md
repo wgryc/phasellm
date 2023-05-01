@@ -9,7 +9,7 @@ Have any questions? Need support? Please reach out on [Twitter (@phasellm](https
 - New agents
   - EmailSenderAgent for sending emails (tested on GMail)
   - NewsSummaryAgent for newsapi.org; summarizes lists of news articles
-- Demo proejcts
+- Demo projects
   - 'News Bot' demo that uses the new agents above to email daily summaries of news topics
   - 'Chain of Thought' demo that generats a markdown file with plans for how to analyze a data set
 
