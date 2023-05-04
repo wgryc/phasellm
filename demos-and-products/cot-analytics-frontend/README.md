@@ -12,6 +12,12 @@ run()
 
 ## Examples of how this works
 
+The screenshot below shows the first code block being executed. There are no outputs (or errors!) because the code works.
+![Screenshot showing Step 1 running.](cot-scr-1.png)
+
+Correlation matrix generated via GPT-4 coding.
+![Screenshot showing Step 2 running.](cot-scr-2.png)
+
 ## Issues
 
 The `cot-analytics` folder generates a great research plan, but the code isn't consisten across steps. Some thinking below.
