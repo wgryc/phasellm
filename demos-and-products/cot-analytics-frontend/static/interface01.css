@@ -1,0 +1,103 @@
+* {
+	font-family: 'Open Sans', sans-serif;	
+	box-sizing: border-box;	
+}
+
+body {
+    margin:0;
+    padding:0;
+}
+
+#everything-everywhere-all-at-once {
+	width:100vw;
+	height:100vh;
+	display: grid;
+	grid-template-columns: 33% 66%;	
+	overflow:hidden;
+}
+
+#col1 {
+    grid-column:1;
+	grid-row:1;
+	padding:25px;
+	background-color:rgb(248, 245, 228);
+}
+
+#col2 {
+	grid-column:2;
+	grid-row: 1;
+	padding:25px;
+}
+
+#data-overview {
+	margin-top:30px;
+}
+
+h1 {
+	font-size:20px;
+	font-weight:600;
+}
+
+#prompt-info {
+	max-height:calc(100vh - 150px);
+	font-size:11px;
+	font-weight:300;
+	font-family: 'Open Sans', sans-serif;	
+	overflow-x:auto;
+	overflow-y:auto;
+}
+
+#cot-output {
+	overflow-x:auto;
+	overflow-y:auto;
+	max-height:calc(100vh - 150px);
+}
+
+.cot-output-cell {
+	border:1px solid rgd(235,235,235);
+	border-radius:7px;
+	padding:15px;
+	margin:10px;
+}
+
+.cot-output-cell .notes {
+	white-space: pre-wrap;
+}
+
+.cot-output-cell .code {
+	width:100%;
+	white-space: pre;
+	font-family: monospace;
+}
+
+.run-button {
+	padding:10px;
+	border-radius:8px;
+	border:1px solid rgb(230,230,230);
+	width:100%;
+	background:rgb(83, 145, 101);
+	color:rgb(248, 245, 228);
+	font-weight:800px;
+	margin-top:10px;
+	width:100px;
+	cursor:pointer;
+}
+
+.code-output-after-run {
+	width:100%;
+	white-space: pre;
+	font-family: monospace;
+	background:rgb(248, 245, 228);
+	border-radius:7px;
+	padding:15px;
+	margin:10px;
+}
+
+.heading-code-output {
+	font-weight:600;
+}
+
+.heading-error {
+	color:crimson;
+	font-weight:600;
+}
