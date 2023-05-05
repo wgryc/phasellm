@@ -1,0 +1,70 @@
+I am researching the relationship between income and sociodemographic census info. I have imported Pandas as `pd`, Numpy as `np`, `scipy`, and `sklearn`, and have a dataframe called `df` loaded into Python. `df` contains the following variables and variable types:
+
+Column Name: age
+Column Type: int64
+
+Column Name: workclass
+Column Type: object
+Sample Values: ['?' 'Federal-gov' 'Local-gov' 'Never-worked' 'Private' 'Self-emp-inc'
+'Self-emp-not-inc' 'State-gov' 'Without-pay']
+
+Column Name: fnlwgt
+Column Type: int64
+
+Column Name: education
+Column Type: object
+Sample Values: ['10th' '11th' '12th' '1st-4th' '5th-6th' '7th-8th' '9th' 'Assoc-acdm'
+'Assoc-voc' 'Bachelors' 'Doctorate' 'HS-grad' 'Masters' 'Preschool'
+'Prof-school' 'Some-college']
+
+Column Name: education.num
+Column Type: int64
+
+Column Name: marital.status
+Column Type: object
+Sample Values: ['Divorced' 'Married-AF-spouse' 'Married-civ-spouse'
+'Married-spouse-absent' 'Never-married' 'Separated' 'Widowed']
+
+Column Name: occupation
+Column Type: object
+Sample Values: ['?' 'Adm-clerical' 'Armed-Forces' 'Craft-repair' 'Exec-managerial'
+'Farming-fishing' 'Handlers-cleaners' 'Machine-op-inspct' 'Other-service'
+'Priv-house-serv' 'Prof-specialty' 'Protective-serv' 'Sales'
+'Tech-support' 'Transport-moving']
+
+Column Name: relationship
+Column Type: object
+Sample Values: ['Husband' 'Not-in-family' 'Other-relative' 'Own-child' 'Unmarried' 'Wife']
+
+Column Name: race
+Column Type: object
+Sample Values: ['Amer-Indian-Eskimo' 'Asian-Pac-Islander' 'Black' 'Other' 'White']
+
+Column Name: sex
+Column Type: object
+Sample Values: ['Female' 'Male']
+
+Column Name: capital.gain
+Column Type: int64
+
+Column Name: capital.loss
+Column Type: int64
+
+Column Name: hours.per.week
+Column Type: int64
+
+Column Name: native.country
+Column Type: object
+Sample Values: ['?' 'Cambodia' 'Canada' 'China' 'Columbia' 'Cuba' 'Dominican-Republic'
+'Ecuador' 'El-Salvador' 'England' 'France' 'Germany' 'Greece' 'Guatemala'
+'Haiti' 'Holand-Netherlands' 'Honduras' 'Hong' 'Hungary' 'India' 'Iran'
+'Ireland' 'Italy' 'Jamaica' 'Japan' 'Laos' 'Mexico' 'Nicaragua'
+'Outlying-US(Guam-USVI-etc)' 'Peru' 'Philippines' 'Poland' 'Portugal'
+'Puerto-Rico' 'Scotland' 'South' 'Taiwan' 'Thailand' 'Trinadad&Tobago'
+'United-States' 'Vietnam' 'Yugoslavia']
+
+Column Name: income
+Column Type: object
+Sample Values: ['<=50K' '>50K']
+
+Given all of the above, could you please write a script to remove missing values ('?') from each column in the data frame, df?

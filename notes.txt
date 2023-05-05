@@ -1,0 +1,3 @@
+https://huggingface.co/spaces/bigcode/bigcode-playground
+https://huggingface.co/chat
+https://huggingface.co/bigcode/starcoder
