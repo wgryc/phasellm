@@ -115,15 +115,12 @@ class HuggingFaceInferenceWrapper():
         headers = {"Authorization": f"Bearer {self.apikey}"}
 
         response = requests.post(self.model_url, headers=headers, json={"inputs": prompt_text}).json()
-
-        all_text = response[0]['generated_text']
-        new_text = all_text[len(prompt_text):]
+        new_text = response[0]['generated_text']
 
         # We only return the first line of text.
         newline_location = new_text.find("\n") 
         if newline_location > 0:
             new_text = new_text[:newline_location]
-
         return new_text
 
     def text_completion(self, prompt):
@@ -133,9 +130,7 @@ class HuggingFaceInferenceWrapper():
         headers = {"Authorization": f"Bearer {self.apikey}"}
         response = requests.post(self.model_url, headers=headers, json={"inputs": prompt}).json()
         all_text = response[0]['generated_text']
-        print(response)
-        new_text = all_text[len(prompt):]
-        return new_text    
+        return all_text
 
 class BloomWrapper():
     """
