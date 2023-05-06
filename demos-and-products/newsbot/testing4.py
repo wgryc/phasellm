@@ -54,7 +54,6 @@ PICKLE_FILE = "data4.pickle"
 
 import pickle 
 
-from phasellm.agents import NewsSummaryAgent
 from phasellm.eval import GPT35Evaluator, HumanEvaluatorCommandLine
 from phasellm.llms import OpenAIGPTWrapper, ClaudeWrapper, Prompt 
 
@@ -72,7 +71,7 @@ class EvaluationStream():
     def __init__(self, objective, prompt, models):
         self.models = models
         self.objective = objective
-        self.prompt = prompt # TODO Should include the templated variables instead...? Or the Prompt object...?
+        self.prompt = prompt
         self.objective = objective 
         self.evaluator = HumanEvaluatorCommandLine()
         self.prefs = [0]*len(models) # This will be a simple counter for now.
@@ -107,19 +106,7 @@ def getArticlesAndSummarize(llm, query, news_articles):
 
     return news_message
 
-def create_data_set(queries, pickle_file):
-    article_dict = {}
-    news_agent = NewsSummaryAgent(news_api_api_key, name="tester agent")
-    for query in queries:
-        news_articles = news_agent.getQuery(query, days_back=1, include_descriptions=True, max_articles=30)
-        article_dict[query] = {"articles":news_articles}
 
-    with open(pickle_file, 'wb') as handle:
-        pickle.dump(article_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-def update_data_set(dict_obj, pickle_file):
-    with open(pickle_file, 'wb') as handle:
-        pickle.dump(dict_obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 def load_data_set(pickle_file):
     articles = None
@@ -127,32 +114,11 @@ def load_data_set(pickle_file):
         articles = pickle.load(handle)
     return articles
 
-# Only need to run this once.
-queries = ['spacex', 'federal reserve', 'shopify', 'openai', 'biden', 'trump', 'met gala', 'king charles', 'poland', 'euro']
 
-if CREATING_DATA: create_data_set(queries, PICKLE_FILE)
 
 llm_1 = OpenAIGPTWrapper(openai_api_key, model="gpt-4")
 llm_2 = OpenAIGPTWrapper(openai_api_key, model="gpt-4")
 
-if CREATING_DATA :
-    articles = load_data_set(PICKLE_FILE)
-    for key, article_dict in articles.items():
-
-        print(f"Generating news summary for '{key}'")
-
-        print("... llm_1")
-        llm_1_completion = getArticlesAndSummarize(llm_1, key, article_dict['articles'])
-
-        print("... llm_2")
-        llm_2_completion = getArticlesAndSummarize2(llm_1, key, article_dict['articles'])
-
-        article_dict["llm_1"] = llm_1_completion
-        article_dict["llm_2"] = llm_2_completion
-
-        articles[key] = article_dict
-
-    update_data_set(articles, PICKLE_FILE)
 
 articles = load_data_set(PICKLE_FILE)
 
