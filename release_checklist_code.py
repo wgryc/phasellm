@@ -146,3 +146,17 @@ bw.complete_chat(messages, 'assistant')
 
 # Run a text completion.
 bw.text_completion("The capital of Poland is")
+
+##########################################################################################
+# HUGGINGFACE INFERENCE API TESTS
+#
+
+from phasellm.llms import HuggingFaceInferenceWrapper
+hf = HuggingFaceInferenceWrapper(hugging_face_api_key, model_url='https://api-inference.huggingface.co/models/google/flan-t5-xxl')
+
+# Testing chat capability.
+messages = [{"role":"user", "content":"What should I eat for lunch today?"}]
+hf.complete_chat(messages, 'assistant')
+
+# Run a text completion.
+hf.text_completion("The capital of Poland is")

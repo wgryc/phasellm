@@ -38,6 +38,10 @@ DATA_FILE_LOC = "incomes.csv"
 # If you want to load another file (e.g., Excel file), replace the code below with the relevant function (e.g., read_excel()).
 df = pd.read_csv(DATA_FILE_LOC)
 
+# Advanced settings
+INCLUDE_COL_DESCRIPTION_VALS = True # Choose whether to include sample values in the column descriptions (within the prompt)
+MAX_UNIQUES_FOR_DESC = 10 # Number of unique values to show in column description
+
 #
 # DATA SET SETUP (END)
 #
@@ -53,9 +57,16 @@ def generateOverview(df):
         col_type = df[column].dtype
         col_description = f"Column Name: {col_name}\nColumn Type: {col_type}"
         if col_type == "object":
+
+            # Get unique values for column descriptions.
             column_values = df[col_name].values
-            uniques = np.unique(column_values)
-            col_description += f"\nSample Values: {str(uniques)}"
+            uniques = list(set(column_values))
+            
+            if INCLUDE_COL_DESCRIPTION_VALS:
+                if len(uniques) > MAX_UNIQUES_FOR_DESC:
+                    col_description += f"\nSample Values: {str(uniques[0:MAX_UNIQUES_FOR_DESC])}"
+                else:
+                    col_description += f"\nSample Values: {str(uniques)}"
         description += col_description + "\n\n"
     return description.strip()
 
