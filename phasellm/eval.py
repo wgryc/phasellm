@@ -69,7 +69,7 @@ class HumanEvaluatorCommandLine():
     """
 
     def __repr__(self):
-        return "<HumanEvaluatorComamndLine>"
+        return "<HumanEvaluatorCommandLine>"
     
     def choose(self, objective, prompt, response1, response2):
 
