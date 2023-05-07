@@ -58,10 +58,51 @@ class LanguageModelWrapper():
         """
         pass
 
+class ChatPrompt():
+    """
+    This is used to generate messages for a ChatBot. Like the Prompt class, it enables you to to have variables that get replaced. This can be done for roles and messages.
+    """
+
+    def __init__(self, messages=[]):
+
+        self.messages = messages 
+
+    def __repr__(self):
+        return "ChatPrompt()"
+    
+    def chat_repr(self):
+        return _clean_messages_to_prompt(self.messages)
+    
+    def fill(self, **kwargs):
+        filled_messages = []
+        for i in range(0, len(self.messages)):
+            pattern = r'\{\s*[a-zA-Z0-9_]+\s*\}'
+
+            role = self.messages[i]["role"]
+            content = self.messages[i]["content"]
+
+            role_matches = re.findall(pattern, role)
+            new_role = role 
+            for m in role_matches:
+                keyword = m.replace("{", "").replace("}", "").strip()
+                if keyword in kwargs:
+                    new_role = new_role.replace(m, kwargs[keyword])
+
+            content_matches = re.findall(pattern, content)
+            new_content = content 
+            for m in content_matches:
+                keyword = m.replace("{", "").replace("}", "").strip()
+                if keyword in kwargs:
+                    new_content = new_content.replace(m, kwargs[keyword])
+
+            filled_messages.append({"role":new_role, "content":new_content})
+
+        return filled_messages
+
 class Prompt():
     """
     Prompts are used to generate text completions. Prompts can be simple Strings. They can also include variables surrounded by curly braces. For example:
-    Hello {name}!
+    > Hello {name}!
     In this case, 'name' can be filled using the fill_prompts() function. This makes it easier to loop through prompts that follow a specific pattern or structure.
     """
 
@@ -77,7 +118,7 @@ class Prompt():
         """
         return self.prompt
     
-    def fill_prompts(self, **kwargs):
+    def fill(self, **kwargs):
         """
         Return a prompt with variables filled in.
         """
@@ -90,11 +131,53 @@ class Prompt():
                 new_prompt = new_prompt.replace(m, kwargs[keyword])
         return new_prompt
 
+class HuggingFaceInferenceWrapper():
+    """
+    Wrapper for Hugging Face's Inference API. Requires access to Hugging Face's inference API.
+    """
+    def __init__(self, apikey, model_url="https://api-inference.huggingface.co/models/bigscience/bloom"):
+        self.apikey = apikey
+        self.model_url = model_url
+
+    def __repr__(self):
+        return f"HuggingFaceInferenceWrapper()"
+
+
+    def complete_chat(self, messages, append_role=None):
+        """
+        Mimicks a chat scenario via a list of {"role": <str>, "content":<str>} objects.
+        """
+
+        prompt_preamble = "You are a friendly chat assistant. You are speaking to the 'user' below and will respond at the end, where it says 'assistant'.\n"
+        prompt_text = prompt_preamble + _clean_messages_to_prompt(messages)
+        if append_role is not None and len(append_role) > 0:
+            prompt_text += f"\n{append_role}:"
+
+        headers = {"Authorization": f"Bearer {self.apikey}"}
+
+        response = requests.post(self.model_url, headers=headers, json={"inputs": prompt_text}).json()
+        new_text = response[0]['generated_text']
+
+        # We only return the first line of text.
+        newline_location = new_text.find("\n") 
+        if newline_location > 0:
+            new_text = new_text[:newline_location]
+        return new_text
+
+    def text_completion(self, prompt):
+        """
+        Completes text.
+        """
+        headers = {"Authorization": f"Bearer {self.apikey}"}
+        response = requests.post(self.model_url, headers=headers, json={"inputs": prompt}).json()
+        all_text = response[0]['generated_text']
+        return all_text
+
 class BloomWrapper():
     """
     Wrapper for Hugging Face's BLOOM model. Requires access to Hugging Face's inference API.
     """
-    def __init__(self, apikey):
+    def __init__(self, apikey, model ):
         self.apikey = apikey
 
     def __repr__(self):

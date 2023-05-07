@@ -2,6 +2,16 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.6 (2023-05-xx)
+
+### New Features
+
+- Added HuggingFaceInferenceWrapper so you can now query models via HuggingFace
+
+### Fixes
+
+_None_
+
 # 0.0.5 (2023-05-01)
 
 ### New Features
