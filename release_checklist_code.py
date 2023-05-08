@@ -89,7 +89,7 @@ dw.complete_chat(messages, 'assistant')
 dw.text_completion("The capital of Poland is")
 	
 ##########################################################################################
-# GPT-3.5 EVALUATOR WITH COHERE AND DOLLY COMPARISONS
+# GPT EVALUATOR WITH COHERE AND DOLLY COMPARISONS
 #
 
 import os
@@ -100,10 +100,10 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 cohere_api_key = os.getenv("COHERE_API_KEY")
 
-from phasellm.eval import GPT35Evaluator
+from phasellm.eval import GPTEvaluator
 
 # We'll use GPT-3.5 as the evaluator.
-e = GPT35Evaluator(openai_api_key)
+e = GPTEvaluator(openai_api_key)
 
 # Our objective.
 objective = "We're building a chatbot to discuss a user's travel preferences and provide advice."
@@ -119,7 +119,7 @@ travel_chat_starts = [
 
 from phasellm.llms import CohereWrapper
 from phasellm.llms import DollyWrapper # NEW: importing the DollyWrapper...
-dwl = DollyWrapper() # NEW: ... and instantiating it.
+dw = DollyWrapper() # NEW: ... and instantiating it.
 
 cohere_model = CohereWrapper(cohere_api_key)
 
@@ -131,20 +131,6 @@ for tcs in travel_chat_starts:
     response_dw = dw.complete_chat(messages, "assistant") # NEW: minor change to variable name
     pref = e.choose(objective, tcs, response_cohere, response_dw)
     print(f"{pref}")
-	
-##########################################################################################
-# BLOOM TESTS
-#
-
-from phasellm.llms import BloomWrapper
-bw = BloomWrapper(hugging_face_api_key)
-
-# Testing chat capability.
-messages = [{"role":"user", "content":"What should I eat for lunch today?"}]
-bw.complete_chat(messages, 'assistant')
-
-# Run a text completion.
-bw.text_completion("The capital of Poland is")
 
 ##########################################################################################
 # HUGGINGFACE INFERENCE API TESTS
