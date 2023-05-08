@@ -2,15 +2,26 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
-# 0.0.6 (2023-05-xx)
+# 0.0.6 (2023-05-08)
+
+_Note:_ a number of changes in this release are not backwards compatible. They contain a '🚨' emoji by the bullet point in case you want to review.
 
 ### New Features
 
-- Added HuggingFaceInferenceWrapper so you can now query models via HuggingFace
+- Lots of new classes!
+  - LLMs: added _HuggingFaceInferenceWrapper_ so you can now query models via HuggingFace
+  - Data: added _ChatPrompt_ to build chat sessions with variables
+  - Evaluation: added _EvaluationStream_ to make it easy to evaluate models
+  - Exceptions: added _ChatStructureException_ to be called when a chat doesn't follow OpenAI's messaging requirements
+- phasellm.eval has _isProperlyStructuredChat()_ to validate 
 
 ### Fixes
 
-_None_
+- 🚨 Changed _fill_prompt()_ to _fill()_ so we are consistent across _Prompt_ and _ChatPrompt_ classes
+- 🚨 _GPT35Evaluator_ is now _GPTEvaluator_ since you can use GPT-4 as well; the evaluation approach randomizes the order in which options are presented to the LLM to avoid any bias it might have
+- Fixes to _ResearchLLM_
+  - _generateOverview()_ now limits examples for categorical variables to 10, though this can also be set at the top of the file to another #. Previously we'd include all possible values.
+  - Making a list of categorical values in _generateOverview()_ often errored out. This has been fixed.
 
 # 0.0.5 (2023-05-01)
 
