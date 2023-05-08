@@ -41,11 +41,10 @@ hugging_face_api_key = os.getenv("HUGGING_FACE_API_KEY")
 #
 
 # Run GPT-3.5 evaluator
+from phasellm.eval import GPTEvaluator
 
-from phasellm.eval import GPT35Evaluator
-
-# We'll use GPT-3.5 as the evaluator.
-e = GPT35Evaluator(openai_api_key)
+# We'll use GPT-3.5 as the evaluator; this is the default setting in the class below
+e = GPTEvaluator(openai_api_key)
 
 # Our objective.
 objective = "We're building a chatbot to discuss a user's travel preferences and provide advice."
