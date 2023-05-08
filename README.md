@@ -52,10 +52,10 @@ cohere_api_key = os.getenv("COHERE_API_KEY")
 We're going to set up the *Evaluator*, which takes two LLM model outputs and decides which one is better for the objective at hand.
 
 ```python
-from phasellm.eval import GPT35Evaluator
+from phasellm.eval import GPTEvaluator
 
-# We'll use GPT-3.5 as the evaluator.
-e = GPT35Evaluator(openai_api_key)
+# We'll use GPT-3.5 as the evaluator (default for GPTEvaluator).
+e = GPTEvaluator(openai_api_key)
 ```
 
 Now it's time to set up the experiment. In this case, we'll set up an `objective` which describes what we're trying to achieve with our chatbot. We'll also provide 5 examples of starting chats that we've seen with our users.
