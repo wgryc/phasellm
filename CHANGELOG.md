@@ -1,6 +1,6 @@
 # PhaseLLM Change Log
 
-Have any questions? Need support? Please reach out on [Twitter (@phasellm](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
+Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
 # 0.0.6 (2023-05-08)
 
