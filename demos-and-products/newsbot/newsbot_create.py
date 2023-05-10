@@ -2,7 +2,7 @@
 
 from phasellm.llms import OpenAIGPTWrapper, ClaudeWrapper, ChatPrompt
 from phasellm.agents import NewsSummaryAgent
-import pickle 
+import json 
 
 ### ENVIRONMENT VARIABLES
 
@@ -17,10 +17,10 @@ news_api_api_key = os.getenv("NEWS_API_API_KEY")
 ### SETUP THE EXPERIMENTAL DATA
 
 queries = ['spacex', 'federal reserve', 'shopify', 'openai', 'biden', 'trump', 'met gala', 'king charles', 'poland', 'euro']
-PICKLE_FILE = "news_articles.pickle"
+JSON_FILE = "news_articles.json"
 
 llm_1 = OpenAIGPTWrapper(openai_api_key, model="gpt-4")
-llm_2 = ClaudeWrapper(anthropic_api_key)
+llm_2 = OpenAIGPTWrapper(openai_api_key, model="gpt-4") # ClaudeWrapper(anthropic_api_key)
 
 chat_prompt_raw_1 = [
 {"role":"system",
@@ -41,44 +41,43 @@ chat_prompt_2 = ChatPrompt(chat_prompt_raw_2)
 
 ### DATA HELPERS
 
-def create_data_set(queries, pickle_file):
+def create_data_set(queries, json_file):
     article_dict = {}
     news_agent = NewsSummaryAgent(news_api_api_key, name="tester agent")
     for query in queries:
         news_articles = news_agent.getQuery(query, days_back=1, include_descriptions=True, max_articles=30)
         article_dict[query] = {"articles":news_articles}
 
-    with open(pickle_file, 'wb') as handle:
-        pickle.dump(article_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    update_data_set(article_dict, json_file)
 
-def update_data_set(dict_obj, pickle_file):
-    with open(pickle_file, 'wb') as handle:
-        pickle.dump(dict_obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
+def update_data_set(dict_obj, json_file):
+    with open(json_file, 'w') as writer:
+        writer.write(json.dumps(dict_obj))
 
-def load_data_set(pickle_file):
+def load_data_set(json_file):
     articles = None
-    with open(pickle_file, 'rb') as handle:
-        articles = pickle.load(handle)
+    with open(json_file, 'r') as reader:
+        articles = json.loads(reader.read())
     return articles
 
 ### RUNNING DATA SET CREATION
 
-create_data_set(queries, PICKLE_FILE)
+create_data_set(queries, JSON_FILE)
 
-articles = load_data_set(PICKLE_FILE)
+articles = load_data_set(JSON_FILE)
 for query, article_dict in articles.items():
 
     print(f"Generating news summary for '{query}'")
 
     print("... llm_1")
-    llm_1_completion = llm_1.complete_chat(chat_prompt_1(query=query, news_articles=article_dict['articles']))
+    llm_1_completion = llm_1.complete_chat(chat_prompt_1.fill(query=query, news_articles=article_dict['articles']))
 
     print("... llm_2")
-    llm_2_completion = llm_2.complete_chat(chat_prompt_1(query=query, news_articles=article_dict['articles']))
+    llm_2_completion = llm_2.complete_chat(chat_prompt_2.fill(query=query, news_articles=article_dict['articles']))
     
     # Saving results...
     article_dict["llm_1"] = llm_1_completion
     article_dict["llm_2"] = llm_2_completion
     articles[query] = article_dict
 
-update_data_set(articles, PICKLE_FILE)
+update_data_set(articles, JSON_FILE)
