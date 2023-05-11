@@ -2,6 +2,8 @@
 Exception classes and tests for prompts, LLMs, and workflows.
 """
 
+from .llms import ChatPrompt
+
 def isAcceptableLLMResponse(response_given, acceptable_options):
     """
     Tests to confirm the response_given is in the list of acceptable_options. acceptable_options can also be a single string.
@@ -49,6 +51,31 @@ def isProperlyStructuredChat(messages, force_roles=False):
             if role not in ["system", "user", "assistant"]:
                 return False
     return True
+
+def reviewOutputWithLLM(text, requirements, llm):
+    """
+    Has an LLM review an output and determines whether the output is OK or not.
+    """
+    prompt = ChatPrompt([{"role":"system", "content":"Follow the user's instructions exactly, and only respond with YES or NO (with additional info)."},
+                         {"role":"user", "content":"I'm working with a large language model and hope you can confirm if the following text abides by a set of requirements I've provided. Here is the text:\n-----\n{output}\n-----\n\nBelow are the requirements the text above is supposed to meet.\n\n-----\n{requirements}\n-----\n\nDoes the text meet the requirements? Please only answer YES or NO. If NO, you can provide additional information on what the text is missing."}])
+
+    result = llm.complete_chat(prompt.fill(text=text, requirements=requirements))
+    if result == "YES":
+        return True 
+    else:
+        raise LLMReviewException(result)
+
+class LLMReviewException(Exception):
+    """
+    Exception that gets thrown 
+    """
+
+    def __init__(self, message):
+        super().__init__("LLM Review Exception: text does not meet requirements.\nInfo: " + message)
+        self.message = message 
+
+    def __repr__(self):
+        return "LLM Review Exception: text does not meet requirements.\nInfo: " + self.message
 
 class ChatStructureException(Exception):
     """

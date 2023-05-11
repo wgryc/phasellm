@@ -299,7 +299,7 @@ class ClaudeWrapper():
     def __repr__(self):
         return f"ClaudeWrapper(model={self.model})"
     
-    def complete_chat(self, messages, append_role=None):
+    def complete_chat(self, messages, append_role="Assistant:"):
         """
         Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimick the chat via the a prompt.
         """
