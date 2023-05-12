@@ -133,3 +133,4 @@ dmypy.json
 
 # Workspaces
 /workspace
+scratchpad.py

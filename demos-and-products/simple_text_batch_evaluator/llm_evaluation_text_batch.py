@@ -1,13 +1,7 @@
 import os
 import sys
 
-from pathlib import Path
-
-p = Path(__file__).parents[1]
-print(p)
-sys.path.insert(0, p)
-sys.path.append(p)
-print(sys.path)
+sys.path.append(".")
 
 import click
 import json
