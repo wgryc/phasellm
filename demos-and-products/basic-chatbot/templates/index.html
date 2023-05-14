@@ -1,0 +1,139 @@
+<html>
+<head>
+<title>WorkshopLLM</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
+
+<style>
+* {
+    font-family: 'Open Sans', sans-serif;	
+    box-sizing: border-box;	
+}
+
+body {
+	margin:0;
+	padding:0;
+	overflow:hidden;
+}
+
+#chatstream {
+    padding:20px;
+    height:calc(100vh - 200px);
+    margin:20px;
+    border:1px solid lightgray;
+    border-radius:10px;
+    overflow-y:auto;
+}
+
+#chatinputdiv {
+    padding:20px;
+    height:150px;
+    margin:20px;
+    border:1px solid lightgray;
+    border-radius:10px;
+}
+
+.interface-element {
+	font-size:15px;
+	font-family: 'Open Sans', sans-serif;	
+}
+	
+#chat-input {
+	padding:10px;
+	border-radius:8px;
+	border:1px solid rgb(230,230,230);
+	width:100%;
+}
+
+#chat-button {
+	padding:10px;
+	border-radius:8px;
+	border:1px solid rgb(230,230,230);
+	width:100%;
+	background:rgb(83, 145, 101);
+	color:rgb(248, 245, 228);
+	font-weight:800px;
+	margin-top:10px;
+	width:100px;
+	cursor:pointer;
+}
+
+.chat-msg-user {
+	background-color:rgb(63, 73, 127);
+	color:white;
+	border-radius:8px;
+	margin-left:50px;
+	padding:10px;
+	margin-top:10px;
+}
+
+.chat-msg-chatbot {
+	background-color:rgb(248, 245, 228);
+	border-radius:8px;
+	margin-right:50px;
+	padding:10px;
+	margin-top:10px;
+}
+
+</style>
+
+</head>
+<body>
+
+<div id="chatstream">
+    
+</div>
+
+
+<div id="chatinputdiv">
+    <form>
+        <input type="text" class="interface-element" id="chat-input" placeholder="Say something! 😀">
+        <button type="button" class="interface-element" id="chat-button" onclick="javascript:send_message();">Submit</button>
+    </form>
+</div>
+
+<script>
+
+function append_message(msg, who) {
+	var output_div = document.getElementById("chatstream");
+	output_div.innerHTML = output_div.innerHTML + `<div class="chat-msg-${who}">${msg}</div>`;
+}
+
+function send_message() {
+	var chat_message_box = document.getElementById("chat-input");
+	var msg_to_send = chat_message_box.value + "";
+	append_message(msg_to_send, "user");
+	chat_message_box.value = "";
+	
+    var data = {"input":msg_to_send};
+    const response = fetch("submit_chat_message", {
+        method: "POST",
+        cache: "no-cache",
+        credentials: "same-origin",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data),
+    })
+    .then(response=>response.json())
+    .then(data=>{
+		console.log(data);
+		console.log(`STATUS: ${data["status"]}`);
+		console.log(`CONTENT: ${data["content"]}`);
+		var new_content = data["content"].replace(/(?:\r\n|\r|\n)/g, '<br>');
+		append_message(new_content, "chatbot");
+    })
+}
+
+var element = document.getElementById('chat-input');
+element.addEventListener('keypress', function(e){
+  if (e.keyCode == 13) {
+    send_message();
+	e.preventDefault(); 
+  }
+});
+
+</script>
+
+</body>
+</html>
