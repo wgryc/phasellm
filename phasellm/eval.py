@@ -2,10 +2,17 @@
 Support for LLM evaluation.
 """
 
-from .llms import OpenAIGPTWrapper
-
 import random
 
+from abc import ABC, abstractmethod
+
+from typing import Dict, List
+
+from phasellm.llms import LanguageModelWrapper
+
+from .llms import OpenAIGPTWrapper
+
+# TODO: Remove if deprecated
 class BinaryPreference():
     """
     Tracks a prompt, prompt variables, responses, and the calculated preference.
@@ -62,6 +69,37 @@ class EvaluationStream():
         """
         pref = self.evaluator.choose(self.objective, self.prompt, response1, response2)
         self.prefs[pref - 1] += 1
+
+class LLMEvaluator(ABC):
+    """
+    A wrapper for ranking raw LLM responses.
+    Raw LLM responses are submitted to some evaluator (such as a human, an ML model, or an another LLM) for ranking.
+    """
+
+    @abstractmethod
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    @abstractmethod
+    def rank(self, llm_responses: List[str], prompt: List[Dict]) -> List[str]:
+        pass
+
+class MockLLMEvaluator(LLMEvaluator):
+    def __init__(self, name: str) -> None:
+        super().__init__(name=name)
+
+    def rank(self, llm_responses: List[str], prompt: List[Dict]) -> List[str]:
+        return random.sample(llm_responses, len(llm_responses))
+
+class MetaLLMEvaluator(LLMEvaluator):
+    def __init__(self, name: str, meta_llm: LanguageModelWrapper) -> None:
+        super().__init__(name=name)
+        self.meta_llm = meta_llm
+
+    def rank(self, llm_responses: List[str], prompt: List[Dict]) -> List[str]:
+        ranking = self.meta_llm.complete_chat(messages=prompt)
+
+        return ranking
 
 class HumanEvaluatorCommandLine():
     """

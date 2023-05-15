@@ -34,7 +34,7 @@ class LanguageModelWrapper(ABC):
 
     # TODO: Specify return type(s)
     @abstractmethod
-    def complete_chat(self, messages: List[Dict], append_role: Optional[str]=None):
+    def complete_chat(self, messages: List[Dict], append_role: Optional[str]=None) -> str:
         """
         Submits a list of message objects (such as { "role": str, "content": str }) to an upstream LLM and returns an LLM response.
 
@@ -44,7 +44,7 @@ class LanguageModelWrapper(ABC):
     
     # TODO: Specify return type(s)
     @abstractmethod
-    def text_completion(self, prompt, stop_sequences=[]):
+    def text_completion(self, prompt, stop_sequences=[]) -> str:
         """
         Standardizes text completion for large language models.
         """
