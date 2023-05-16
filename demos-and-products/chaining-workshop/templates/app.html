@@ -65,7 +65,6 @@ body {
 	background-color:crimson;
 	color:white;
 	border-radius:8px;
-	margin-right:50px;
 	padding:10px;
 	margin-top:10px;
 }
@@ -110,6 +109,7 @@ body {
 function append_message(msg, who) {
 	var output_div = document.getElementById("chatstream");
 	output_div.innerHTML = output_div.innerHTML + `<div class="chat-msg-${who}">${msg}</div>`;
+	scroll_bottom_output();
 }
 
 function send_message() {
@@ -143,6 +143,11 @@ element.addEventListener('keypress', function(e){
 	e.preventDefault(); 
   }
 });
+
+function scroll_bottom_output() {
+	var output_div = document.getElementById("chatstream");
+	output_div.scrollTop = output_div.scrollHeight;
+}
 
 var app_name = "{{ app_name }}";
 var system_message = `{{ sys_msg }}`;

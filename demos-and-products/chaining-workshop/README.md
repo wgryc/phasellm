@@ -36,7 +36,12 @@ fallback prompt (i.e., error)
 
 variables = user/app provided, LLM-provided
 
-## 
+## How to Add Conditional Flows
 
-Socrates
-Elon Musk
+- Output Parser: need to take the output of a model and parse it in some way. This should parse the outputs into specific variables.
+- Pass a function to the next prompt? This will be limited, though -- you still need to write functions. Is that bad?
+- Prebuilt template functions + custom functions.
+
+Output Parser -> Environment Variable -> Function
+
+

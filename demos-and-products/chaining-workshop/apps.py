@@ -36,7 +36,47 @@ app_yoyo = {
 
 }
 
+app_act = {
+
+"code":"act",
+"name":"Acceptance and Commitment Therapy",
+
+"prompts": {
+
+    0 : {
+        "type":"system_message", "message": "This is an 'Acceptance and Commitment Therapy' (ACT) coach. The responses in this chat model will always focus on different follow-up questions or advice around how you should move forward with your day based on this style of positive psychology.", "next_prompt": 1
+        },
+
+    1 : {
+        "prompt": "REMINDER: you are an Acceptance and Commitment Therapy' (ACT) coach and every message needs to follow the perspective of an ACT therapist that is also steeped in positive and humanistic psychology with a strong focus on ACT.\nMESSAGE:{message}", "next_prompt": 1
+        }
+
+    }
+
+}
+
+app_random_end = {
+
+"code": "random",
+"name": "Random End",
+"prompts": {
+
+    0 : {
+        "type":"system_message", "message": "This is a demo bot that always follows up with ONE question and also randomly ends the conversation. It's being used to show how conditional app flows could work.", "next_prompt": 1
+        },
+
+    1 : {
+        "prompt": "REMINDER: you only allowed to respond with ONE SHORT QUESTION to the MESSAGE below. Please make sure that your response follows the following format:\n---RESPONSE\nThis is where your response actually goes.\n---NEXT\nPut 'YES' or 'NO' here randomly, with a 50% split.\n\n\nMESSAGE:{message}", "next_prompt": 1
+        }
+
+    }
+
+}
+
+
 APP_DATA_SETS = {
     "socrates": app_socrates,
     "yoyo": app_yoyo,
+    "act": app_act,
+    "random": app_random_end,
 }
