@@ -1,16 +1,16 @@
 from phasellm.eval import EvaluationStream
 
-import pickle 
+import json 
 
-PICKLE_FILE = "news_articles.pickle"
+JSON_FILE = "news_articles.json"
 
-def load_data_set(pickle_file):
+def load_data_set(json_file):
     articles = None
-    with open(pickle_file, 'rb') as handle:
-        articles = pickle.load(handle)
+    with open(json_file, 'r') as reader:
+        articles = json.loads(reader.read())
     return articles
 
-articles = load_data_set(PICKLE_FILE)
+articles = load_data_set(JSON_FILE)
 
 # Note that we don't pass the two LLMs to the Evaluation Stream -- no need to do so in this example.
 es = EvaluationStream("Which news summary is higher quality and more engaging?", "You are a helpful news summarizer. We will provide you with a list of news articles and will ask that you summarize them and retain links to source by adding footnotes. For example, if you have a news article describing XYZ and URL to the article, you would discuss XYZ[1] and add '[1] URL' to the bottom of the message. Note that the footnotes should be counted as of the summary; you do not need to keep the numbers from the earlier order, just from your summary. In other words, footnotes should start at 1, 2, 3, etc...", [None, None])
