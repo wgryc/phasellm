@@ -64,13 +64,10 @@ claude_model = ClaudeWrapper(anthropic_api_key)
 
 print("Running test. 1 = Cohere, and 2 = Claude.")
 for tcs in travel_chat_starts:
-
     messages = [{"role":"system", "content":objective},
             {"role":"user", "content":tcs}]
-
     response_cohere = cohere_model.complete_chat(messages, "assistant")
     response_claude = claude_model.complete_chat(messages, "assistant")
-
     pref = e.choose(objective, tcs, response_cohere, response_claude)
     print(f"{pref}")
 	
