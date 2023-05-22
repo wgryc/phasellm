@@ -8,8 +8,8 @@ from phasellm.llms import OpenAIGPTWrapper, ChatBot, Prompt
 
 load_dotenv()
 MODEL_LLM = OpenAIGPTWrapper
-#MODEL_STRING = "gpt-4"
-MODEL_STRING = "gpt-3.5-turbo" # Use for speed.
+MODEL_STRING = "gpt-4"
+#MODEL_STRING = "gpt-3.5-turbo" # Use for speed.
 MODEL_API_KEY = os.getenv("OPENAI_API_KEY")
 llm = MODEL_LLM(MODEL_API_KEY, MODEL_STRING)
 
@@ -105,6 +105,14 @@ def process_message(message):
             else:
                 if "RESPONSE" in response_dict:
                     response = response_dict["RESPONSE"]
+        if "DANGER" in response_dict:
+            if isInt(response_dict["DANGER"]):
+                danger_score = int(response_dict["DANGER"])
+                if danger_score > 80:
+                    response = "Dangerous topic! Chat is over!"
+                else:
+                    if "RESPONSE" in response_dict:
+                        response = response_dict["RESPONSE"]
 
     APP_PROMPT_STATE = next_prompt 
 

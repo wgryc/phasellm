@@ -73,10 +73,29 @@ app_random_end = {
 
 }
 
+app_danger_demo = {
+
+"code": "danger",
+"name": "Brand Sentiment",
+"prompts": {
+
+    0 : {
+        "type":"system_message", "message": "This is a demo bot that interviews you about how you feel about your recent Nike sneaker purchase. If your sentiment goes down quite a bit, then it ends the interview.", "next_prompt": 1
+        },
+
+    1 : {
+        "prompt": "REMINDER: please always follow up with a question to keep learning about my sentiment around Nike sneakers. Also provide a 'danger' score from 0 to 100, where 100 means the conversation is incredibly negative, and 0 means it's incredibly positive, and 50 means it's neutral. Please make sure that your response follows the following format, always starting with '---RESPONSE':\n\n---RESPONSE\nThis is where your response actually goes.\n---DANGER\nThis is the sentiment score with 100 = negative, 50 = neutral, and 0 = positive.\n\n\nMESSAGE:{message}", "next_prompt": 1
+        }
+
+    }
+
+}
+
 
 APP_DATA_SETS = {
     "socrates": app_socrates,
     "yoyo": app_yoyo,
     "act": app_act,
     "random": app_random_end,
+    "danger": app_danger_demo
 }

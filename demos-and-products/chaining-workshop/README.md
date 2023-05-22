@@ -45,3 +45,18 @@ variables = user/app provided, LLM-provided
 Output Parser -> Environment Variable -> Function
 
 
+OUTPUT PARSER
+
+
+
+For all of your responses, please provide them in the following format:
+---MESSAGE
+This is where your actual message will go.
+---SENTIMENT-SCORE
+A score between 0 and 100 that shows how positive or negative the person's response was when describing their product.
+---END
+Include 'yes' or 'no' here. 'Yes' means we've asked 2 follow-up questions or the sentiment score has gotten close to 0 and you think it's safer to end the conversation. 'Yes' will continue the conversation.
+
+## Conditional Flows v2
+
+Right now, this is all hard-coded via " ---VAR" which is a poor way of doing things. 
