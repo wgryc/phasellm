@@ -2,6 +2,20 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.7 (2023-05-27)
+
+### New Features
+
+- ChatBot now has a `resend()` function to redo the last chat message in case of errors or if building message arrays outside of a bot
+- Newsbot now has sample Claude code as well (the 100K token model is a fantastic model for news bots)
+- Demo project: "chaining workshop" -- we'll be exploring unique ways to build prompt chains soon
+- Demo project: basic chatbot. Use this as a base for other projects
+
+### Fixes
+
+- ClaudeWrapper bug fix: appending "Assistant:" to chats by default.
+- Reverted `requirements.txt` to earlier version (v0.0.5)
+
 # 0.0.6 (2023-05-08)
 
 _Note:_ a number of changes in this release are not backwards compatible. They contain a '🚨' emoji by the bullet point in case you want to review.
