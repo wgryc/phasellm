@@ -17,14 +17,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ClaudeWrapper if using Anthropic
-MODEL_CLASS = ClaudeWrapper 
-MODEL_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-MODEL_NAME = None
+#MODEL_CLASS = ClaudeWrapper 
+#MODEL_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+#MODEL_NAME = None
 
 # OpenAIWrapper if using GPT-3.5 or GPT-4. We don't recommend older models.
-#MODEL_CLASS = OpenAIGPTWrapper
-#MODEL_API_KEY = os.getenv("OPENAI_API_KEY")
-#MODEL_NAME = "gpt-4"
+MODEL_CLASS = OpenAIGPTWrapper
+MODEL_API_KEY = os.getenv("OPENAI_API_KEY")
+MODEL_NAME = "gpt-4"
 #MODEL_NAME = "gpt-3.5-turbo"
 
 # This is the ChatBot we'll be using and referncing throughout. It gets created using the class and API key above in start_bi_session()

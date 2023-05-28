@@ -142,3 +142,15 @@ hf.complete_chat(messages, 'assistant')
 
 # Run a text completion.
 hf.text_completion("The capital of Poland is")
+
+##########################################################################################
+# CHATBOT resend() TEST
+#
+
+from phasellm.llms import OpenAIGPTWrapper, ChatBot
+
+oaiw = OpenAIGPTWrapper(openai_api_key, 'gpt-4')
+cb = ChatBot(oaiw)
+m = [{'role': 'system', 'content': "You are a robot that adds 'YO!' to the end of every sentence."}, {'role': 'user', 'content': 'Tell me about Poland.'}]
+cb.messages = m
+cb.resend()

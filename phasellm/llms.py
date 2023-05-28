@@ -480,6 +480,21 @@ class ChatBot():
         """
         self.messages.append({"role":role, "content":message})
 
+    def resend(self):
+        """
+        If the last message in the messages stack (i.e. array of role and content pairs) is from the user, it will resend the message and return the response. It's similar to erasing the last message in the stack and resending the last user message to the chat model.
+
+        This is useful if a model has errored out or if you are building a broader messages stack outside of the actual chatbot.
+        """
+
+        last_message = self.messages.pop()
+        if last_message['role'] == 'user':
+            response = self.chat(last_message['content'])
+            return response
+        else:
+            self.messages.append(last_message)
+            return None 
+
     def chat(self, message):
         """
         Chats with the chatbot.
