@@ -19,6 +19,4 @@ print(cb.chat("What is 3x3+1?"))
 
 pprint(cb.messages)
 
-out_file = "t.html"
-with open(out_file, 'w') as w:
-    w.write("<html><body>" + h.chatbotToHtml(cb) + "</body></html>")
+h.toHtmlFile(h.chatbotToHtml(cb), 't.html')
