@@ -2,6 +2,16 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.9 (2023-06-04)
+
+### New Features
+
+_None_
+
+### Fixes
+
+- Hotfix for ChatBot chat() function to remove new fields (e.g., time stamp) when making API calls
+
 # 0.0.8 (2023-06-04)
 
 ### New Features
