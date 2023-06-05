@@ -513,7 +513,13 @@ class ChatBot():
         """
         self._append_message('user', message)
         start_time = time.time()
-        response = self.llm.complete_chat(self.messages, "assistant")
+
+        clean_messages = [] # We remove fields that the ChatBot class specifically tracks.
+        for m in self.messages:
+            m_copy = {"role":m["role"], "content":m["content"]}
+            clean_messages.append(m_copy)
+
+        response = self.llm.complete_chat(clean_messages, "assistant")
         self._append_message('assistant', response, log_time_seconds = time.time() - start_time)
         return response
     
