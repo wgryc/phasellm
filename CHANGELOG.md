@@ -2,6 +2,17 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.8 (2023-06-04)
+
+### New Features
+
+- ChatBot `messages` stack now also tracks the timestamp for when a message was sent, and how long it took to process in the case of external API calls.
+- HTML module that enables HTML outputs for ChatBot
+
+### Fixes
+
+_None_
+
 # 0.0.7 (2023-05-27)
 
 ### New Features
