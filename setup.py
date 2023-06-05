@@ -25,7 +25,7 @@ setup(
         "torch>=1.0.0",
         "python-dotenv",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.7.1",
     keywords="llm, nlp, evaluation, ai",
     classifiers=[
         "Development Status :: 3 - Alpha",
