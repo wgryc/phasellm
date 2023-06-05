@@ -1,0 +1,115 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<style>
+
+.phasellm_chatbot_stream {
+    margin:5px;
+    box-sizing:content-box;
+    padding:8px;
+    border-radius:8px;
+    border:1px solid black;
+    display:inline-block;
+}
+.phasellm_chatbot_stream .response_container {
+    display:block;
+    display:block;
+    margin:5px;
+    padding:8px;
+}
+
+.content_user {
+    background-color:green;
+    color:white;
+}
+
+.content_system {
+    color:gray;
+    background-color:lightgray;
+    font-style:italic;
+}
+
+.content_assistant {
+    color:white;
+    background-color:crimson;
+}
+
+.response {
+    padding:8px;
+    border-radius:8px;  
+}
+
+.phasellm_chatbot_stream .timestamp {
+    margin:5px 5px 5px 15px;
+    font-size:70%;
+    color:gray;
+    font-style:italic;
+    display:inline-block;
+}
+
+.phasellm_chatbot_stream .time_taken {
+    margin:5px 5px 5px 15px;
+    font-size:70%;
+    color:gray;
+    font-style:italic;
+    display:inline-block;
+}
+
+.legend {
+    font-size:70%;
+    text-align:right;
+    padding-right:15px;
+}
+
+.legend_box {
+    width:10px;
+    height:10px;
+    display:inline-block;
+    position:relative;
+    top:2px;
+    margin-left:8px;
+    margin-right:2px;
+}
+
+</style>
+</head>
+<body>
+<div class='phasellm_chatbot_stream'>
+<div class="legend">
+    <b>Legend</b><div class="legend_box content_system">&nbsp;</div> System <div class="legend_box content_assistant">&nbsp;</div> Assistant <div class="legend_box content_user">&nbsp;</div> User
+</div>
+<div class='response_container'>
+    <div class='response content_system'>You are a friendly chatbot assistant.</div>
+    <div class='timestamp'>02 June 2023 at 18:58:40</div>
+    
+</div>
+
+<div class='response_container'>
+    <div class='response content_user'>Hey Claude, how's the weather up there?</div>
+    <div class='timestamp'>02 June 2023 at 18:58:40</div>
+    
+</div>
+
+<div class='response_container'>
+    <div class='response content_assistant'>Sorry, my name is Claude, not Claude. I was created by Anthropic.</div>
+    <div class='timestamp'>02 June 2023 at 18:58:41</div>
+    <div class='time_taken'>(1.249 seconds)</div>
+</div>
+
+<div class='response_container'>
+    <div class='response content_user'>What is 3x3+1?</div>
+    <div class='timestamp'>02 June 2023 at 18:58:41</div>
+    
+</div>
+
+<div class='response_container'>
+    <div class='response content_assistant'>10</div>
+    <div class='timestamp'>02 June 2023 at 18:58:42</div>
+    <div class='time_taken'>(1.084 seconds)</div>
+</div>
+
+</div>
+</body>
+</html>
+    

@@ -5,6 +5,8 @@ Abstract classes and wrappers for LLMs, chatbots, and prompts.
 import requests
 import json
 import re
+import time 
+from datetime import datetime 
 
 # Imports for external APIs
 import openai
@@ -474,11 +476,21 @@ class ChatBot():
         self.messages = []
         self._append_message('system', initial_system_prompt)
 
-    def _append_message(self, role, message):
+    def _append_message(self, role, message, log_time_seconds=None):
         """
         Saves a message to the chatbot's message queue.
         """
-        self.messages.append({"role":role, "content":message})
+
+        append_me = {"role":role, "content":message}
+
+        # Adding time stamps
+        append_me["timestamp_utc"] = datetime.now()
+        
+        # Save how long it took to run the query.
+        if log_time_seconds is not None:
+            append_me["log_time_seconds"] = log_time_seconds
+
+        self.messages.append(append_me)
 
     def resend(self):
         """
@@ -500,7 +512,8 @@ class ChatBot():
         Chats with the chatbot.
         """
         self._append_message('user', message)
+        start_time = time.time()
         response = self.llm.complete_chat(self.messages, "assistant")
-        self._append_message('assistant', response)
+        self._append_message('assistant', response, log_time_seconds = time.time() - start_time)
         return response
     
