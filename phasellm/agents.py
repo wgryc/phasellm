@@ -3,32 +3,37 @@ Agents to help with workflows.
 """
 
 import sys
-from io import StringIO
+import smtplib
+import requests
 import contextlib
 
-import requests
+from io import StringIO
+
+from abc import ABC, abstractmethod
+
 from datetime import datetime, timedelta
 
-import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from .exceptions import LLMCodeException
 
-class Agent():
+
+class Agent(ABC):
     """
     Abstract class for agents.
     """
 
+    @abstractmethod
     def __init__(self, name=''):
         self.name = name
-        pass 
 
     def __repr__(self):
         return f"Agent(name='{self.name}')"
-    
+
+
 @contextlib.contextmanager
-def stdoutIO(stdout=None):
+def stdout_io(stdout=None):
     """
     Used to hijack printing to screen so we can save the Python code output for the LLM (or any other arbitrary code).
     """
@@ -39,22 +44,27 @@ def stdoutIO(stdout=None):
     yield stdout
     sys.stdout = old
 
+
 class CodeExecutionAgent(Agent):
     """
     Agent used for executing arbitrary code.
     """
 
     def __init__(self, name=''):
-        self.name = name 
+        super().__init__(name=name)
 
-    def execute_code(self, code, globals=None, locals=None):
+    def __repr__(self):
+        return f"CodeExecutionAgent(name={self.name})"
+
+    @staticmethod
+    def execute_code(code, globals=None, locals=None):
         """
         Executes arbitrary Python code and saves the output (or error!) to a variable.
         
         Returns the variable and a boolean (is_error) depending on whether an error took place.
         """
-        is_error = False
-        with stdoutIO() as s:
+        # TODO consider changing globals and locals parameter names to prevent shadowing the built-in functions.
+        with stdout_io() as s:
             try:
                 exec(code, globals, locals)
             except Exception as err:
@@ -62,12 +72,13 @@ class CodeExecutionAgent(Agent):
 
         return s.getvalue()
 
+
 class EmailSenderAgent(Agent):
     """
     Send emails via an SMTP server.
     """
 
-    def __init__(self, sender_name, smtp, sender_address, password, port):
+    def __init__(self, sender_name, smtp, sender_address, password, port, name=''):
         """
         Initialize an EmailSenderAgent object.
 
@@ -78,16 +89,22 @@ class EmailSenderAgent(Agent):
         password -- the password for the email account
         port -- the port used by the SMTP server
         """
+        super().__init__(name=name)
         self.sender_name = sender_name
         self.smtp = smtp
-        self.sender_address = sender_address 
+        self.sender_address = sender_address
         self.password = password
-        self.port = port 
+        self.port = port
 
     def __repr__(self):
         return f"EmailSenderAgent(name={self.name})"
-    
+
     def sendPlainEmail(self, recipient_email, subject, content):
+        # TODO deprecating this to be more Pythonic with naming conventions.
+        print('Deprecated. Use send_plain_email instead.')
+        self.send_plain_email(recipient_email, subject, content)
+
+    def send_plain_email(self, recipient_email, subject, content):
         """
         Sends an email encoded as plain text.
 
@@ -109,6 +126,7 @@ class EmailSenderAgent(Agent):
 
         s.send_message(message)
 
+
 class NewsSummaryAgent(Agent):
     """
     newsapi.org agent. Takes a query, calls the API, and gets news articles.
@@ -118,15 +136,21 @@ class NewsSummaryAgent(Agent):
         """
         Initializes the agent. Requires a newsapi.org API key.
         """
-        self.apikey = apikey 
-        self.name = name
+        super().__init__(name=name)
+        self.apikey = apikey
 
     def __repr__(self):
         return f"NewsSummaryAgent(name={self.name})"
-    
+
     def getQuery(self, query, days_back=1, include_descriptions=True, max_articles=25):
+        # TODO deprecating this to be more Pythonic with naming conventions.
+        print('Deprecated. Use get_query instead.')
+        self.get_query(query, days_back, include_descriptions, max_articles)
+
+    def get_query(self, query, days_back=1, include_descriptions=True, max_articles=25):
         """
-        Gets all articles for a query for the # of days back. Returns a String with all the information so that an LLM can summarize it. Note that obtaining too many articles will likely cause an issue with prompt length.
+        Gets all articles for a query for the # of days back. Returns a String with all the information so that an LLM
+        can summarize it. Note that obtaining too many articles will likely cause an issue with prompt length.
 
         Keyword arguments:
         query -- what keyword to look for in news articles
