@@ -2,7 +2,8 @@
 Abstract classes and wrappers for LLMs, chatbots, and prompts.
 """
 
-from typing import TypedDict, Optional, List
+from typing import Optional, List
+from typing_extensions import TypedDict
 
 from abc import ABC, abstractmethod
 
@@ -297,6 +298,82 @@ class BloomWrapper(LanguageModelWrapper):
         return new_text
 
 
+class StreamingOpenAIGPTWrapper(LanguageModelWrapper):
+    """
+    Streaming compliant wrapper for the OpenAI API. Supports all major text and chat completion models by OpenAI.
+    """
+
+    def __init__(self, apikey, model="gpt-3.5-turbo"):
+        super().__init__()
+        openai.api_key = apikey
+        self.model = model
+
+    def __repr__(self):
+        return f"StreamingOpenAIGPTWrapper(model={self.model})"
+
+    def complete_chat(self, messages, append_role=None) -> str:
+        """
+        Completes chat with OpenAI. If using GPT 3.5 or 4, will simply send the list of {"role": <str>, "content":<str>}
+        objects to the API.
+
+        If using an older model, it will structure the messages list into a prompt first.
+
+        Yields the text as it is generated, rather than waiting for the entire completion.
+        """
+        if ('gpt-4' in self.model) or ('gpt-3.5' in self.model):
+            response = openai.ChatCompletion.create(
+                model=self.model,
+                messages=messages,
+                stream=True
+            )
+            for chunk in response:
+                if "content" in chunk["choices"][0]["delta"]:
+                    yield chunk["choices"][0]["delta"]["content"]
+        else:
+            prompt_text = self.prep_prompt_from_messages(
+                messages=messages,
+                append_role=append_role,
+                include_preamble=False
+            )
+
+            response = openai.Completion.create(
+                model=self.model,
+                prompt=prompt_text,
+                stop=_get_stop_sequences_from_messages(messages),
+                stream=True
+            )
+
+            for chunk in response:
+                if "text" in chunk["choices"][0]["delta"]:
+                    yield chunk["choices"][0]["delta"]["text"]
+
+    # TODO Add error handling for gpt-3.5 and gpt-4.
+    def text_completion(self, prompt, stop_sequences=None) -> str:
+        """
+        Completes text via OpenAI. Note that this doesn't support GPT 3.5 or later, as they are chat models.
+
+        Yields the text as it is generated, rather than waiting for the entire completion.
+        """
+        if stop_sequences is None:
+            stop_sequences = []
+
+        if len(stop_sequences) == 0:
+            response = openai.Completion.create(
+                model=self.model,
+                prompt=prompt
+            )
+        else:
+            response = openai.Completion.create(
+                model=self.model,
+                prompt=prompt,
+                stop=stop_sequences
+            )
+
+        for chunk in response:
+            if "text" in chunk["choices"][0]["delta"]:
+                yield chunk["choices"][0]["delta"]["text"]
+
+
 class OpenAIGPTWrapper(LanguageModelWrapper):
     """
     Wrapper for the OpenAI API. Supports all major text and chat completion models by OpenAI.
@@ -341,11 +418,10 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             top_response_content = response['choices'][0]['text']
             return top_response_content
 
-    # Note that this currently will error out with GPT 3.5 or above as they are chat models.
-    # TODO Add error catching.
+    # TODO Add error handling for gpt-3.5 and gpt-4.
     def text_completion(self, prompt, stop_sequences=None) -> str:
         """
-        Completes text via OpenAI. Note that this doesn't support GPT 3.5 or later.
+        Completes text via OpenAI. Note that this doesn't support GPT 3.5 or later, as they are chat models.
         """
         if stop_sequences is None:
             stop_sequences = []

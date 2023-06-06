@@ -6,3 +6,5 @@ transformers>=4.25.0
 accelerate>=0.16.0
 torch>=1.0.0
 python-dotenv
+typing-extensions>=4.6.3
+urllib3==1.26.6
