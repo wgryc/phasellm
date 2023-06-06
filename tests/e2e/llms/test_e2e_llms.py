@@ -13,12 +13,14 @@ from tests.e2e.llms.utils import \
 
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
+anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 
 
 class E2ETestStreamingOpenAIGPTWrapper(TestCase):
 
     def test_complete_chat(self):
         fixture = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
+
         messages = [{"role": "user", "content": "What should I eat for lunch today?"}]
         generator = fixture.complete_chat(messages, append_role='assistant')
 
@@ -59,8 +61,9 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
 class E2ETestStreamingClaudeWrapper(TestCase):
 
     def test_complete_chat(self):
-        fixture = StreamingClaudeWrapper(openai_api_key, model="claude-v1")
-        messages = [{"role": "user", "content": "What are you?"}]
+        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
+
+        messages = [{"role": "user", "content": "What should I eat for lunch today?"}]
         generator = fixture.complete_chat(messages, append_role='assistant')
 
         self.assertTrue(isinstance(generator, types.GeneratorType), "Expecting a generator.")
@@ -70,7 +73,7 @@ class E2ETestStreamingClaudeWrapper(TestCase):
         common_streaming_chat_assertions(self, results, chunk_time_seconds_threshold=0.1, verbose=True)
 
     def test_text_completion_success(self):
-        fixture = StreamingClaudeWrapper(openai_api_key, model="claude-v1")
+        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
 
         prompt = "Three countries in North America are: "
         generator = fixture.text_completion(prompt)

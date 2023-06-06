@@ -1,8 +1,8 @@
 import time
 
-from unittest import TestCase
+from typing import Generator
 
-from types import GeneratorType
+from unittest import TestCase
 
 from dataclasses import dataclass
 
@@ -14,7 +14,7 @@ class StreamingChatCompletionProbe:
     mean_chunk_time: float
 
 
-def probe_streaming_chat_completion(generator: GeneratorType):
+def probe_streaming_chat_completion(generator: Generator) -> StreamingChatCompletionProbe:
     """
     Helper function for testing streaming chat completion.
     """
@@ -28,7 +28,7 @@ def probe_streaming_chat_completion(generator: GeneratorType):
         time_start = time_end
 
         # Print the response length so far.
-        res = res + chunk
+        res += chunk
 
     # Compute the mean chunk time
     mean_chunk_time = sum(chunk_times) / len(chunk_times)
@@ -41,7 +41,7 @@ def common_streaming_chat_assertions(
         probe: StreamingChatCompletionProbe,
         chunk_time_seconds_threshold: float,
         verbose: bool = False
-):
+) -> None:
     """
     Helper function for common streaming chat completion assertions.
     """
@@ -69,7 +69,7 @@ class StreamingTextCompletionProbe:
     chunk_count: int
 
 
-def probe_streaming_text_completion(generator: GeneratorType):
+def probe_streaming_text_completion(generator: Generator) -> StreamingTextCompletionProbe:
     """
     Helper function for testing streaming text completion.
     """
@@ -77,7 +77,7 @@ def probe_streaming_text_completion(generator: GeneratorType):
     chunk_count = 0
     for chunk in generator:
         chunk_count += 1
-        res = res + chunk
+        res += chunk
 
     return StreamingTextCompletionProbe(res=res, chunk_count=chunk_count)
 
@@ -86,7 +86,7 @@ def common_streaming_text_assertions(
         tester: TestCase,
         probe: StreamingTextCompletionProbe,
         verbose: bool = False
-):
+) -> None:
     """
     Helper function for common streaming text completion assertions.
     """

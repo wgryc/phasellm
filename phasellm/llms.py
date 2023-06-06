@@ -1,17 +1,20 @@
 """
 Abstract classes and wrappers for LLMs, chatbots, and prompts.
 """
-
-from typing import Optional, List
-from typing_extensions import TypedDict
-
-from abc import ABC, abstractmethod
-
-import requests
-import json
 import re
 import time
+import json
+import requests
+
+# Typing imports
+from typing import Optional, List, Generator
+from typing_extensions import TypedDict
+
+# Abstract class imports
+from abc import ABC, abstractmethod
+
 from datetime import datetime
+from sseclient import SSEClient
 
 # Imports for external APIs
 import openai
@@ -311,7 +314,7 @@ class StreamingOpenAIGPTWrapper(LanguageModelWrapper):
     def __repr__(self):
         return f"StreamingOpenAIGPTWrapper(model={self.model})"
 
-    def complete_chat(self, messages, append_role=None) -> str:
+    def complete_chat(self, messages, append_role=None) -> Generator:
         """
         Completes chat with OpenAI. If using GPT 3.5 or 4, will simply send the list of {"role": <str>, "content":<str>}
         objects to the API.
@@ -347,7 +350,8 @@ class StreamingOpenAIGPTWrapper(LanguageModelWrapper):
                 if "text" in chunk["choices"][0]["delta"]:
                     yield chunk["choices"][0]["delta"]["text"]
 
-    def text_completion(self, prompt, stop_sequences=None) -> str:
+    # TODO Consider error handling for chat models.
+    def text_completion(self, prompt, stop_sequences=None) -> Generator:
         """
         Completes text via OpenAI. Note that this doesn't support GPT 3.5 or later, as they are chat models.
 
@@ -419,7 +423,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             top_response_content = response['choices'][0]['text']
             return top_response_content
 
-    # TODO Add error handling for gpt-3.5 and gpt-4.
+    # TODO Consider error handling for chat models.
     def text_completion(self, prompt, stop_sequences=None) -> str:
         """
         Completes text via OpenAI. Note that this doesn't support GPT 3.5 or later, as they are chat models.
@@ -442,12 +446,93 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
         return top_response_content
 
 
+class StreamingClaudeWrapper(LanguageModelWrapper):
+    """
+    Streaming wrapper for Anthropic's Claude large language model.
+
+    We've opted to call Anthropic's API directly rather than using their Python offering.
+
+    Yields the text as it is generated, rather than waiting for the entire completion.
+    """
+    API_URL = "https://api.anthropic.com/v1/complete"
+
+    def __init__(self, apikey, model="claude-v1"):
+        super().__init__()
+        self.apikey = apikey
+        self.model = model
+
+    def __repr__(self):
+        return f"StreamingClaudeWrapper(model={self.model})"
+
+    def _call_model(self, prompt: str, stop_sequences: List[str]) -> Generator:
+        """
+        Calls the model with the given prompt.
+        """
+        headers = {
+            "X-API-Key": self.apikey,
+            "Accept": "text/event-stream"
+        }
+
+        payload = {
+            "prompt": prompt,
+            "model": self.model,
+            "max_tokens_to_sample": 500,
+            "stop_sequences": stop_sequences,
+            "stream": True
+        }
+
+        resp = requests.post(self.API_URL, headers=headers, json=payload, stream=True)
+        client = SSEClient(resp)
+
+        strip_index = 0
+        for event in client.events():
+            if event.data != "[DONE]":
+                completion = json.loads(event.data)["completion"].strip()
+                # Anthropic's API returns completions inclusive of previous chunks, so we need to strip them out.
+                completion = completion[strip_index:]
+                strip_index += len(completion)
+                yield completion
+
+    def complete_chat(self, messages: List[Message], append_role="Assistant:") -> Generator:
+        """
+        Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via the a
+        prompt.
+        """
+
+        prompt_text = self.prep_prompt_from_messages(
+            messages=messages,
+            append_role=append_role,
+            include_preamble=False
+        )
+
+        return self._call_model(
+            prompt=prompt_text,
+            stop_sequences=_get_stop_sequences_from_messages(messages)
+        )
+
+    def text_completion(self, prompt, stop_sequences=None) -> Generator:
+        """
+        Completes text based on provided prompt.
+
+        Yields the text as it is generated, rather than waiting for the entire completion.
+        """
+
+        if stop_sequences is None:
+            stop_sequences = []
+
+        return self._call_model(
+            prompt=prompt,
+            stop_sequences=stop_sequences
+        )
+
+
 class ClaudeWrapper(LanguageModelWrapper):
     """
     Wrapper for Anthropic's Claude large language model.
 
     We've opted to call Anthropic's API directly rather than using their Python offering.
     """
+    API_URL = "https://api.anthropic.com/v1/complete"
 
     def __init__(self, apikey, model="claude-v1"):
         super().__init__()
@@ -457,43 +542,7 @@ class ClaudeWrapper(LanguageModelWrapper):
     def __repr__(self):
         return f"ClaudeWrapper(model={self.model})"
 
-    def complete_chat(self, messages, append_role="Assistant:") -> str:
-        """
-        Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via the a
-        prompt.
-        """
-
-        headers = {
-            "X-API-Key": self.apikey,
-            "Accept": "application/json"
-        }
-
-        prompt_text = self.prep_prompt_from_messages(
-            messages=messages,
-            append_role=append_role,
-            include_preamble=False
-        )
-
-        payload = {
-            "prompt": prompt_text,
-            "model": self.model,
-            "max_tokens_to_sample": 500,
-            "stop_sequences": _get_stop_sequences_from_messages(messages)
-        }
-
-        resp = requests.post("https://api.anthropic.com/v1/complete", headers=headers, json=payload)
-        completion = json.loads(resp.text)["completion"].strip()
-
-        return completion
-
-    def text_completion(self, prompt, stop_sequences=None) -> str:
-        """
-        Completes text based on provided prompt.
-        """
-
-        if stop_sequences is None:
-            stop_sequences = []
-
+    def _call_model(self, prompt: str, messages: List[Message]) -> str:
         headers = {
             "X-API-Key": self.apikey,
             "Accept": "application/json"
@@ -503,12 +552,35 @@ class ClaudeWrapper(LanguageModelWrapper):
             "prompt": prompt,
             "model": self.model,
             "max_tokens_to_sample": 500,
-            "stop_sequences": stop_sequences
+            "stop_sequences": _get_stop_sequences_from_messages(messages)
         }
 
         resp = requests.post("https://api.anthropic.com/v1/complete", headers=headers, json=payload)
-        completion = json.loads(resp.text)["completion"].strip()
-        return completion
+        return json.loads(resp.text)["completion"].strip()
+
+    def complete_chat(self, messages, append_role="Assistant:") -> str:
+        """
+        Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via the a
+        prompt.
+        """
+
+        prompt_text = self.prep_prompt_from_messages(
+            messages=messages,
+            append_role=append_role,
+            include_preamble=False
+        )
+
+        return self._call_model(prompt_text, messages)
+
+    def text_completion(self, prompt, stop_sequences=None) -> str:
+        """
+        Completes text based on provided prompt.
+        """
+
+        if stop_sequences is None:
+            stop_sequences = []
+
+        return self._call_model(prompt, stop_sequences)
 
 
 # TODO Might want to add stop sequences (new lines, roles) to make this better.

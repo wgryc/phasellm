@@ -8,3 +8,4 @@ torch>=1.0.0
 python-dotenv
 typing-extensions>=4.6.3
 urllib3==1.26.6
+sseclient-py==1.7.2
