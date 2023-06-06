@@ -347,7 +347,6 @@ class StreamingOpenAIGPTWrapper(LanguageModelWrapper):
                 if "text" in chunk["choices"][0]["delta"]:
                     yield chunk["choices"][0]["delta"]["text"]
 
-    # TODO Add error handling for gpt-3.5 and gpt-4.
     def text_completion(self, prompt, stop_sequences=None) -> str:
         """
         Completes text via OpenAI. Note that this doesn't support GPT 3.5 or later, as they are chat models.
@@ -360,18 +359,20 @@ class StreamingOpenAIGPTWrapper(LanguageModelWrapper):
         if len(stop_sequences) == 0:
             response = openai.Completion.create(
                 model=self.model,
-                prompt=prompt
+                prompt=prompt,
+                stream=True
             )
         else:
             response = openai.Completion.create(
                 model=self.model,
                 prompt=prompt,
-                stop=stop_sequences
+                stop=stop_sequences,
+                stream=True
             )
 
         for chunk in response:
-            if "text" in chunk["choices"][0]["delta"]:
-                yield chunk["choices"][0]["delta"]["text"]
+            if "text" in chunk["choices"][0]:
+                yield chunk["choices"][0]["text"]
 
 
 class OpenAIGPTWrapper(LanguageModelWrapper):
