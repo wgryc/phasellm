@@ -7,7 +7,7 @@ import json
 import requests
 
 # Typing imports
-from typing import Optional, List, Generator
+from typing import Optional, List, Union, Generator
 from typing_extensions import TypedDict
 
 # Abstract class imports
@@ -754,7 +754,7 @@ class ChatBot:
 
         self.messages.append(append_me)
 
-    def resend(self):
+    def resend(self) -> Optional[Union[str, Generator]]:
         """
         If the last message in the messages stack (i.e. array of role and content pairs) is from the user, it will
         resend the message and return the response. It's similar to erasing the last message in the stack and resending
@@ -766,13 +766,11 @@ class ChatBot:
         # TODO consider if this is necessary, given the TODO suggestion in self.chat().
         last_message = self.messages.pop()
         if last_message['role'] == 'user':
-            response = self.chat(last_message['content'])
-            return response
+            return self.chat(last_message['content'])
         else:
             self.messages.append(last_message)
-            return None
 
-    def chat(self, message):
+    def chat(self, message) -> Union[str, Generator]:
         """
         Chats with the chatbot.
         """
@@ -786,5 +784,16 @@ class ChatBot:
             clean_messages.append(m_copy)
 
         response = self.llm.complete_chat(clean_messages, append_role='assistant')
-        self._append_message('assistant', response, log_time_seconds=time.time() - start_time)
-        return response
+        if isinstance(response, Generator):
+            '''
+            If the response is a generator, we'll need intercept it so that we can append it to the message stack.
+            (Generators only yield their results once).
+            '''
+            full_response = ''
+            for chunk in response:
+                full_response += chunk
+                yield chunk
+            self._append_message('assistant', full_response, log_time_seconds=time.time() - start_time)
+        else:
+            self._append_message('assistant', response, log_time_seconds=time.time() - start_time)
+            return response
