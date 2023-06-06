@@ -10,7 +10,8 @@ from phasellm.llms import StreamingOpenAIGPTWrapper, StreamingClaudeWrapper, Cha
 
 from tests.e2e.llms.utils import \
     StreamingChatCompletionProbe, probe_streaming_chat_completion, common_streaming_chat_assertions, \
-    StreamingTextCompletionProbe, probe_streaming_text_completion, common_streaming_text_assertions
+    StreamingTextCompletionProbe, probe_streaming_text_completion, common_streaming_text_assertions, \
+    StreamingSSECompletionProbe, probe_streaming_sse_completions, common_streaming_sse_assertions
 
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -73,7 +74,19 @@ class E2ETestStreamingClaudeWrapper(TestCase):
 
         common_streaming_chat_assertions(self, results, chunk_time_seconds_threshold=0.1, verbose=True)
 
-    def test_text_completion_success(self):
+    def test_complete_chat_sse(self):
+        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True)
+
+        messages = [{"role": "user", "content": "What should I eat for lunch today?"}]
+        generator = fixture.complete_chat(messages, append_role='assistant')
+
+        self.assertTrue(isinstance(generator, Generator), "Expecting a generator.")
+
+        results: StreamingSSECompletionProbe = probe_streaming_sse_completions(generator)
+
+        common_streaming_sse_assertions(self, results)
+
+    def test_text_completion(self):
         fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
 
         prompt = "Three countries in North America are: "
@@ -85,12 +98,25 @@ class E2ETestStreamingClaudeWrapper(TestCase):
 
         common_streaming_text_assertions(self, result, verbose=True)
 
+    def test_text_completion_sse(self):
+        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True)
+
+        prompt = "Three countries in North America are: "
+        generator = fixture.text_completion(prompt)
+
+        self.assertTrue(isinstance(generator, Generator), "Expecting a generator.")
+
+        results: StreamingSSECompletionProbe = probe_streaming_sse_completions(generator)
+
+        common_streaming_sse_assertions(self, results)
+
 
 class E2ETestStreamingChatBot(TestCase):
 
     def test_chat(self):
         llm = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
         fixture = ChatBot(llm)
+
         generator = fixture.chat('Who are you')
 
         self.assertTrue(isinstance(generator, Generator), "Expecting a generator.")

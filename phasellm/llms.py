@@ -63,8 +63,7 @@ def _clean_messages_to_prompt(messages: List[Message]) -> str:
 
     This is influenced by the OpenAI chat completion API.
     """
-    out_text = "\n".join([f"{str(m['role'])}: {str(m['content'])}" for m in messages])
-    return out_text
+    return "\n".join([f"{str(m['role'])}: {str(m['content'])}" for m in messages])
 
 
 def _truncate_completion(completion: str) -> str:
@@ -85,8 +84,13 @@ def _get_stop_sequences_from_messages(messages: List[Message]):
     roles = set()
     for m in messages:
         roles.add(m["role"])
-    stop_sequences = [f"\n{r}:" for r in roles]
-    return stop_sequences
+    return [f"\n{r}:" for r in roles]
+
+
+def _conditional_format_sse_response(content: str, format_sse: bool) -> str:
+    if format_sse:
+        return f"data: {content}\n\n"
+    return content
 
 
 class LanguageModelWrapper(ABC):
@@ -144,6 +148,17 @@ class LanguageModelWrapper(ABC):
 
         # Remove whitespace from before and after prompt.
         return prompt_text.strip()
+
+
+class StreamingLanguageModelWrapper(LanguageModelWrapper):
+    """
+    Abstract class for streaming language models. Extends the regular LanguageModelWrapper.
+    """
+
+    @abstractmethod
+    def __init__(self, format_sse: bool):
+        super().__init__()
+        self.format_sse = format_sse
 
 
 class ChatPrompt:
@@ -238,9 +253,7 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
         new_text = response[0]['generated_text']
 
         # We only return the first line of text.
-        new_text = _truncate_completion(new_text)
-
-        return new_text
+        return _truncate_completion(new_text)
 
     def text_completion(self, prompt) -> str:
         """
@@ -248,8 +261,7 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
         """
         headers = {"Authorization": f"Bearer {self.apikey}"}
         response = requests.post(self.model_url, headers=headers, json={"inputs": prompt}).json()
-        all_text = response[0]['generated_text']
-        return all_text
+        return response[0]['generated_text']
 
 
 # TODO consider deleting the BloomWrapper class since this functionality is in HuggingFaceInferenceWrapper
@@ -285,9 +297,7 @@ class BloomWrapper(LanguageModelWrapper):
         new_text = all_text[len(prompt_text):]
 
         # We only return the first line of text.
-        new_text = _truncate_completion(new_text)
-
-        return new_text
+        return _truncate_completion(new_text)
 
     def text_completion(self, prompt) -> str:
         """
@@ -297,19 +307,18 @@ class BloomWrapper(LanguageModelWrapper):
 
         response = requests.post(self.API_URL, headers=headers, json={"inputs": prompt}).json()
         all_text = response[0]['generated_text']
-        new_text = all_text[len(prompt):]
-        return new_text
+        return all_text[len(prompt):]
 
 
-class StreamingOpenAIGPTWrapper(LanguageModelWrapper):
+class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
     """
     Streaming compliant wrapper for the OpenAI API. Supports all major text and chat completion models by OpenAI.
     """
 
-    def __init__(self, apikey, model="gpt-3.5-turbo"):
-        super().__init__()
+    def __init__(self, apikey, model="gpt-3.5-turbo", format_sse=False):
+        super().__init__(format_sse=format_sse)
         openai.api_key = apikey
-        self.model = model
+        self.model: str = model
 
     def __repr__(self):
         return f"StreamingOpenAIGPTWrapper(model={self.model})"
@@ -331,7 +340,8 @@ class StreamingOpenAIGPTWrapper(LanguageModelWrapper):
             )
             for chunk in response:
                 if "content" in chunk["choices"][0]["delta"]:
-                    yield chunk["choices"][0]["delta"]["content"]
+                    content = chunk["choices"][0]["delta"]["content"]
+                    yield _conditional_format_sse_response(content=content, format_sse=self.format_sse)
         else:
             prompt_text = self.prep_prompt_from_messages(
                 messages=messages,
@@ -348,7 +358,8 @@ class StreamingOpenAIGPTWrapper(LanguageModelWrapper):
 
             for chunk in response:
                 if "text" in chunk["choices"][0]["delta"]:
-                    yield chunk["choices"][0]["delta"]["text"]
+                    text = chunk["choices"][0]["delta"]["text"]
+                    yield _conditional_format_sse_response(content=text, format_sse=self.format_sse)
 
     # TODO Consider error handling for chat models.
     def text_completion(self, prompt, stop_sequences=None) -> Generator:
@@ -376,7 +387,8 @@ class StreamingOpenAIGPTWrapper(LanguageModelWrapper):
 
         for chunk in response:
             if "text" in chunk["choices"][0]:
-                yield chunk["choices"][0]["text"]
+                text = chunk["choices"][0]["text"]
+                yield _conditional_format_sse_response(content=text, format_sse=self.format_sse)
 
 
 class OpenAIGPTWrapper(LanguageModelWrapper):
@@ -420,8 +432,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
                 stop=_get_stop_sequences_from_messages(messages)
             )
 
-            top_response_content = response['choices'][0]['text']
-            return top_response_content
+            return response['choices'][0]['text']
 
     # TODO Consider error handling for chat models.
     def text_completion(self, prompt, stop_sequences=None) -> str:
@@ -442,11 +453,10 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
                 prompt=prompt,
                 stop=stop_sequences
             )
-        top_response_content = response['choices'][0]['text']
-        return top_response_content
+        return response['choices'][0]['text']
 
 
-class StreamingClaudeWrapper(LanguageModelWrapper):
+class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
     """
     Streaming wrapper for Anthropic's Claude large language model.
 
@@ -456,8 +466,8 @@ class StreamingClaudeWrapper(LanguageModelWrapper):
     """
     API_URL = "https://api.anthropic.com/v1/complete"
 
-    def __init__(self, apikey, model="claude-v1"):
-        super().__init__()
+    def __init__(self, apikey, model="claude-v1", format_sse=False):
+        super().__init__(format_sse=format_sse)
         self.apikey = apikey
         self.model = model
 
@@ -487,11 +497,15 @@ class StreamingClaudeWrapper(LanguageModelWrapper):
         strip_index = 0
         for event in client.events():
             if event.data != "[DONE]":
-                completion = json.loads(event.data)["completion"].strip()
+                # Load the data as JSON
+                completion = json.loads(event.data)["completion"]
+
                 # Anthropic's API returns completions inclusive of previous chunks, so we need to strip them out.
                 completion = completion[strip_index:]
                 strip_index += len(completion)
-                yield completion
+
+                # If format_sse is True, we need to yield with SSE formatting.
+                yield _conditional_format_sse_response(content=completion, format_sse=self.format_sse)
 
     def complete_chat(self, messages: List[Message], append_role="Assistant:") -> Generator:
         """
@@ -610,8 +624,7 @@ class GPT2Wrapper(LanguageModelWrapper):
         generator = pipeline('text-generation', model='gpt2')
         resps = generator(prompt_text, max_length=max_length, num_return_sequences=1)
         resp = resps[0]['generated_text']
-        resp = resp[len(prompt_text):]  # Strip out the original text.
-        return resp
+        return resp[len(prompt_text):]  # Strip out the original text.
 
     def text_completion(self, prompt, max_length=200) -> str:
         """
@@ -620,8 +633,7 @@ class GPT2Wrapper(LanguageModelWrapper):
         generator = pipeline('text-generation', model='gpt2')
         resps = generator(prompt, max_length=max_length, num_return_sequences=1)
         resp = resps[0]['generated_text']
-        resp = resp[len(prompt):]  # Strip out the original text.
-        return resp
+        return resp[len(prompt):]  # Strip out the original text.
 
 
 class DollyWrapper(LanguageModelWrapper):
@@ -649,16 +661,13 @@ class DollyWrapper(LanguageModelWrapper):
             include_preamble=True
         )
 
-        resp = self.generate_text(prompt_text)
-
-        return resp
+        return self.generate_text(prompt_text)
 
     def text_completion(self, prompt) -> str:
         """
         Completes text via Dolly.
         """
-        resp = self.generate_text(prompt)
-        return resp
+        return self.generate_text(prompt)
 
 
 class CohereWrapper(LanguageModelWrapper):
@@ -713,8 +722,7 @@ class CohereWrapper(LanguageModelWrapper):
             max_tokens=300,
             stop_sequences=stop_sequences
         )
-        resp = response.generations[0].text
-        return resp
+        return response.generations[0].text
 
 
 class ChatBot:

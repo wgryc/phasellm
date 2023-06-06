@@ -101,3 +101,56 @@ def common_streaming_text_assertions(
     if verbose:
         print(f'Chunk count: {probe.chunk_count}')
         print(f'Result:\n{probe.res}')
+
+
+@dataclass
+class StreamingSSECompletionProbe:
+    res: str
+    chunk_count: int
+    chunks_with_protocol: int
+
+
+def probe_streaming_sse_completions(generator: Generator) -> StreamingSSECompletionProbe:
+    """
+    Helper function for testing streaming chat completion.
+    """
+    res = ''
+    chunk_count = 0
+    chunks_with_protocol = 0
+    for chunk in generator:
+        chunk_count += 1
+        if chunk.startswith('data:') and chunk.endswith('\n\n'):
+            chunks_with_protocol += 1
+        res += chunk
+
+    return StreamingSSECompletionProbe(res=res, chunk_count=chunk_count, chunks_with_protocol=chunks_with_protocol)
+
+
+def common_streaming_sse_assertions(
+        tester: TestCase,
+        probe: StreamingSSECompletionProbe,
+        verbose: bool = False
+) -> None:
+    """
+    Helper function for common streaming chat completion assertions.
+    """
+    tester.assertTrue(
+        len(probe.res) > 0,
+        "Expecting a non-empty response."
+    )
+    tester.assertTrue(
+        probe.chunk_count > 1,
+        f"Expecting more than one chunk, got {probe.chunk_count}"
+    )
+    tester.assertTrue(
+        probe.chunks_with_protocol > 1,
+        f"Expecting more than one chunk with protocol, got {probe.chunks_with_protocol}"
+    )
+    tester.assertTrue(
+        probe.chunks_with_protocol == probe.chunk_count,
+        f"Expecting all chunks to have protocol, got {probe.chunks_with_protocol} out of {probe.chunk_count}"
+    )
+    if verbose:
+        print(f'Chunk count: {probe.chunk_count}')
+        print(f'Chunks with protocol: {probe.chunks_with_protocol}')
+        print(f'Result:\n{probe.res}')
