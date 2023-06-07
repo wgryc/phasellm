@@ -2,14 +2,21 @@
 Agents to help with workflows.
 """
 
+import os
 import sys
+import docker
 import smtplib
 import requests
-import contextlib
 
 from io import StringIO
 
+from pathlib import Path
+
+from typing import Generator
+
 from abc import ABC, abstractmethod
+
+from contextlib import contextmanager
 
 from datetime import datetime, timedelta
 
@@ -32,7 +39,7 @@ class Agent(ABC):
         return f"Agent(name='{self.name}')"
 
 
-@contextlib.contextmanager
+@contextmanager
 def stdout_io(stdout=None):
     """
     Used to hijack printing to screen so we can save the Python code output for the LLM (or any other arbitrary code).
@@ -57,7 +64,7 @@ class CodeExecutionAgent(Agent):
         return f"CodeExecutionAgent(name={self.name})"
 
     @staticmethod
-    def execute_code(code, globals=None, locals=None):
+    def execute_code(code: str, globals=None, locals=None):
         """
         Executes arbitrary Python code and saves the output (or error!) to a variable.
         
@@ -73,12 +80,75 @@ class CodeExecutionAgent(Agent):
         return s.getvalue()
 
 
+class SandboxedCodeExecutionAgent(Agent):
+    """
+    Agent used for executing arbitrary code in a sandboxed environment. We choose to use docker for this, so if you're
+    running this code, you'll need to have docker installed and running.
+    """
+    CODE_FILENAME = 'sandbox_code.py'
+
+    def __init__(self, name: str = '', docker_image: str = 'python:3', scratch_dir: str = None):
+        super().__init__(name=name)
+
+        self.docker_image = docker_image
+
+        if scratch_dir is None:
+            scratch_dir = f'.tmp/sandboxed_code_execution'
+        self.scratch_dir = scratch_dir
+
+    def __repr__(self):
+        return f"SandboxedCodeExecutionAgent(name={self.name})"
+
+    def __enter__(self):
+        """
+        Initializes the docker client.
+        """
+        self.client = docker.from_env()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Closes the docker client.
+        """
+        self.client.close()
+
+    def _create_scratch_dir(self):
+        """
+        Creates a directory if it does not exist.
+        """
+        if not os.path.exists(self.scratch_dir):
+            os.makedirs(self.scratch_dir)
+
+    def _code_to_temp_file(self, code: str):
+        """
+        Writes the code to a temporary file so that it can be volume mounted to a docker container.
+        """
+        self._create_scratch_dir()
+        with open(os.path.join(self.scratch_dir, self.CODE_FILENAME), 'w') as f:
+            f.write(code)
+
+    def execute_code(self, code: str) -> Generator:
+        """
+        Runs a docker container with the specified image and command.
+        """
+        self._code_to_temp_file(code)
+
+        # TODO consider implementing a procedure for installing python packages.
+        return self.client.containers.run(
+            image=self.docker_image,
+            command=f'python code/{self.CODE_FILENAME}',
+            volumes={Path(self.scratch_dir).absolute(): {'bind': '/code', 'mode': 'rw'}},
+            stream=True,
+            auto_remove=True
+        )
+
+
 class EmailSenderAgent(Agent):
     """
     Send emails via an SMTP server.
     """
 
-    def __init__(self, sender_name, smtp, sender_address, password, port, name=''):
+    def __init__(self, sender_name: str, smtp: str, sender_address: str, password: str, port: int, name: str = ''):
         """
         Initialize an EmailSenderAgent object.
 
@@ -99,12 +169,12 @@ class EmailSenderAgent(Agent):
     def __repr__(self):
         return f"EmailSenderAgent(name={self.name})"
 
-    def sendPlainEmail(self, recipient_email, subject, content):
+    def sendPlainEmail(self, recipient_email: str, subject: str, content: str):
         # TODO deprecating this to be more Pythonic with naming conventions.
-        print('Deprecated. Use send_plain_email instead.')
+        print('sendPlainEmail() is deprecated. Use send_plain_email instead.')
         self.send_plain_email(recipient_email, subject, content)
 
-    def send_plain_email(self, recipient_email, subject, content):
+    def send_plain_email(self, recipient_email: str, subject: str, content: str):
         """
         Sends an email encoded as plain text.
 
@@ -132,7 +202,7 @@ class NewsSummaryAgent(Agent):
     newsapi.org agent. Takes a query, calls the API, and gets news articles.
     """
 
-    def __init__(self, apikey=None, name=''):
+    def __init__(self, apikey: str = None, name: str = ''):
         """
         Initializes the agent. Requires a newsapi.org API key.
         """
@@ -144,10 +214,10 @@ class NewsSummaryAgent(Agent):
 
     def getQuery(self, query, days_back=1, include_descriptions=True, max_articles=25):
         # TODO deprecating this to be more Pythonic with naming conventions.
-        print('Deprecated. Use get_query instead.')
+        print('getQuery() is deprecated. Use get_query instead.')
         self.get_query(query, days_back, include_descriptions, max_articles)
 
-    def get_query(self, query, days_back=1, include_descriptions=True, max_articles=25):
+    def get_query(self, query: str, days_back: int = 1, include_descriptions: bool = True, max_articles: int = 25):
         """
         Gets all articles for a query for the # of days back. Returns a String with all the information so that an LLM
         can summarize it. Note that obtaining too many articles will likely cause an issue with prompt length.
