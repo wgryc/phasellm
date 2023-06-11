@@ -53,7 +53,7 @@ def _fill_variables(source: str, **kwargs) -> str:
     for m in variables:
         keyword = m.replace("{", "").replace("}", "").strip()
         if keyword in kwargs:
-            filled = source.replace(m, kwargs[keyword])
+            filled = filled.replace(m, kwargs[keyword])
     return filled
 
 
