@@ -30,6 +30,8 @@ cohere_api_key = os.getenv("COHERE_API_KEY")
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 hugging_face_api_key = os.getenv("HUGGING_FACE_API_KEY")
 
+skip_local_models = os.getenv("SKIP_LOCAL_MODELS").lower() == "true"
+
 
 class E2ETestHuggingFaceInferenceWrapper(TestCase):
 
@@ -91,10 +93,16 @@ class E2ETestClaudeWrapper(TestCase):
 class E2ETestGPT2Wrapper(TestCase):
 
     def test_complete_chat(self):
+        if skip_local_models:
+            print("Skipping test_complete_chat for GPT2Wrapper as SKIP_LOCAL_MODELS is set to True")
+            return
         fixture = GPT2Wrapper()
         test_complete_chat(self, fixture, verbose=False)
 
     def test_text_completion_success(self):
+        if skip_local_models:
+            print("Skipping test_text_completion_success for GPT2Wrapper as SKIP_LOCAL_MODELS is set to True")
+            return
         fixture = GPT2Wrapper()
         test_text_completion_success(self, fixture, verbose=False)
 
@@ -102,10 +110,16 @@ class E2ETestGPT2Wrapper(TestCase):
 class E2ETestDollyWrapper(TestCase):
 
     def test_complete_chat(self):
+        if skip_local_models:
+            print("Skipping test_complete_chat for DollyWrapper as SKIP_LOCAL_MODELS is set to True")
+            return
         fixture = DollyWrapper()
         test_complete_chat(self, fixture, verbose=False)
 
     def test_text_completion_success(self):
+        if skip_local_models:
+            print("Skipping test_text_completion_success for DollyWrapper as SKIP_LOCAL_MODELS is set to True")
+            return
         fixture = DollyWrapper()
         test_text_completion_success(self, fixture, verbose=False)
 
@@ -296,24 +310,36 @@ class E2ETestChatBot(TestCase):
         test_chatbot_resend(self, fixture)
 
     def test_gpt2_chat(self):
+        if skip_local_models:
+            print("Skipping test_gpt2_chat as SKIP_LOCAL_MODELS is set to True")
+            return
         llm = GPT2Wrapper()
         fixture = ChatBot(llm)
 
         test_chatbot_chat(self, fixture)
 
     def test_gpt2_resend(self):
+        if skip_local_models:
+            print("Skipping test_gpt2_resend as SKIP_LOCAL_MODELS is set to True")
+            return
         llm = GPT2Wrapper()
         fixture = ChatBot(llm)
 
         test_chatbot_resend(self, fixture)
 
     def test_dolly_chat(self):
+        if skip_local_models:
+            print("Skipping test_dolly_chat as SKIP_LOCAL_MODELS is set to True")
+            return
         llm = DollyWrapper()
         fixture = ChatBot(llm)
 
         test_chatbot_chat(self, fixture)
 
     def test_dolly_resend(self):
+        if skip_local_models:
+            print("Skipping test_dolly_resend as SKIP_LOCAL_MODELS is set to True")
+            return
         llm = DollyWrapper()
         fixture = ChatBot(llm)
 

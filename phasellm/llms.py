@@ -102,10 +102,6 @@ def _conditional_format_sse_response(content: str, format_sse: bool) -> str:
     return content
 
 
-def _yield_stop_token(stop_token: str) -> Generator:
-    yield _format_sse(stop_token)
-
-
 class LanguageModelWrapper(ABC):
     """
     Abstract Class for interacting with large language models.
@@ -358,7 +354,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
                     content = chunk["choices"][0]["delta"]["content"]
                     yield _conditional_format_sse_response(content=content, format_sse=self.format_sse)
             if self.format_sse and self.append_stop_token:
-                yield _yield_stop_token(stop_token=self.stop_token)
+                yield _format_sse(content=self.stop_token)
         else:
             prompt_text = self.prep_prompt_from_messages(
                 messages=messages,
@@ -378,7 +374,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
                     text = chunk["choices"][0]["delta"]["text"]
                     yield _conditional_format_sse_response(content=text, format_sse=self.format_sse)
             if self.format_sse and self.append_stop_token:
-                yield _yield_stop_token(stop_token=self.stop_token)
+                yield _format_sse(content=self.stop_token)
 
     # TODO Consider error handling for chat models.
     def text_completion(self, prompt, stop_sequences=None) -> Generator:
@@ -409,7 +405,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
                 text = chunk["choices"][0]["text"]
                 yield _conditional_format_sse_response(content=text, format_sse=self.format_sse)
         if self.format_sse and self.append_stop_token:
-            yield _yield_stop_token(stop_token=self.stop_token)
+            yield _format_sse(content=self.stop_token)
 
 
 class OpenAIGPTWrapper(LanguageModelWrapper):
@@ -528,7 +524,7 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
                 # If format_sse is True, we need to yield with SSE formatting.
                 yield _conditional_format_sse_response(content=completion, format_sse=self.format_sse)
         if self.format_sse and self.append_stop_token:
-            yield _yield_stop_token(stop_token=self.stop_token)
+            yield _format_sse(content=self.stop_token)
 
     def complete_chat(self, messages: List[Message], append_role="Assistant:") -> Generator:
         """
