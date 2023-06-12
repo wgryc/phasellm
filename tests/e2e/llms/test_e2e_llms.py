@@ -22,7 +22,8 @@ from tests.e2e.llms.utils import test_streaming_complete_chat, test_streaming_co
 # Chatbot tests
 from tests.e2e.llms.utils import test_chatbot_chat, test_chatbot_resend
 # Streaming chatbot tests
-from tests.e2e.llms.utils import test_streaming_chatbot_chat, test_streaming_chatbot_resend
+from tests.e2e.llms.utils import test_streaming_chatbot_chat, test_streaming_chatbot_chat_sse, \
+    test_streaming_chatbot_resend
 
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -30,7 +31,8 @@ cohere_api_key = os.getenv("COHERE_API_KEY")
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 hugging_face_api_key = os.getenv("HUGGING_FACE_API_KEY")
 
-skip_local_models = os.getenv("SKIP_LOCAL_MODELS").lower() == "true"
+skip_local_models = os.getenv("SKIP_LOCAL_MODELS")
+skip_local_models = skip_local_models is not None and skip_local_models.lower() == "true"
 
 
 class E2ETestHuggingFaceInferenceWrapper(TestCase):
@@ -365,6 +367,12 @@ class E2ETestStreamingChatBot(TestCase):
         fixture = ChatBot(llm)
 
         test_streaming_chatbot_chat(self, fixture=fixture, chunk_time_seconds_threshold=0.2, verbose=False)
+
+    def test_openai_gpt_streaming_chat_sse(self):
+        llm = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo", format_sse=True, append_stop_token=True)
+        fixture = ChatBot(llm)
+
+        test_streaming_chatbot_chat_sse(self, fixture=fixture, verbose=False)
 
     def test_openai_gpt_streaming_resend(self):
         llm = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")

@@ -209,6 +209,10 @@ def common_streaming_sse_assertions(
             probe.chunks_with_stop == 1,
             f"Expecting one chunk with stop token, got {probe.chunks_with_stop}"
         )
+        tester.assertTrue(
+            probe.res.endswith(f'data: {STOP_TOKEN}\n\n'),
+            f"Expecting the last chunk to be the stop token."
+        )
     if verbose:
         print(f'Chunk count: {probe.chunk_count}')
         print(f'Chunks with protocol: {probe.chunks_with_protocol}')
@@ -311,9 +315,9 @@ def common_chatbot_resend_assertions(
 # LLM Wrapper tests ---------------------------------------------------------------------------------------------------
 
 def test_complete_chat(
-    tester: TestCase,
-    fixture: LanguageModelWrapper,
-    verbose: bool = False
+        tester: TestCase,
+        fixture: LanguageModelWrapper,
+        verbose: bool = False
 ) -> None:
     messages = [{"role": "user", "content": "What should I eat for lunch today?"}]
     response = fixture.complete_chat(messages, append_role='assistant')
@@ -322,9 +326,9 @@ def test_complete_chat(
 
 
 def test_text_completion_success(
-    tester: TestCase,
-    fixture: LanguageModelWrapper,
-    verbose: bool = False
+        tester: TestCase,
+        fixture: LanguageModelWrapper,
+        verbose: bool = False
 ) -> None:
     prompt = "Three countries in North America are: "
     response = fixture.text_completion(prompt)
@@ -333,9 +337,9 @@ def test_text_completion_success(
 
 
 def test_text_completion_failure(
-    tester: TestCase,
-    fixture: LanguageModelWrapper,
-    verbose: bool = False
+        tester: TestCase,
+        fixture: LanguageModelWrapper,
+        verbose: bool = False
 ) -> None:
     exception = None
     try:
@@ -384,9 +388,9 @@ def test_streaming_complete_chat_sse(
 
 
 def test_streaming_text_completion_success(
-    tester: TestCase,
-    fixture: StreamingLanguageModelWrapper,
-    verbose: bool = False
+        tester: TestCase,
+        fixture: StreamingLanguageModelWrapper,
+        verbose: bool = False
 ) -> None:
     prompt = "Three countries in North America are: "
     generator = fixture.text_completion(prompt)
@@ -397,9 +401,9 @@ def test_streaming_text_completion_success(
 
 
 def test_streaming_text_completion_failure(
-    tester: TestCase,
-    fixture: StreamingLanguageModelWrapper,
-    verbose: bool = False
+        tester: TestCase,
+        fixture: StreamingLanguageModelWrapper,
+        verbose: bool = False
 ) -> None:
     prompt = "The capital of Canada is"
     generator = fixture.text_completion(prompt)
@@ -420,10 +424,10 @@ def test_streaming_text_completion_failure(
 
 
 def test_streaming_text_completion_sse(
-    tester: TestCase,
-    fixture: StreamingLanguageModelWrapper,
-    check_stop: bool = False,
-    verbose: bool = False
+        tester: TestCase,
+        fixture: StreamingLanguageModelWrapper,
+        check_stop: bool = False,
+        verbose: bool = False
 ) -> None:
     prompt = "Three countries in North America are: "
     generator = fixture.text_completion(prompt)
@@ -438,9 +442,9 @@ def test_streaming_text_completion_sse(
 # ChatBot tests -------------------------------------------------------------------------------------------------------
 
 def test_chatbot_chat(
-    tester: TestCase,
-    fixture: ChatBot,
-    verbose: bool = False
+        tester: TestCase,
+        fixture: ChatBot,
+        verbose: bool = False
 ) -> None:
     """
     Test the chat() method of the ChatBot for non-streaming wrappers.
@@ -464,9 +468,9 @@ def test_chatbot_chat(
 
 
 def test_chatbot_resend(
-    tester: TestCase,
-    fixture: ChatBot,
-    verbose: bool = False
+        tester: TestCase,
+        fixture: ChatBot,
+        verbose: bool = False
 ) -> None:
     """
     Test the resend() method of the ChatBot for non-streaming wrappers.
@@ -490,10 +494,10 @@ def test_chatbot_resend(
 # Streaming ChatBot tests ---------------------------------------------------------------------------------------------
 
 def test_streaming_chatbot_chat(
-    tester: TestCase,
-    fixture: ChatBot,
-    chunk_time_seconds_threshold: float = 0.2,
-    verbose: bool = False
+        tester: TestCase,
+        fixture: ChatBot,
+        chunk_time_seconds_threshold: float = 0.2,
+        verbose: bool = False
 ) -> None:
     """
     Test the chat() method of the ChatBot for streaming wrappers.
@@ -528,10 +532,39 @@ def test_streaming_chatbot_chat(
     common_secondary_chatbot_assertions(tester, fixture=fixture)
 
 
+def test_streaming_chatbot_chat_sse(
+        tester: TestCase,
+        fixture: ChatBot,
+        check_stop: bool = False,
+        verbose: bool = False
+) -> None:
+    """
+    Test the chat() method of the ChatBot for streaming wrappers with sse.
+    """
+    generator = fixture.chat('Who are you')
+
+    tester.assertTrue(isinstance(generator, Generator), "Expecting a generator.")
+
+    # Check the results of the generator.
+    results: StreamingSSECompletionProbe = probe_streaming_sse_completions(generator)
+    common_streaming_sse_assertions(tester=tester, probe=results, check_stop=check_stop, verbose=verbose)
+
+    common_primary_chatbot_assertions(tester, fixture=fixture, response=results.res)
+
+    # Make another call to ChatBot.chat() to ensure it is capable of receiving a new message.
+    generator = fixture.chat('Where do you come from?')
+
+    # Check the results of the generator.
+    results: StreamingSSECompletionProbe = probe_streaming_sse_completions(generator)
+    common_streaming_sse_assertions(tester=tester, probe=results, check_stop=check_stop, verbose=verbose)
+
+    common_secondary_chatbot_assertions(tester, fixture=fixture)
+
+
 def test_streaming_chatbot_resend(
-    tester: TestCase,
-    fixture: ChatBot,
-    verbose: bool = False
+        tester: TestCase,
+        fixture: ChatBot,
+        verbose: bool = False
 ) -> None:
     """
     Test the resend() method of the ChatBot for streaming wrappers.
