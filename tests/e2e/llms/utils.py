@@ -1,13 +1,17 @@
 import time
 import copy
 
-from typing import Generator
-
 from unittest import TestCase
 
-from phasellm.llms import LanguageModelWrapper, StreamingLanguageModelWrapper, ChatBot
-
 from dataclasses import dataclass
+
+from phasellm.llms import Message
+
+from typing import Generator, List
+
+from phasellm.llms import STOP_TOKEN
+
+from phasellm.llms import LanguageModelWrapper, StreamingLanguageModelWrapper, ChatBot
 
 
 def common_chat_assertions(tester: TestCase, response: str, verbose: bool = False) -> None:
@@ -145,27 +149,40 @@ class StreamingSSECompletionProbe:
     res: str
     chunk_count: int
     chunks_with_protocol: int
+    chunks_with_stop: int
 
 
-def probe_streaming_sse_completions(generator: Generator) -> StreamingSSECompletionProbe:
+def probe_streaming_sse_completions(
+        generator: Generator,
+        stop_token: str = STOP_TOKEN
+) -> StreamingSSECompletionProbe:
     """
     Helper function for testing streaming chat completion.
     """
     res = ''
     chunk_count = 0
     chunks_with_protocol = 0
+    chunks_with_stop = 0
     for chunk in generator:
         chunk_count += 1
         if chunk.startswith('data:') and chunk.endswith('\n\n'):
             chunks_with_protocol += 1
+        if chunk == f'data: {stop_token}\n\n':
+            chunks_with_stop += 1
         res += chunk
 
-    return StreamingSSECompletionProbe(res=res, chunk_count=chunk_count, chunks_with_protocol=chunks_with_protocol)
+    return StreamingSSECompletionProbe(
+        res=res,
+        chunk_count=chunk_count,
+        chunks_with_protocol=chunks_with_protocol,
+        chunks_with_stop=chunks_with_stop
+    )
 
 
 def common_streaming_sse_assertions(
         tester: TestCase,
         probe: StreamingSSECompletionProbe,
+        check_stop: bool = False,
         verbose: bool = False
 ) -> None:
     """
@@ -187,6 +204,11 @@ def common_streaming_sse_assertions(
         probe.chunks_with_protocol == probe.chunk_count,
         f"Expecting all chunks to have protocol, got {probe.chunks_with_protocol} out of {probe.chunk_count}"
     )
+    if check_stop:
+        tester.assertTrue(
+            probe.chunks_with_stop == 1,
+            f"Expecting one chunk with stop token, got {probe.chunks_with_stop}"
+        )
     if verbose:
         print(f'Chunk count: {probe.chunk_count}')
         print(f'Chunks with protocol: {probe.chunks_with_protocol}')
@@ -258,6 +280,30 @@ def common_secondary_chatbot_assertions(
     print(f'ChatBot messages:\n{fixture.messages}')
 
 
+def common_chatbot_resend_assertions(
+        tester: TestCase,
+        fixture: ChatBot,
+        messages: List[Message]
+):
+    tester.assertTrue(len(fixture.messages) == 3, "Expecting 3 messages.")
+    tester.assertTrue(
+        fixture.messages[0] == messages[0],
+        f"Expecting first message to be \n{messages[0]}, got \n{fixture.messages[0]}"
+    )
+    tester.assertTrue(
+        fixture.messages[1]['role'] == messages[1]['role'] and fixture.messages[1]['content'] == messages[1]['content'],
+        f"Expecting second message role and content to be equal, got \n{fixture.messages[1]}"
+    )
+    tester.assertTrue(
+        fixture.messages[1]['timestamp_utc'],
+        f"Expecting second message timestamp_utc to be set, got \n{fixture.messages[1]}"
+    )
+    tester.assertTrue(
+        fixture.messages[2]['timestamp_utc'],
+        f"Expecting third message timestamp_utc to be set, got \n{fixture.messages[1]}"
+    )
+
+
 #######################################################################################################################
 # Reusable tests
 #######################################################################################################################
@@ -324,6 +370,7 @@ def test_streaming_complete_chat(
 def test_streaming_complete_chat_sse(
         tester: TestCase,
         fixture: StreamingLanguageModelWrapper,
+        check_stop: bool = False,
         verbose: bool = False
 ) -> None:
     messages = [{"role": "user", "content": "What should I eat for lunch today?"}]
@@ -333,7 +380,7 @@ def test_streaming_complete_chat_sse(
 
     results: StreamingSSECompletionProbe = probe_streaming_sse_completions(generator)
 
-    common_streaming_sse_assertions(tester=tester, probe=results, verbose=verbose)
+    common_streaming_sse_assertions(tester=tester, probe=results, check_stop=check_stop, verbose=verbose)
 
 
 def test_streaming_text_completion_success(
@@ -375,6 +422,7 @@ def test_streaming_text_completion_failure(
 def test_streaming_text_completion_sse(
     tester: TestCase,
     fixture: StreamingLanguageModelWrapper,
+    check_stop: bool = False,
     verbose: bool = False
 ) -> None:
     prompt = "Three countries in North America are: "
@@ -384,7 +432,7 @@ def test_streaming_text_completion_sse(
 
     results: StreamingSSECompletionProbe = probe_streaming_sse_completions(generator)
 
-    common_streaming_sse_assertions(tester=tester, probe=results, verbose=verbose)
+    common_streaming_sse_assertions(tester=tester, probe=results, check_stop=check_stop, verbose=verbose)
 
 
 # ChatBot tests -------------------------------------------------------------------------------------------------------
@@ -436,12 +484,7 @@ def test_chatbot_resend(
 
     # Check that the ChatBot is in the correct state.
     common_primary_chatbot_assertions(tester, fixture, response)
-
-    tester.assertTrue(len(fixture.messages) == 3, "Expecting 3 messages.")
-    tester.assertTrue(
-        fixture.messages[:1] == m,
-        f"Expecting first two messages to be \n{m}, got \n{fixture.messages[:1]}"
-    )
+    common_chatbot_resend_assertions(tester, fixture=fixture, messages=m)
 
 
 # Streaming ChatBot tests ---------------------------------------------------------------------------------------------
@@ -510,10 +553,6 @@ def test_streaming_chatbot_resend(
         verbose=verbose
     )
 
+    # Check that the ChatBot is in the correct state.
     common_primary_chatbot_assertions(tester, fixture=fixture, response=results.res)
-
-    tester.assertTrue(len(fixture.messages) == 3, "Expecting 3 messages.")
-    tester.assertTrue(
-        fixture.messages[:2] == m,
-        f"Expecting first two messages to be \n{m}, got \n{fixture.messages[:2]}"
-    )
+    common_chatbot_resend_assertions(tester, fixture=fixture, messages=m)

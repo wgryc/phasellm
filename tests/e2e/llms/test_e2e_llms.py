@@ -135,9 +135,21 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
         """
         Tests that the StreamingOpenAIGPTWrapper can be used to perform streaming chat completion.
         """
-        fixture = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo", format_sse=True)
+        fixture = StreamingOpenAIGPTWrapper(
+            openai_api_key, model="gpt-3.5-turbo", format_sse=True, append_stop_token=False
+        )
 
-        test_streaming_complete_chat_sse(self, fixture, verbose=False)
+        test_streaming_complete_chat_sse(self, fixture, check_stop=False, verbose=False)
+
+    def test_complete_chat_sse_with_stop(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper can be used to perform streaming chat completion with a stop token.
+        """
+        fixture = StreamingOpenAIGPTWrapper(
+            openai_api_key, model="gpt-3.5-turbo", format_sse=True, append_stop_token=True
+        )
+
+        test_streaming_complete_chat_sse(self, fixture, check_stop=True, verbose=False)
 
     def test_text_completion_success(self):
         """
@@ -159,32 +171,72 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
         """
         Tests that the StreamingOpenAIGPTWrapper can be used to perform streaming text completion.
         """
-        fixture = StreamingOpenAIGPTWrapper(openai_api_key, model="text-davinci-003", format_sse=True)
+        fixture = StreamingOpenAIGPTWrapper(
+            openai_api_key, model="text-davinci-003", format_sse=True, append_stop_token=False
+        )
 
-        test_streaming_text_completion_sse(self, fixture, verbose=False)
+        test_streaming_text_completion_sse(self, fixture, check_stop=False, verbose=False)
+
+    def test_text_completion_sse_with_stop(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper can be used to perform streaming text completion with a stop token.
+        """
+        fixture = StreamingOpenAIGPTWrapper(
+            openai_api_key, model="text-davinci-003", format_sse=True, append_stop_token=True
+        )
+
+        test_streaming_text_completion_sse(self, fixture, check_stop=True, verbose=False)
 
 
 class E2ETestStreamingClaudeWrapper(TestCase):
 
     def test_complete_chat(self):
+        """
+        Tests that the StreamingClaudeWrapper can be used to perform chat completion.
+        """
         fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
 
         test_streaming_complete_chat(self, fixture, verbose=False)
 
     def test_complete_chat_sse(self):
-        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True)
+        """
+        Tests that the StreamingClaudeWrapper can be used to perform streaming chat completion.
+        """
+        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True, append_stop_token=False)
 
-        test_streaming_complete_chat_sse(self, fixture, verbose=False)
+        test_streaming_complete_chat_sse(self, fixture, check_stop=False, verbose=False)
+
+    def test_complete_chat_sse_with_stop(self):
+        """
+        Tests that the StreamingClaudeWrapper can be used to perform streaming chat completion with a stop token.
+        """
+        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True, append_stop_token=True)
+
+        test_streaming_complete_chat_sse(self, fixture, check_stop=True, verbose=False)
 
     def test_text_completion(self):
+        """
+        Tests that the StreamingClaudeWrapper can be used to perform text completion.
+        """
         fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
 
         test_streaming_text_completion_success(self, fixture, verbose=False)
 
     def test_text_completion_sse(self):
-        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True)
+        """
+        Tests that the StreamingClaudeWrapper can be used to perform streaming text completion.
+        """
+        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True, append_stop_token=False)
 
-        test_streaming_text_completion_sse(self, fixture, verbose=False)
+        test_streaming_text_completion_sse(self, fixture, check_stop=False, verbose=False)
+
+    def test_text_completion_sse_with_stop(self):
+        """
+        Tests that the StreamingClaudeWrapper can be used to perform streaming text completion with a stop token.
+        """
+        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True, append_stop_token=True)
+
+        test_streaming_text_completion_sse(self, fixture, check_stop=True, verbose=False)
 
 
 class E2ETestChatBot(TestCase):

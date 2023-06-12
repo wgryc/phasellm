@@ -28,6 +28,8 @@ import torch
 variable_pattern = r'\{\s*[a-zA-Z0-9_]+\s*\}'
 variable_regex = re.compile(variable_pattern)
 
+STOP_TOKEN = "<|END|>"
+
 
 class Message(TypedDict):
     """
@@ -87,10 +89,21 @@ def _get_stop_sequences_from_messages(messages: List[Message]):
     return [f"\n{r}:" for r in roles]
 
 
+def _format_sse(content: str) -> str:
+    """
+    Returns the string that indicates that the response should be formatted as an SSE.
+    """
+    return f"data: {content}\n\n"
+
+
 def _conditional_format_sse_response(content: str, format_sse: bool) -> str:
     if format_sse:
-        return f"data: {content}\n\n"
+        return _format_sse(content)
     return content
+
+
+def _yield_stop_token(stop_token: str) -> Generator:
+    yield _format_sse(stop_token)
 
 
 class LanguageModelWrapper(ABC):
@@ -156,9 +169,11 @@ class StreamingLanguageModelWrapper(LanguageModelWrapper):
     """
 
     @abstractmethod
-    def __init__(self, format_sse: bool):
+    def __init__(self, format_sse: bool, append_stop_token: bool = True, stop_token: str = STOP_TOKEN):
         super().__init__()
         self.format_sse = format_sse
+        self.append_stop_token = append_stop_token
+        self.stop_token = stop_token
 
 
 class ChatPrompt:
@@ -315,8 +330,8 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
     Streaming compliant wrapper for the OpenAI API. Supports all major text and chat completion models by OpenAI.
     """
 
-    def __init__(self, apikey, model="gpt-3.5-turbo", format_sse=False):
-        super().__init__(format_sse=format_sse)
+    def __init__(self, apikey, model="gpt-3.5-turbo", format_sse=False, append_stop_token=True, stop_token=""):
+        super().__init__(format_sse=format_sse, append_stop_token=append_stop_token, stop_token=stop_token)
         openai.api_key = apikey
         self.model: str = model
 
@@ -342,6 +357,8 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
                 if "content" in chunk["choices"][0]["delta"]:
                     content = chunk["choices"][0]["delta"]["content"]
                     yield _conditional_format_sse_response(content=content, format_sse=self.format_sse)
+            if self.format_sse and self.append_stop_token:
+                yield _yield_stop_token(stop_token=self.stop_token)
         else:
             prompt_text = self.prep_prompt_from_messages(
                 messages=messages,
@@ -360,6 +377,8 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
                 if "text" in chunk["choices"][0]["delta"]:
                     text = chunk["choices"][0]["delta"]["text"]
                     yield _conditional_format_sse_response(content=text, format_sse=self.format_sse)
+            if self.format_sse and self.append_stop_token:
+                yield _yield_stop_token(stop_token=self.stop_token)
 
     # TODO Consider error handling for chat models.
     def text_completion(self, prompt, stop_sequences=None) -> Generator:
@@ -389,6 +408,8 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             if "text" in chunk["choices"][0]:
                 text = chunk["choices"][0]["text"]
                 yield _conditional_format_sse_response(content=text, format_sse=self.format_sse)
+        if self.format_sse and self.append_stop_token:
+            yield _yield_stop_token(stop_token=self.stop_token)
 
 
 class OpenAIGPTWrapper(LanguageModelWrapper):
@@ -466,8 +487,8 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
     """
     API_URL = "https://api.anthropic.com/v1/complete"
 
-    def __init__(self, apikey, model="claude-v1", format_sse=False):
-        super().__init__(format_sse=format_sse)
+    def __init__(self, apikey, model="claude-v1", format_sse=False, append_stop_token=True, stop_token=STOP_TOKEN):
+        super().__init__(format_sse=format_sse, append_stop_token=append_stop_token, stop_token=stop_token)
         self.apikey = apikey
         self.model = model
 
@@ -506,6 +527,8 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
 
                 # If format_sse is True, we need to yield with SSE formatting.
                 yield _conditional_format_sse_response(content=completion, format_sse=self.format_sse)
+        if self.format_sse and self.append_stop_token:
+            yield _yield_stop_token(stop_token=self.stop_token)
 
     def complete_chat(self, messages: List[Message], append_role="Assistant:") -> Generator:
         """
