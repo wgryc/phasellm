@@ -13,17 +13,23 @@ class TestE2ESandboxedCodeExecutionAgent(TestCase):
 
     def test_execute_code_stream_result(self):
         code = "print('Hello, world!')\nprint('Hello again')"
+
+        expected = ['Hello, world!\n', 'Hello again\n']
         with SandboxedCodeExecutionAgent() as fixture:
             logs = fixture.execute_code(code)
-            for log in logs:
-                print(log.decode('utf-8'))
+            for i, log in enumerate(logs):
+                actual = log.decode('utf-8')
+                self.assertTrue(actual == expected[i], f"{actual} != {expected[i]}")
 
     def test_execute_code_concat_result(self):
         code = "print('0')\nprint('1')"
+
         with SandboxedCodeExecutionAgent() as fixture:
             logs = fixture.execute_code(code)
-            logs = b''.join(logs)
-            print(logs.decode('utf-8'))
+            actual = b''.join(logs).decode('utf-8')
+
+        expected = '0\n1\n'
+        self.assertTrue(actual == expected, f"{actual} != {expected}")
 
     def test_execute_code_external_package(self):
         pass
