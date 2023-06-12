@@ -2,6 +2,21 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.10 (2023-06-12)
+
+### New Features
+
+- We now have support for streaming LLMs
+- `StreamingLanguageModelWrapper` allows you to build your own streaming wrappers
+- `StreamingOpenAIGPTWrapper` for GPT-4 and GPT-3.5
+- `StreamingClaudeWrapper` for Claude (Anthropic)
+- Significant additions to tests, to ensure stability of future releases (see `tests` folder)
+- ChatBot class supports both streaming and non-streaming LLMs, so you can plug and play with either
+
+### Fixes
+
+- Starting to add type hints to our code; this will take a bit of time but let us know if you have questions
+
 # 0.0.9 (2023-06-04)
 
 ### New Features
@@ -16,7 +31,7 @@ _None_
 
 ### New Features
 
-- ChatBot `messages` stack now also tracks the timestamp for when a message was sent, and how long it took to process in the case of external API calls.
+- ChatBot `messages` stack now also tracks the timestamp for when a message was sent, and how long it took to process in the case of external API calls
 - HTML module that enables HTML outputs for ChatBot
 
 ### Fixes
