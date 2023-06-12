@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.0.9"
+VERSION = "0.0.10"
 
 DESCRIPTION = "Wrappers for common large langugae models (LLMs) with support for evaluation."
 
@@ -25,7 +25,7 @@ setup(
         "torch>=1.0.0",
         "python-dotenv",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.7.1",
     keywords="llm, nlp, evaluation, ai",
     classifiers=[
         "Development Status :: 3 - Alpha",
