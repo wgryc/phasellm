@@ -12,7 +12,7 @@ from io import StringIO
 
 from pathlib import Path
 
-from typing import Generator
+from typing import Generator, Union
 
 from abc import ABC, abstractmethod
 
@@ -87,7 +87,7 @@ class SandboxedCodeExecutionAgent(Agent):
     """
     CODE_FILENAME = 'sandbox_code.py'
 
-    def __init__(self, name: str = '', docker_image: str = 'python:3', scratch_dir: str = None):
+    def __init__(self, name: str = '', docker_image: str = 'python:3', scratch_dir: Union[Path, str] = None):
         super().__init__(name=name)
 
         self.docker_image = docker_image

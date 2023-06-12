@@ -1,13 +1,14 @@
 from unittest import TestCase
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from phasellm.agents import SandboxedCodeExecutionAgent
 
 
 class TestSandboxedCodeExecutionAgent(TestCase):
 
-    def test_execute_code(self):
+    @patch('phasellm.agents.SandboxedCodeExecutionAgent._code_to_temp_file')
+    def test_execute_code(self, _):
         """
         Test that the agent executes code with the correct parameters.
         """
