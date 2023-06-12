@@ -1,86 +1,167 @@
 import os
 
-from typing import Generator
-
 from unittest import TestCase
 
 from dotenv import load_dotenv
 
 from phasellm.llms import \
+    HuggingFaceInferenceWrapper, \
+    BloomWrapper, \
     OpenAIGPTWrapper, StreamingOpenAIGPTWrapper, \
     ClaudeWrapper, StreamingClaudeWrapper, \
+    GPT2Wrapper, \
+    DollyWrapper, \
+    CohereWrapper, \
     ChatBot
 
-from tests.e2e.llms.utils import \
-    common_chat_assertions, common_text_assertions, \
-    StreamingChatCompletionProbe, probe_streaming_chat_completion, common_streaming_chat_assertions, \
-    StreamingTextCompletionProbe, probe_streaming_text_completion, common_streaming_text_assertions, \
-    StreamingSSECompletionProbe, probe_streaming_sse_completions, common_streaming_sse_assertions
+# LLM wrapper tests
+from tests.e2e.llms.utils import test_complete_chat, test_text_completion_success, test_text_completion_failure
+# Streaming LLM wrapper tests
+from tests.e2e.llms.utils import test_streaming_complete_chat, test_streaming_complete_chat_sse, \
+    test_streaming_text_completion_success, test_streaming_text_completion_failure, test_streaming_text_completion_sse
+# Chatbot tests
+from tests.e2e.llms.utils import test_chatbot_chat, test_chatbot_resend
+# Streaming chatbot tests
+from tests.e2e.llms.utils import test_streaming_chatbot_chat, test_streaming_chatbot_resend
 
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
+cohere_api_key = os.getenv("COHERE_API_KEY")
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+hugging_face_api_key = os.getenv("HUGGING_FACE_API_KEY")
+
+
+class E2ETestHuggingFaceInferenceWrapper(TestCase):
+
+    def test_complete_chat(self):
+        fixture = HuggingFaceInferenceWrapper(
+            hugging_face_api_key,
+            model_url="https://api-inference.huggingface.co/models/bigscience/bloom"
+        )
+        test_complete_chat(self, fixture, verbose=False)
+
+    def test_text_completion_success(self):
+        fixture = HuggingFaceInferenceWrapper(
+            hugging_face_api_key,
+            model_url="https://api-inference.huggingface.co/models/bigscience/bloom"
+        )
+        test_text_completion_success(self, fixture, verbose=False)
+
+
+class E2ETestBloomWrapper(TestCase):
+
+    def test_complete_chat(self):
+        fixture = BloomWrapper(hugging_face_api_key)
+        test_complete_chat(self, fixture, verbose=False)
+
+    def test_text_completion_success(self):
+        fixture = BloomWrapper(hugging_face_api_key)
+        test_text_completion_success(self, fixture, verbose=False)
 
 
 class E2ETestOpenAIGPTWrapper(TestCase):
 
     def test_complete_chat(self):
         fixture = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
-
-        messages = [{"role": "user", "content": "What should I eat for lunch today?"}]
-        response = fixture.complete_chat(messages, append_role='assistant')
-
-        common_chat_assertions(self, response, verbose=True)
+        test_complete_chat(self, fixture, verbose=False)
 
     def test_text_completion_success(self):
         fixture = OpenAIGPTWrapper(openai_api_key, model="text-davinci-003")
+        test_text_completion_success(self, fixture, verbose=False)
 
-        prompt = "Three countries in North America are: "
-        response = fixture.text_completion(prompt)
+    def test_text_completion_failure(self):
+        """
+        Tests that the OpenAIGPTWrapper raises an exception when a chat model is used for text completion.
+        """
+        fixture = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
+        test_text_completion_failure(self, fixture, verbose=False)
 
-        common_text_assertions(self, response, verbose=True)
+
+class E2ETestClaudeWrapper(TestCase):
+
+    def test_complete_chat(self):
+        fixture = ClaudeWrapper(anthropic_api_key, model="claude-v1")
+        test_complete_chat(self, fixture, verbose=False)
+
+    def test_text_completion_success(self):
+        fixture = ClaudeWrapper(anthropic_api_key, model="claude-v1")
+        test_text_completion_success(self, fixture, verbose=False)
+
+
+class E2ETestGPT2Wrapper(TestCase):
+
+    def test_complete_chat(self):
+        fixture = GPT2Wrapper()
+        test_complete_chat(self, fixture, verbose=False)
+
+    def test_text_completion_success(self):
+        fixture = GPT2Wrapper()
+        test_text_completion_success(self, fixture, verbose=False)
+
+
+class E2ETestDollyWrapper(TestCase):
+
+    def test_complete_chat(self):
+        fixture = DollyWrapper()
+        test_complete_chat(self, fixture, verbose=False)
+
+    def test_text_completion_success(self):
+        fixture = DollyWrapper()
+        test_text_completion_success(self, fixture, verbose=False)
+
+
+class E2ETestCohereWrapper(TestCase):
+
+    def test_complete_chat(self):
+        fixture = CohereWrapper(cohere_api_key, model="xlarge")
+        test_complete_chat(self, fixture, verbose=False)
+
+    def test_text_completion_success(self):
+        fixture = CohereWrapper(cohere_api_key, model="xlarge")
+        test_text_completion_success(self, fixture, verbose=False)
 
 
 class E2ETestStreamingOpenAIGPTWrapper(TestCase):
 
     def test_complete_chat(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper can be used to perform chat completion.
+        """
         fixture = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
 
-        messages = [{"role": "user", "content": "What should I eat for lunch today?"}]
-        generator = fixture.complete_chat(messages, append_role='assistant')
+        test_streaming_complete_chat(self, fixture, verbose=False)
 
-        results: StreamingChatCompletionProbe = probe_streaming_chat_completion(generator)
+    def test_complete_chat_sse(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper can be used to perform streaming chat completion.
+        """
+        fixture = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo", format_sse=True)
 
-        common_streaming_chat_assertions(self, results, chunk_time_seconds_threshold=0.1, verbose=True)
+        test_streaming_complete_chat_sse(self, fixture, verbose=False)
 
     def test_text_completion_success(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper can be used to perform text completion.
+        """
         fixture = StreamingOpenAIGPTWrapper(openai_api_key, model="text-davinci-003")
 
-        prompt = "Three countries in North America are: "
-        generator = fixture.text_completion(prompt)
-
-        result: StreamingTextCompletionProbe = probe_streaming_text_completion(generator)
-
-        common_streaming_text_assertions(self, result, verbose=True)
+        test_streaming_text_completion_success(self, fixture, verbose=False)
 
     def test_text_completion_failure(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper raises an exception when a chat model is used for text completion.
+        """
         fixture = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
 
-        prompt = "The capital of Canada is"
-        generator = fixture.text_completion(prompt)
+        test_streaming_text_completion_failure(self, fixture, verbose=False)
 
-        self.assertTrue(isinstance(generator, Generator), "Expecting a generator.")
+    def test_text_completion_sse(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper can be used to perform streaming text completion.
+        """
+        fixture = StreamingOpenAIGPTWrapper(openai_api_key, model="text-davinci-003", format_sse=True)
 
-        exception = None
-        try:
-            # Convert the generator to a list to evaluate it.
-            list(generator)
-        except Exception as e:
-            exception = e
-
-        print(f'Exception:\n{exception}')
-
-        self.assertTrue(exception is not None, "Expecting an exception.")
+        test_streaming_text_completion_sse(self, fixture, verbose=False)
 
 
 class E2ETestStreamingClaudeWrapper(TestCase):
@@ -88,50 +169,22 @@ class E2ETestStreamingClaudeWrapper(TestCase):
     def test_complete_chat(self):
         fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
 
-        messages = [{"role": "user", "content": "What should I eat for lunch today?"}]
-        generator = fixture.complete_chat(messages, append_role='assistant')
-
-        self.assertTrue(isinstance(generator, Generator), "Expecting a generator.")
-
-        results: StreamingChatCompletionProbe = probe_streaming_chat_completion(generator)
-
-        common_streaming_chat_assertions(self, results, chunk_time_seconds_threshold=0.1, verbose=True)
+        test_streaming_complete_chat(self, fixture, verbose=False)
 
     def test_complete_chat_sse(self):
         fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True)
 
-        messages = [{"role": "user", "content": "What should I eat for lunch today?"}]
-        generator = fixture.complete_chat(messages, append_role='assistant')
-
-        self.assertTrue(isinstance(generator, Generator), "Expecting a generator.")
-
-        results: StreamingSSECompletionProbe = probe_streaming_sse_completions(generator)
-
-        common_streaming_sse_assertions(self, results)
+        test_streaming_complete_chat_sse(self, fixture, verbose=False)
 
     def test_text_completion(self):
         fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
 
-        prompt = "Three countries in North America are: "
-        generator = fixture.text_completion(prompt)
-
-        self.assertTrue(isinstance(generator, Generator), "Expecting a generator.")
-
-        result = probe_streaming_text_completion(generator)
-
-        common_streaming_text_assertions(self, result, verbose=True)
+        test_streaming_text_completion_success(self, fixture, verbose=False)
 
     def test_text_completion_sse(self):
         fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True)
 
-        prompt = "Three countries in North America are: "
-        generator = fixture.text_completion(prompt)
-
-        self.assertTrue(isinstance(generator, Generator), "Expecting a generator.")
-
-        results: StreamingSSECompletionProbe = probe_streaming_sse_completions(generator)
-
-        common_streaming_sse_assertions(self, results)
+        test_streaming_text_completion_sse(self, fixture, verbose=False)
 
 
 class E2ETestChatBot(TestCase):
@@ -140,77 +193,115 @@ class E2ETestChatBot(TestCase):
         llm = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
         fixture = ChatBot(llm)
 
-        response = fixture.chat('Who are you')
+        test_chatbot_chat(self, fixture)
 
-        self.assertTrue(isinstance(response, str), f"Expecting a string, got {type(response)}.")
+    def test_openai_gpt_resend(self):
+        llm = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
+        fixture = ChatBot(llm)
+
+        test_chatbot_resend(self, fixture)
+
+    def test_claude_chat(self):
+        llm = ClaudeWrapper(anthropic_api_key, model="claude-v1")
+        fixture = ChatBot(llm)
+
+        test_chatbot_chat(self, fixture)
+
+    def test_claude_resend(self):
+        llm = ClaudeWrapper(anthropic_api_key, model="claude-v1")
+        fixture = ChatBot(llm)
+
+        test_chatbot_resend(self, fixture)
+
+    def test_hugging_face_chat(self):
+        llm = HuggingFaceInferenceWrapper(
+            hugging_face_api_key,
+            model_url="https://api-inference.huggingface.co/models/bigscience/bloom"
+        )
+        fixture = ChatBot(llm)
+
+        test_chatbot_chat(self, fixture)
+
+    def test_hugging_face_resend(self):
+        llm = HuggingFaceInferenceWrapper(
+            hugging_face_api_key,
+            model_url="https://api-inference.huggingface.co/models/bigscience/bloom"
+        )
+        fixture = ChatBot(llm)
+
+        test_chatbot_resend(self, fixture)
+
+    def test_bloom_chat(self):
+        llm = BloomWrapper(hugging_face_api_key)
+        fixture = ChatBot(llm)
+
+        test_chatbot_chat(self, fixture)
+
+    def test_bloom_resend(self):
+        llm = BloomWrapper(hugging_face_api_key)
+        fixture = ChatBot(llm)
+
+        test_chatbot_resend(self, fixture)
+
+    def test_gpt2_chat(self):
+        llm = GPT2Wrapper()
+        fixture = ChatBot(llm)
+
+        test_chatbot_chat(self, fixture)
+
+    def test_gpt2_resend(self):
+        llm = GPT2Wrapper()
+        fixture = ChatBot(llm)
+
+        test_chatbot_resend(self, fixture)
+
+    def test_dolly_chat(self):
+        llm = DollyWrapper()
+        fixture = ChatBot(llm)
+
+        test_chatbot_chat(self, fixture)
+
+    def test_dolly_resend(self):
+        llm = DollyWrapper()
+        fixture = ChatBot(llm)
+
+        test_chatbot_resend(self, fixture)
+
+    def test_cohere_chat(self):
+        llm = CohereWrapper(cohere_api_key, model="xlarge")
+        fixture = ChatBot(llm)
+
+        test_chatbot_chat(self, fixture)
+
+    def test_cohere_resend(self):
+        llm = CohereWrapper(cohere_api_key, model="xlarge")
+        fixture = ChatBot(llm)
+
+        test_chatbot_resend(self, fixture)
 
 
 class E2ETestStreamingChatBot(TestCase):
 
     def test_openai_gpt_streaming_chat(self):
-        # TODO refactor assertions into reusable function to test all wrappers.
         llm = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
         fixture = ChatBot(llm)
 
-        generator = fixture.chat('Who are you')
+        test_streaming_chatbot_chat(self, fixture=fixture, chunk_time_seconds_threshold=0.2, verbose=False)
 
-        self.assertTrue(isinstance(generator, Generator), "Expecting a generator.")
+    def test_openai_gpt_streaming_resend(self):
+        llm = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
+        fixture = ChatBot(llm)
 
-        # Check the results of the generator.
-        results: StreamingChatCompletionProbe = probe_streaming_chat_completion(generator)
-        common_streaming_chat_assertions(self, results, chunk_time_seconds_threshold=0.2, verbose=False)
+        test_streaming_chatbot_resend(self, fixture=fixture, verbose=False)
 
-        # Check the state of the ChatBot.
-        self.assertTrue(
-            len(fixture.messages) > 1,
-            "Expecting more than one message in the stack."
-        )
-        self.assertTrue(
-            fixture.messages[-1]['role'] == 'assistant',
-            "Expecting the last message to be from the assistant."
-        )
+    def test_claude_streaming_chat(self):
+        llm = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
+        fixture = ChatBot(llm)
 
-        # Check that the generator executed by ChatBot.chat() stores the realized result in the stack.
-        self.assertTrue(
-            len(fixture.messages[-1]['content']) != 0,
-            "Expecting the last message to have content."
-        )
-        self.assertTrue(
-            fixture.messages[-1]['content'] == results.res,
-        )
+        test_streaming_chatbot_chat(self, fixture=fixture, chunk_time_seconds_threshold=0.2, verbose=False)
 
-        # Make another call to ChatBot.chat() to ensure it is capable of receiving a new message.
-        generator = fixture.chat('Where do you come from?')
+    def test_claude_streaming_resend(self):
+        llm = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
+        fixture = ChatBot(llm)
 
-        # Check the results of the generator.
-        results: StreamingChatCompletionProbe = probe_streaming_chat_completion(generator)
-        common_streaming_chat_assertions(self, results, chunk_time_seconds_threshold=0.1, verbose=True)
-
-        # Ensure there are 5 messages in the stack. (1 system, 2 user, 2 assistant)
-        self.assertTrue(
-            len(fixture.messages) == 5,
-            "Expecting 5 messages in the stack (1 system, 2 user, 2 assistant)."
-        )
-        # Check that the messages are in the correct order.
-        self.assertTrue(
-            fixture.messages[0]['role'] == 'system',
-            "Expecting the first message to be from the system."
-        )
-        self.assertTrue(
-            fixture.messages[1]['role'] == 'user',
-            "Expecting the first message to be from the user."
-        )
-        self.assertTrue(
-            fixture.messages[2]['role'] == 'assistant',
-            "Expecting the second message to be from the assistant."
-        )
-        self.assertTrue(
-            fixture.messages[3]['role'] == 'user',
-            "Expecting the third message to be from the user."
-        )
-        self.assertTrue(
-            fixture.messages[4]['role'] == 'assistant',
-            "Expecting the last message to be from the assistant."
-        )
-
-        print(f'ChatBot messages:\n{fixture.messages}')
+        test_streaming_chatbot_resend(self, fixture=fixture, verbose=False)
