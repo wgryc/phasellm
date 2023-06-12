@@ -6,9 +6,13 @@ from unittest import TestCase
 
 from dotenv import load_dotenv
 
-from phasellm.llms import StreamingOpenAIGPTWrapper, StreamingClaudeWrapper, ChatBot
+from phasellm.llms import \
+    OpenAIGPTWrapper, StreamingOpenAIGPTWrapper, \
+    ClaudeWrapper, StreamingClaudeWrapper, \
+    ChatBot
 
 from tests.e2e.llms.utils import \
+    common_chat_assertions, common_text_assertions, \
     StreamingChatCompletionProbe, probe_streaming_chat_completion, common_streaming_chat_assertions, \
     StreamingTextCompletionProbe, probe_streaming_text_completion, common_streaming_text_assertions, \
     StreamingSSECompletionProbe, probe_streaming_sse_completions, common_streaming_sse_assertions
@@ -16,6 +20,25 @@ from tests.e2e.llms.utils import \
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+
+
+class E2ETestOpenAIGPTWrapper(TestCase):
+
+    def test_complete_chat(self):
+        fixture = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
+
+        messages = [{"role": "user", "content": "What should I eat for lunch today?"}]
+        response = fixture.complete_chat(messages, append_role='assistant')
+
+        common_chat_assertions(self, response, verbose=True)
+
+    def test_text_completion_success(self):
+        fixture = OpenAIGPTWrapper(openai_api_key, model="text-davinci-003")
+
+        prompt = "Three countries in North America are: "
+        response = fixture.text_completion(prompt)
+
+        common_text_assertions(self, response, verbose=True)
 
 
 class E2ETestStreamingOpenAIGPTWrapper(TestCase):
@@ -111,9 +134,21 @@ class E2ETestStreamingClaudeWrapper(TestCase):
         common_streaming_sse_assertions(self, results)
 
 
+class E2ETestChatBot(TestCase):
+
+    def test_openai_gpt_chat(self):
+        llm = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
+        fixture = ChatBot(llm)
+
+        response = fixture.chat('Who are you')
+
+        self.assertTrue(isinstance(response, str), f"Expecting a string, got {type(response)}.")
+
+
 class E2ETestStreamingChatBot(TestCase):
 
-    def test_chat(self):
+    def test_openai_gpt_streaming_chat(self):
+        # TODO refactor assertions into reusable function to test all wrappers.
         llm = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
         fixture = ChatBot(llm)
 

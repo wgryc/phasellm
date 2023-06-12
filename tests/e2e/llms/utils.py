@@ -7,6 +7,40 @@ from unittest import TestCase
 from dataclasses import dataclass
 
 
+def common_chat_assertions(tester: TestCase, chat: str, verbose: bool = False) -> None:
+    """
+    Helper function for common chat completion assertions.
+    """
+    tester.assertTrue(
+        isinstance(chat, str),
+        f"Expected a string. Got: {type(chat)}"
+    )
+    tester.assertTrue(
+        len(chat) > 0,
+        f"Chat is empty."
+    )
+
+    if verbose:
+        print(f"Chat: {chat}")
+
+
+def common_text_assertions(tester: TestCase, chat: str, verbose: bool = False) -> None:
+    """
+    Helper function for common text completion assertions.
+    """
+    tester.assertTrue(
+        isinstance(chat, str),
+        f"Expected a string. Got: {type(chat)}"
+    )
+    tester.assertTrue(
+        len(chat) > 0,
+        f"Chat is empty."
+    )
+
+    if verbose:
+        print(f"Chat: {chat}")
+
+
 @dataclass
 class StreamingChatCompletionProbe:
     res: str

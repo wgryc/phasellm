@@ -111,7 +111,7 @@ class LanguageModelWrapper(ABC):
         pass
 
     @abstractmethod
-    def complete_chat(self, messages: List[Message], append_role: Optional[str] = None) -> str:
+    def complete_chat(self, messages: List[Message], append_role: Optional[str] = None) -> Union[str, Generator]:
         """
         Takes an array of messages in the form {"role": <str>, "content":<str>} and generate a response.
 
@@ -120,7 +120,7 @@ class LanguageModelWrapper(ABC):
         pass
 
     @abstractmethod
-    def text_completion(self, prompt: str) -> str:
+    def text_completion(self, prompt: str) -> Union[str, Generator]:
         """
         Standardizes text completion for large language models.
         """
@@ -744,6 +744,26 @@ class ChatBot:
         self.messages: List[EnhancedMessage] = []
         self._append_message('system', initial_system_prompt)
 
+    def _response(self, response: str, start_time: float):
+        """
+        Handles a response from the LLM.
+        """
+        self._append_message('assistant', response, log_time_seconds=time.time() - start_time)
+        return response
+
+    def _streaming_response(self, response: Generator, start_time: float):
+        """
+        Handles a streaming response from the LLM.
+
+        If the response is a generator, we'll need intercept it so that we can append it to the message stack.
+        (Generators only yield their results once).
+        """
+        full_response = ''
+        for chunk in response:
+            full_response += chunk
+            yield chunk
+        self._append_message('assistant', full_response, log_time_seconds=time.time() - start_time)
+
     def _append_message(self, role: str, message: str, log_time_seconds=None) -> None:
         """
         Saves a message to the ChatBot message queue.
@@ -792,16 +812,8 @@ class ChatBot:
             clean_messages.append(m_copy)
 
         response = self.llm.complete_chat(clean_messages, append_role='assistant')
+
         if isinstance(response, Generator):
-            '''
-            If the response is a generator, we'll need intercept it so that we can append it to the message stack.
-            (Generators only yield their results once).
-            '''
-            full_response = ''
-            for chunk in response:
-                full_response += chunk
-                yield chunk
-            self._append_message('assistant', full_response, log_time_seconds=time.time() - start_time)
+            return self._streaming_response(response=response, start_time=start_time)
         else:
-            self._append_message('assistant', response, log_time_seconds=time.time() - start_time)
-            return response
+            return self._response(response=response, start_time=start_time)
