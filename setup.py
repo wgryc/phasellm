@@ -24,6 +24,7 @@ setup(
         "accelerate>=0.16.0",
         "torch>=1.0.0",
         "python-dotenv",
+        "sseclient-py==1.7.2",
     ],
     python_requires=">=3.7.1",
     keywords="llm, nlp, evaluation, ai",
