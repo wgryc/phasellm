@@ -32,7 +32,7 @@ class Agent(ABC):
     """
 
     @abstractmethod
-    def __init__(self, name=''):
+    def __init__(self, name: str = ''):
         self.name = name
 
     def __repr__(self):
@@ -57,14 +57,14 @@ class CodeExecutionAgent(Agent):
     Agent used for executing arbitrary code.
     """
 
-    def __init__(self, name=''):
+    def __init__(self, name: str = ''):
         super().__init__(name=name)
 
     def __repr__(self):
         return f"CodeExecutionAgent(name={self.name})"
 
     @staticmethod
-    def execute_code(code: str, globals=None, locals=None):
+    def execute_code(code: str, globals=None, locals=None) -> str:
         """
         Executes arbitrary Python code and saves the output (or error!) to a variable.
         
@@ -112,14 +112,14 @@ class SandboxedCodeExecutionAgent(Agent):
         """
         self.client.close()
 
-    def _create_scratch_dir(self):
+    def _create_scratch_dir(self) -> None:
         """
         Creates a directory if it does not exist.
         """
         if not os.path.exists(self.scratch_dir):
             os.makedirs(self.scratch_dir)
 
-    def _code_to_temp_file(self, code: str):
+    def _code_to_temp_file(self, code: str) -> None:
         """
         Writes the code to a temporary file so that it can be volume mounted to a docker container.
         """
@@ -169,12 +169,12 @@ class EmailSenderAgent(Agent):
     def __repr__(self):
         return f"EmailSenderAgent(name={self.name})"
 
-    def sendPlainEmail(self, recipient_email: str, subject: str, content: str):
+    def sendPlainEmail(self, recipient_email: str, subject: str, content: str) -> None:
         # TODO deprecating this to be more Pythonic with naming conventions.
         print('sendPlainEmail() is deprecated. Use send_plain_email instead.')
         self.send_plain_email(recipient_email, subject, content)
 
-    def send_plain_email(self, recipient_email: str, subject: str, content: str):
+    def send_plain_email(self, recipient_email: str, subject: str, content: str) -> None:
         """
         Sends an email encoded as plain text.
 
@@ -212,12 +212,24 @@ class NewsSummaryAgent(Agent):
     def __repr__(self):
         return f"NewsSummaryAgent(name={self.name})"
 
-    def getQuery(self, query, days_back=1, include_descriptions=True, max_articles=25):
+    def getQuery(
+            self,
+            query: str,
+            days_back: int = 1,
+            include_descriptions: bool = True,
+            max_articles: int = 25
+    ) -> str:
         # TODO deprecating this to be more Pythonic with naming conventions.
         print('getQuery() is deprecated. Use get_query instead.')
-        self.get_query(query, days_back, include_descriptions, max_articles)
+        return self.get_query(query, days_back, include_descriptions, max_articles)
 
-    def get_query(self, query: str, days_back: int = 1, include_descriptions: bool = True, max_articles: int = 25):
+    def get_query(
+            self,
+            query: str,
+            days_back: int = 1,
+            include_descriptions: bool = True,
+            max_articles: int = 25
+    ) -> str:
         """
         Gets all articles for a query for the # of days back. Returns a String with all the information so that an LLM
         can summarize it. Note that obtaining too many articles will likely cause an issue with prompt length.
@@ -231,7 +243,12 @@ class NewsSummaryAgent(Agent):
 
         start_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
 
-        api_url = f"https://newsapi.org/v2/everything?q={query}&from={start_date}&sortBy=publishedAt&apiKey={self.apikey}"
+        api_url = \
+            f"https://newsapi.org/v2/everything?" \
+            f"q={query}" \
+            f"&from={start_date}" \
+            f"&sortBy=publishedAt" \
+            f"&apiKey={self.apikey}"
 
         headers = {'Accept': 'application/json'}
         r = requests.get(api_url, headers=headers)
@@ -253,7 +270,8 @@ class NewsSummaryAgent(Agent):
                     article_desc += f"\nDESCRIPTION: {article['description']}\n"
                 article_desc += f"URL: {article['url']}"
                 return_me += article_desc
-                if article_counter > max_articles: break
+                if article_counter > max_articles:
+                    break
 
         return_me += "---------------"
 

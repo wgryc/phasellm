@@ -31,6 +31,7 @@ cohere_api_key = os.getenv("COHERE_API_KEY")
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 hugging_face_api_key = os.getenv("HUGGING_FACE_API_KEY")
 
+# Enable skipping local testing local models (most machines can't run them)
 skip_local_models = os.getenv("SKIP_LOCAL_MODELS")
 skip_local_models = skip_local_models is not None and skip_local_models.lower() == "true"
 
@@ -571,14 +572,20 @@ class E2ETestStreamingChatBot(TestCase):
 
         test_streaming_chatbot_resend(self, fixture=fixture, verbose=False)
 
+    # TODO Consider adding test_openai_gpt_streaming_resend_sse()
+
     def test_claude_streaming_chat(self):
         llm = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
         fixture = ChatBot(llm)
 
         test_streaming_chatbot_chat(self, fixture=fixture, chunk_time_seconds_threshold=0.5, verbose=False)
 
+    # TODO Consider adding test_claude_streaming_chat_sse()
+
     def test_claude_streaming_resend(self):
         llm = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
         fixture = ChatBot(llm)
 
         test_streaming_chatbot_resend(self, fixture=fixture, verbose=False)
+
+    # TODO Consider adding test_claude_streaming_resend_sse()
