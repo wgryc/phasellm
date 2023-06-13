@@ -1,6 +1,12 @@
 from unittest import TestCase
 
-from phasellm.agents import SandboxedCodeExecutionAgent
+from unittest.mock import patch
+
+from phasellm.agents import SandboxedCodeExecutionAgent, EmailSenderAgent, NewsSummaryAgent
+
+
+class TestCodeExecutionAgent(TestCase):
+    pass
 
 
 class TestSandboxedCodeExecutionAgent(TestCase):
@@ -88,3 +94,57 @@ class TestSandboxedCodeExecutionAgent(TestCase):
 
         for package in self.packages_to_include:
             self.assertTrue(package in packages, f"Package: {package} not in packages: {packages}")
+
+
+class TestEmailSenderAgent(TestCase):
+
+    @patch('phasellm.agents.EmailSenderAgent.send_plain_email')
+    def test_send_plain_email_deprecated(self, send_plain_email_mock):
+        """
+        Test that a plain email can be sent using the deprecated method.
+        Args:
+            send_plain_email_mock: A mock of the send_plain_email method.
+
+        Returns:
+
+        """
+        fixture = EmailSenderAgent(
+            sender_name='test',
+            smtp='test',
+            sender_address='test',
+            password='test',
+            port=0,
+            name='Test Agent'
+        )
+
+        fixture.sendPlainEmail(recipient_email='test', subject='test', content='test')
+
+        self.assertTrue(
+            send_plain_email_mock.called_with(recipient_email='test', subject='test', content='test'),
+            "send_plain_email was not called with the correct arguments."
+        )
+
+
+class TestNewsSummaryAgent(TestCase):
+
+    @patch('phasellm.agents.NewsSummaryAgent.get_query')
+    def test_get_query_deprecated(self, get_query_mock):
+        """
+        Test that the a query can be retrieved using the deprecated method.
+        Args:
+            get_query_mock: A mock of the get_query method.
+
+        Returns:
+
+        """
+        fixture = NewsSummaryAgent(
+            apikey='test',
+            name='Test Agent'
+        )
+
+        fixture.getQuery(query='test', days_back=0, include_descriptions=True, max_articles=1)
+
+        self.assertTrue(
+            get_query_mock.called_with(query='test', days_back=0, include_descriptions=True, max_articles=1),
+            "get_query was not called with the correct arguments."
+        )
