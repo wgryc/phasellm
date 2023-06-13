@@ -143,7 +143,9 @@ class SandboxedCodeExecutionAgent(Agent):
                 "sklearn": "scikit-learn",
                 "matplotlib": "matplotlib",
                 "seaborn": "seaborn",
-                "statsmodels": "statsmodels"
+                "statsmodels": "statsmodels",
+                "tensorflow": "tensorflow",
+                "torch": "torch",
             }
         self.module_package_mappings_whitelist = module_package_mappings_whitelist
 

@@ -1,31 +1,90 @@
 from unittest import TestCase
 
-from unittest.mock import MagicMock, patch
-
 from phasellm.agents import SandboxedCodeExecutionAgent
 
 
 class TestSandboxedCodeExecutionAgent(TestCase):
 
-    @patch('phasellm.agents.SandboxedCodeExecutionAgent._code_to_temp_file')
-    def test_execute_code(self, _):
-        """
-        Test that the agent executes code with the correct parameters.
-        """
-        # Set up fixture and mock the client so that we can make assertions about the parameters passed to it.
-        fixture = SandboxedCodeExecutionAgent()
-        fixture.client = MagicMock()
+    def setUp(self) -> None:
+        self.fixture = SandboxedCodeExecutionAgent()
+        self.modules_to_include = [
+            "os",
+            "sys",
+            "numpy",
+            "pandas",
+            "scipy",
+            "sklearn",
+            "matplotlib",
+            "seaborn",
+            "statsmodels",
+            "tensorflow",
+            "torch"
+        ]
+        self.packages_to_include = [
+            "numpy",
+            "pandas",
+            "scipy",
+            "scikit-learn",
+            "matplotlib",
+            "seaborn",
+            "statsmodels",
+            "tensorflow",
+            "torch"
+        ]
 
-        # Execute the code.
-        fixture.execute_code('print("Hello, world!")')
+    def tearDown(self) -> None:
+        self.fixture.close()
 
-        '''
-        Ensure that the agent is called with the stream and auto_remove parameters.
-        
-        auto_remove is critically important because it ensures that the container is removed after execution. Without 
-        it, containers can build up and consume too much disk space on the host machine.
-        '''
-        self.assertTrue(fixture.client.containers.run.called_with(
-            stream=True,
-            auto_remove=True
-        ), "The agent was not called with the correct parameters.")
+    def test_modules_to_packages_import_format(self):
+        """
+        Tests that modules contained within a code string are converted to packages (if they are in the whitelist).
+
+        focuses on the "import {module}" format.
+        """
+        code = "\n".join([f"import {package}" for package in self.modules_to_include]) + \
+               "\n\nprint('Hello, world!')\n"
+
+        packages = self.fixture._modules_to_packages(code=code)
+
+        self.assertTrue("os" not in packages)
+
+        for package in self.packages_to_include:
+            self.assertTrue(package in packages, f"Package: {package} not in packages: {packages}")
+
+    def test_modules_to_packages_from_format(self):
+        """
+        Tests that modules contained within a code string are converted to packages (if they are in the whitelist).
+
+        Focuses on the "from {module} import {thing}" format.
+
+        Returns:
+
+        """
+        code = "\n".join([f"from {package} import *" for package in self.modules_to_include]) + \
+               "\n\nprint('Hello, world!')\n"
+
+        packages = self.fixture._modules_to_packages(code=code)
+
+        self.assertTrue("os" not in packages)
+
+        for package in self.packages_to_include:
+            self.assertTrue(package in packages, f"Package: {package} not in packages: {packages}")
+
+    def test_modules_to_packages_from_format_with_alias(self):
+        """
+        Tests that modules contained within a code string are converted to packages (if they are in the whitelist).
+
+        Focuses on the "from {module} import {thing} as {alias}" format.
+
+        Returns:
+
+        """
+        code = "\n".join([f"from {package} import * as {package}_alias" for package in self.modules_to_include]) + \
+               "\n\nprint('Hello, world!')\n"
+
+        packages = self.fixture._modules_to_packages(code=code)
+
+        self.assertTrue("os" not in packages)
+
+        for package in self.packages_to_include:
+            self.assertTrue(package in packages, f"Package: {package} not in packages: {packages}")
