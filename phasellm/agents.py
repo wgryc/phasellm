@@ -154,11 +154,14 @@ class SandboxedCodeExecutionAgent(Agent):
         self.scratch_dir = scratch_dir
 
         # Pre-compile regexes for performance (helps if executing code in a loop).
-        self.module_regex = re.compile(r"(?:(?<=^import\s)|(?<=^from\s))\w+", flags=re.MULTILINE)
+        self._module_regex = re.compile(r"(?:(?<=^import\s)|(?<=^from\s))\w+", flags=re.MULTILINE)
 
         # Create the docker client.
-        self.client: DockerClient = docker.from_env()
+        self._client: DockerClient = docker.from_env()
         self._ping_client()
+
+        # Placeholder for the container.
+        self._container: Optional[Container] = None
 
     def __repr__(self):
         return f"SandboxedCodeExecutionAgent(" \
@@ -185,7 +188,7 @@ class SandboxedCodeExecutionAgent(Agent):
         Returns:
 
         """
-        self.close_client()
+        self.close()
 
     def _ping_client(self):
         """
@@ -193,7 +196,7 @@ class SandboxedCodeExecutionAgent(Agent):
         Returns:
 
         """
-        if not self.client.ping():
+        if not self._client.ping():
             raise ConnectionError('Docker is not running. Please start docker.')
 
     def _create_scratch_dir(self) -> None:
@@ -241,7 +244,7 @@ class SandboxedCodeExecutionAgent(Agent):
 
         """
 
-        modules = self.module_regex.findall(code)
+        modules = self._module_regex.findall(code)
 
         final_packages = []
         for module in modules:
@@ -271,50 +274,27 @@ class SandboxedCodeExecutionAgent(Agent):
 
         return ExecCommands(requirements=requirements_command, python=python_command)
 
-    def _start_container(self) -> Container:
-        """
-        Starts the docker container.
-        Returns:
-            A docker container object.
-        """
-        container: Container = self.client.containers.create(
-            image=self.docker_image,
-            volumes={Path(self.scratch_dir).absolute(): {'bind': '/code', 'mode': 'rw'}},
-            auto_remove=False,
-            tty=True,
-        )
-        container.start()
-        return container
-
     @staticmethod
-    def _handle_exec_errors(res: ExecResult, code: str):
+    def _handle_exec_errors(output: str, exit_code: int, code: str):
         """
         Handles errors that occur during code execution.
         Returns:
 
         """
-        if res.exit_code and res.exit_code != 0:
-            raise LLMCodeException(code, b''.join(res.output).decode('utf-8'))
+        if exit_code is not None and exit_code != 0:
+            raise LLMCodeException(code, output)
 
-    def close_client(self):
-        """
-        Closes the docker client. This should be called when you're done using the agent. This method automatically
-        runs when exiting the context manager. If you do not use a context manager, you should call this method.
-        Returns:
-
-        """
-        self.client.close()
-
-    def execute_code(self, code: str) -> Generator:
+    def _execute(self, code: str, auto_stop_container: bool) -> Generator:
         """
         Starts the container, installs packages defined in the code (if they are provided in the
         module_package_mappings_whitelist), and executes the provided code inside the container.
         Args:
             code: The code string to execute.
-
+            auto_stop_container: Whether or not to automatically stop the container after execution.
         Returns:
             A Generator that yields the stdout and stderr of the code execution.
         """
+
         self._create_scratch_dir()
 
         packages: List[str] = self._modules_to_packages(code)
@@ -324,26 +304,93 @@ class SandboxedCodeExecutionAgent(Agent):
 
         commands: ExecCommands = self._prep_commands(packages)
 
-        container: Optional[Container] = None
         try:
-            container: Container = self._start_container()
+            # If the container is already running, use it. Otherwise, start a new container.
+            if self._container is None:
+                self.start_container()
 
             # Run the requirements command if it exists.
             if commands.requirements is not None:
-                res: ExecResult = container.exec_run(commands.requirements)
-                self._handle_exec_errors(res=res, code=code)
+                res: ExecResult = self._container.exec_run(commands.requirements)
+                self._handle_exec_errors(output=res.output, exit_code=res.exit_code, code=code)
 
             # Run the python command.
-            res: ExecResult = container.exec_run(commands.python, stream=True)
-            self._handle_exec_errors(res=res, code=code)
+            exec_handle = self._client.api.exec_create(container=self._container.name, cmd=commands.python)
+            res: ExecResult = self._client.api.exec_start(exec_handle['Id'], stream=True)
 
             # Yield the output of the python command.
-            for data in res.output:
-                yield data.decode('utf-8')
+            output = []
+            for data in res:
+                chunk = data.decode('utf-8')
+                output.append(chunk)
+                yield chunk
+            output = ''.join(output)
+
+            # Handle errors for streaming output.
+            exit_code = self._client.api.exec_inspect(exec_handle['Id'])['ExitCode']
+            self._handle_exec_errors(output=output, exit_code=exit_code, code=code)
         finally:
-            if container is not None:
-                container.stop()
-                container.remove()
+            if auto_stop_container:
+                self.stop_container()
+
+    def close(self):
+        """
+        Stops all containers and closes client sessions. This should be called when you're done using the agent.
+
+        This method automatically runs when exiting the context manager. If you do not use a context manager, you
+        should call this method manually.
+
+        Returns:
+
+        """
+        self.stop_container()
+        # Closes client sessions
+        self._client.close()
+
+    def start_container(self) -> None:
+        """
+        Starts the docker container.
+        Returns:
+
+        """
+        if self._container is not None:
+            raise RuntimeError('Container is already running.')
+
+        container: Container = self._client.containers.create(
+            image=self.docker_image,
+            volumes={Path(self.scratch_dir).absolute(): {'bind': '/code', 'mode': 'rw'}},
+            auto_remove=False,
+            tty=True,
+        )
+        container.start()
+        self._container = container
+
+    def stop_container(self) -> None:
+        """
+        Stops the docker container and removes it, if it exists.
+        Returns:
+
+        """
+        if self._container is not None:
+            self._container.stop()
+            self._container.remove()
+            self._container = None
+
+    def execute_code(self, code: str, stream: bool = True, auto_stop_container: bool = False) -> Union[str, Generator]:
+        """
+        Executes the provided code inside a sandboxed container.
+        Args:
+            code: The code string to execute.
+            stream: Whether or not to stream the output of the code execution.
+            auto_stop_container: Whether or not to automatically stop the container after the code execution.
+        Returns:
+            A string output of the whole code execution stdout and stderr if stream is False, otherwise a Generator
+            that yields the stdout and stderr of the code execution.
+        """
+        generator = self._execute(code=code, auto_stop_container=auto_stop_container)
+        if stream:
+            return generator
+        return ''.join(list(generator))
 
 
 class EmailSenderAgent(Agent):
