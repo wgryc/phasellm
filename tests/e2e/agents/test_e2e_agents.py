@@ -129,6 +129,57 @@ class TestE2ESandboxedCodeExecutionAgent(TestCase):
             container_not_found = False
         self.assertFalse(container_not_found, f"Container {container_name} should not exist.")
 
+    def test_execute_code_multiple_executions_one_container(self):
+        """
+        Test that multiple code executions can be run on the same container.
+        Returns:
+
+        """
+        code_1 = (
+            "print('1')"
+        )
+        code_2 = (
+            "print('2')"
+        )
+
+        with SandboxedCodeExecutionAgent(scratch_dir=self.scratch_dir) as fixture:
+
+            expected = "1\n"
+            logs = fixture.execute_code(code_1, stream=False)
+            self.assertTrue(logs == expected, f"\n{logs}\n!=\n{expected}")
+            container_name_1 = fixture._container.name
+
+            expected = "2\n"
+            logs = fixture.execute_code(code_2, stream=False)
+            self.assertTrue(logs == expected, f"\n{logs}\n!=\n{expected}")
+            container_name_2 = fixture._container.name
+
+            self.assertTrue(container_name_1 == container_name_2, f"{container_name_1} != {container_name_2}")
+
+    def test_execute_code_multiple_executions_multiple_containers(self):
+        """
+        Test that multiple code executions can be run on different containers.
+        Returns:
+
+        """
+        code_1 = (
+            "print('1')"
+        )
+        code_2 = (
+            "print('2')"
+        )
+
+        with SandboxedCodeExecutionAgent(scratch_dir=self.scratch_dir) as fixture:
+            expected = "1\n"
+            logs = fixture.execute_code(code_1, stream=False, auto_stop_container=True)
+            self.assertTrue(logs == expected, f"\n{logs}\n!=\n{expected}")
+            self.assertTrue(fixture._container is None, f"Container should be None, got {fixture._container}")
+
+            expected = "2\n"
+            logs = fixture.execute_code(code_2, stream=False, auto_stop_container=True)
+            self.assertTrue(logs == expected, f"\n{logs}\n!=\n{expected}")
+            self.assertTrue(fixture._container is None, f"Container should be None, got {fixture._container}")
+
 
 class TestE2EEmailSenderAgent(TestCase):
 
