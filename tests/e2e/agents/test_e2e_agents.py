@@ -43,8 +43,7 @@ class TestE2ESandboxedCodeExecutionAgent(TestCase):
         with SandboxedCodeExecutionAgent(scratch_dir=self.scratch_dir) as fixture:
             logs = fixture.execute_code(code)
             for i, log in enumerate(logs):
-                actual = log.decode('utf-8')
-                self.assertTrue(actual == expected[i], f"{actual}\n!=\n{expected[i]}")
+                self.assertTrue(log == expected[i], f"{log}\n!=\n{expected[i]}")
 
     def test_execute_code_concat_result(self):
         code = (
@@ -54,7 +53,7 @@ class TestE2ESandboxedCodeExecutionAgent(TestCase):
 
         with SandboxedCodeExecutionAgent() as fixture:
             logs = fixture.execute_code(code)
-            actual = b''.join(logs).decode('utf-8')
+            actual = ''.join(logs)
 
         expected = '0\n1\n'
         self.assertTrue(actual == expected, f"{actual}\n!=\n{expected}")
@@ -67,7 +66,7 @@ class TestE2ESandboxedCodeExecutionAgent(TestCase):
 
         with SandboxedCodeExecutionAgent() as fixture:
             logs = fixture.execute_code(code)
-            actual = b''.join(logs).decode('utf-8')
+            actual = ''.join(logs)
 
         expected = '[1 2 3]\n'
 
