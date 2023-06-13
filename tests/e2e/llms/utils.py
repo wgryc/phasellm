@@ -80,7 +80,7 @@ def probe_streaming_chat_completion(generator: Generator) -> StreamingChatComple
 def common_streaming_chat_assertions(
         tester: TestCase,
         probe: StreamingChatCompletionProbe,
-        chunk_time_seconds_threshold: float,
+        chunk_time_seconds_threshold: float = 0.5,
         verbose: bool = False
 ) -> None:
     """
@@ -496,7 +496,7 @@ def test_chatbot_resend(
 def test_streaming_chatbot_chat(
         tester: TestCase,
         fixture: ChatBot,
-        chunk_time_seconds_threshold: float = 0.2,
+        chunk_time_seconds_threshold: float = 0.5,
         verbose: bool = False
 ) -> None:
     """

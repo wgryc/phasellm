@@ -1,6 +1,5 @@
 import os
 import shutil
-import time
 
 from pathlib import Path
 
@@ -10,13 +9,7 @@ import docker.errors
 
 from phasellm.exceptions import LLMCodeException
 
-from phasellm.agents import CodeExecutionAgent, SandboxedCodeExecutionAgent, EmailSenderAgent, NewsSummaryAgent
-
-
-class TestE2ECodeExecutionAgent(TestCase):
-
-    def test_execute_code(self):
-        pass
+from phasellm.agents import SandboxedCodeExecutionAgent
 
 
 class TestE2ESandboxedCodeExecutionAgent(TestCase):
@@ -113,8 +106,6 @@ class TestE2ESandboxedCodeExecutionAgent(TestCase):
         # Get the container name for the next assertions
         container_name = fixture._container.name
 
-        print(fixture._client.api.adapters)
-
         # Close the client & container
         fixture.close()
 
@@ -179,21 +170,3 @@ class TestE2ESandboxedCodeExecutionAgent(TestCase):
             logs = fixture.execute_code(code_2, stream=False, auto_stop_container=True)
             self.assertTrue(logs == expected, f"\n{logs}\n!=\n{expected}")
             self.assertTrue(fixture._container is None, f"Container should be None, got {fixture._container}")
-
-
-class TestE2EEmailSenderAgent(TestCase):
-
-    def test_send_plain_email(self):
-        pass
-
-    def test_send_plain_email_deprecated(self):
-        pass
-
-
-class TestE2ENewsSummaryAgent(TestCase):
-
-    def test_get_query(self):
-        pass
-
-    def test_get_query_deprecated(self):
-        pass

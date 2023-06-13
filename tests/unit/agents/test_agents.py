@@ -2,11 +2,28 @@ from unittest import TestCase
 
 from unittest.mock import patch
 
-from phasellm.agents import SandboxedCodeExecutionAgent, EmailSenderAgent, NewsSummaryAgent
+from phasellm.agents import CodeExecutionAgent, SandboxedCodeExecutionAgent, EmailSenderAgent, NewsSummaryAgent
 
 
 class TestCodeExecutionAgent(TestCase):
-    pass
+
+    def test_execute_code(self):
+        """
+        Tests that the CodeExecutionAgent can execute code.
+        Returns:
+
+        """
+        fixture = CodeExecutionAgent()
+
+        code = (
+            "print('Hello, world!')\n"
+        )
+
+        expected = 'Hello, world!\n'
+
+        actual = fixture.execute_code(code)
+
+        self.assertTrue(actual == expected, f"{actual}\n!=\n{expected}")
 
 
 class TestSandboxedCodeExecutionAgent(TestCase):
@@ -124,6 +141,10 @@ class TestEmailSenderAgent(TestCase):
             "send_plain_email was not called with the correct arguments."
         )
 
+    def test_send_plain_email(self):
+        # TODO consider mocking networking calls and making assertions on s.send_message()
+        pass
+
 
 class TestNewsSummaryAgent(TestCase):
 
@@ -148,3 +169,7 @@ class TestNewsSummaryAgent(TestCase):
             get_query_mock.called_with(query='test', days_back=0, include_descriptions=True, max_articles=1),
             "get_query was not called with the correct arguments."
         )
+
+    def test_get_query(self):
+        # TODO consider mocking networking calls and making assertions on string output.
+        pass

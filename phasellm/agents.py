@@ -445,7 +445,7 @@ class EmailSenderAgent(Agent):
         """
         # TODO deprecating this to be more Pythonic with naming conventions.
         warn('sendPlainEmail() is deprecated. Use send_plain_email() instead.')
-        self.send_plain_email(recipient_email, subject, content)
+        self.send_plain_email(recipient_email=recipient_email, subject=subject, content=content)
 
     def send_plain_email(self, recipient_email: str, subject: str, content: str) -> None:
         """
@@ -509,7 +509,12 @@ class NewsSummaryAgent(Agent):
         """
         # TODO deprecating this to be more Pythonic with naming conventions.
         warn('getQuery() is deprecated. Use get_query() instead.')
-        return self.get_query(query, days_back, include_descriptions, max_articles)
+        return self.get_query(
+            query=query,
+            days_back=days_back,
+            include_descriptions=include_descriptions,
+            max_articles=max_articles
+        )
 
     def get_query(
             self,
