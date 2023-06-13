@@ -2,6 +2,7 @@
 Agents to help with workflows.
 """
 
+import re
 import os
 import sys
 import docker
@@ -12,13 +13,15 @@ from io import StringIO
 
 from pathlib import Path
 
-from typing import Generator, Union
-
 from abc import ABC, abstractmethod
 
 from contextlib import contextmanager
 
 from datetime import datetime, timedelta
+
+from docker.models.containers import Container
+
+from typing import Generator, Union, Dict, List, Optional
 
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -108,7 +111,7 @@ class SandboxedCodeExecutionAgent(Agent):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
-        Closes the docker client.
+        Waits for the container to exit, removes it, and closes the docker client.
         """
         self.client.close()
 
@@ -119,28 +122,86 @@ class SandboxedCodeExecutionAgent(Agent):
         if not os.path.exists(self.scratch_dir):
             os.makedirs(self.scratch_dir)
 
-    def _code_to_temp_file(self, code: str) -> None:
+    def _write_code_file(self, code: str) -> None:
         """
         Writes the code to a temporary file so that it can be volume mounted to a docker container.
         """
-        self._create_scratch_dir()
         with open(os.path.join(self.scratch_dir, self.CODE_FILENAME), 'w') as f:
             f.write(code)
+
+    def _write_requirements_file(self, packages: List[str]) -> None:
+        """
+        Writes a requirements.txt file to the scratch directory.
+        """
+        with open(os.path.join(self.scratch_dir, 'requirements.txt'), 'w') as f:
+            for package in packages:
+                f.write(f'{package}\n')
+
+    @staticmethod
+    def _modules_to_packages(code: str) -> List[str]:
+        """
+        Scans the code for modules and maps them to a package. If no package is specified in the mapping whitelist,
+        then the package is ignored.
+        """
+        module_package_mappings_whitelist = {
+            "numpy": "numpy",
+            "pandas": "pandas",
+            "scipy": "scipy",
+            "sklearn": "scikit-learn",
+            "matplotlib": "matplotlib",
+            "seaborn": "seaborn",
+            "statsmodels": "statsmodels"
+        }
+        pattern = re.compile(r"(?:(?<=^import\s)|(?<=^from\s))\w+", flags=re.MULTILINE)
+        modules = pattern.findall(code)
+
+        final_packages = []
+        for module in modules:
+            try:
+                if module_package_mappings_whitelist[module] is not None:
+                    final_packages.append(module_package_mappings_whitelist[module])
+            except KeyError:
+                pass
+        return final_packages
 
     def execute_code(self, code: str) -> Generator:
         """
         Runs a docker container with the specified image and command.
         """
-        self._code_to_temp_file(code)
+        self._create_scratch_dir()
+        packages = self._modules_to_packages(code)
+        self._write_requirements_file(packages)
+        self._write_code_file(code)
 
-        # TODO consider implementing a procedure for installing python packages.
-        return self.client.containers.run(
+        # Prepare the command.
+        requirements_command = None
+        if len(packages) > 0:
+            requirements_command = 'pip install -r code/requirements.txt'
+        python_command = f'python code/{self.CODE_FILENAME}'
+
+        container: Container = self.client.containers.run(
             image=self.docker_image,
-            command=f'python code/{self.CODE_FILENAME}',
             volumes={Path(self.scratch_dir).absolute(): {'bind': '/code', 'mode': 'rw'}},
-            stream=True,
-            auto_remove=True
+            detach=True,
+            tty=True
         )
+
+        if requirements_command is not None:
+            res = container.exec_run(requirements_command)
+            if res.exit_code != 0:
+                raise LLMCodeException(code, res.output.decode('utf-8'))
+
+        res = container.exec_run(python_command, stream=True)
+
+        try:
+            while True:
+                line = next(res.output)
+                yield line
+        except StopIteration:
+            pass
+
+        container.stop()
+        container.remove()
 
 
 class EmailSenderAgent(Agent):

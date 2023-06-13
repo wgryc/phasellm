@@ -21,7 +21,7 @@ class TestE2ESandboxedCodeExecutionAgent(TestCase):
         Runs before every test.
         """
         # Set the temp_path for the agent to use.
-        self.scratch_dir = Path('.tmp')
+        self.scratch_dir = Path('./.tmp')
 
     def tearDown(self) -> None:
         """
@@ -32,27 +32,46 @@ class TestE2ESandboxedCodeExecutionAgent(TestCase):
             shutil.rmtree(self.scratch_dir)
 
     def test_execute_code_stream_result(self):
-        code = "print('Hello, world!')\nprint('Hello again')"
+        code = (
+            "import time\n"
+            "print('Hello, world!')\n"
+            "time.sleep(1)\n"
+            "print('Hello again')"
+        )
 
         expected = ['Hello, world!\n', 'Hello again\n']
         with SandboxedCodeExecutionAgent(scratch_dir=self.scratch_dir) as fixture:
             logs = fixture.execute_code(code)
             for i, log in enumerate(logs):
                 actual = log.decode('utf-8')
-                self.assertTrue(actual == expected[i], f"{actual} != {expected[i]}")
+                self.assertTrue(actual == expected[i], f"{actual}\n!=\n{expected[i]}")
 
     def test_execute_code_concat_result(self):
-        code = "print('0')\nprint('1')"
+        code = (
+            "print('0')\n"
+            "print('1')"
+        )
 
         with SandboxedCodeExecutionAgent() as fixture:
             logs = fixture.execute_code(code)
             actual = b''.join(logs).decode('utf-8')
 
         expected = '0\n1\n'
-        self.assertTrue(actual == expected, f"{actual} != {expected}")
+        self.assertTrue(actual == expected, f"{actual}\n!=\n{expected}")
 
     def test_execute_code_external_package(self):
-        pass
+        code = (
+            'import numpy as np\n'
+            'print(np.array([1, 2, 3]))'
+        )
+
+        with SandboxedCodeExecutionAgent() as fixture:
+            logs = fixture.execute_code(code)
+            actual = b''.join(logs).decode('utf-8')
+
+        expected = '[1 2 3]\n'
+
+        self.assertTrue(actual == expected, f"{actual}\n!=\n{expected}")
 
 
 class TestE2EEmailSenderAgent(TestCase):
