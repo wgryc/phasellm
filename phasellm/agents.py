@@ -13,6 +13,8 @@ from io import StringIO
 
 from pathlib import Path
 
+from warnings import warn
+
 from abc import ABC, abstractmethod
 
 from contextlib import contextmanager
@@ -175,7 +177,7 @@ class SandboxedCodeExecutionAgent(Agent):
         """
         Runs When entering the context manager.
         Returns:
-
+            SandboxedCodeExecutionAgent()
         """
         return self
 
@@ -183,23 +185,26 @@ class SandboxedCodeExecutionAgent(Agent):
         """
         Runs when exiting the context manager.
         Args:
-            exc_type:
-            exc_val:
-            exc_tb:
+            exc_type: The exception type.
+            exc_val: The exception value.
+            exc_tb: The exception traceback.
 
         Returns:
 
         """
         self.close()
 
-    def _ping_client(self):
+    def _ping_client(self) -> None:
         """
         Pings the docker client to make sure it's running.
+
         Returns:
 
+        Raises:
+            :py:class:`docker.errors.APIError`
+                If the server returns an error.
         """
-        if not self._client.ping():
-            raise ConnectionError('Docker is not running. Please start docker.')
+        self._client.ping()
 
     def _create_scratch_dir(self) -> None:
         """
@@ -240,10 +245,10 @@ class SandboxedCodeExecutionAgent(Agent):
         Scans the code for modules and maps them to a package. If no package is specified in the mapping whitelist,
         then the package is ignored.
         Args:
-            code:
+            code: The code to scan for modules.
 
         Returns:
-
+            A list of packages to install in the sandboxed environment.
         """
 
         modules = self._module_regex.findall(code)
@@ -277,9 +282,14 @@ class SandboxedCodeExecutionAgent(Agent):
         return ExecCommands(requirements=requirements_command, python=python_command)
 
     @staticmethod
-    def _handle_exec_errors(output: str, exit_code: int, code: str):
+    def _handle_exec_errors(output: str, exit_code: int, code: str) -> None:
         """
         Handles errors that occur during code execution.
+        Args:
+            output: The output of the code execution.
+            exit_code: The exit code of the code execution.
+            code: The code that was executed.
+
         Returns:
 
         """
@@ -335,7 +345,7 @@ class SandboxedCodeExecutionAgent(Agent):
             if auto_stop_container:
                 self.stop_container()
 
-    def close(self):
+    def close(self) -> None:
         """
         Stops all containers and closes client sessions. This should be called when you're done using the agent.
 
@@ -396,21 +406,22 @@ class SandboxedCodeExecutionAgent(Agent):
 
 
 class EmailSenderAgent(Agent):
-    """
-    Send emails via an SMTP server.
-    """
 
     def __init__(self, sender_name: str, smtp: str, sender_address: str, password: str, port: int, name: str = ''):
         """
-        Initialize an EmailSenderAgent object.
+        Create an EmailSenderAgent.
 
-        Keyword arguments:
-        sender_name -- name of the sender (i.e., "Wojciech")
-        smtp -- the smtp server (e.g., smtp.gmail.com)
-        sender_address -- the sender's email address
-        password -- the password for the email account
-        port -- the port used by the SMTP server
+        Sends emails via an SMPT server.
+
+        Args:
+            sender_name: Name of the sender (i.e., "Wojciech")
+            smtp: The smtp server (e.g., smtp.gmail.com)
+            sender_address: The sender's email address
+            password: The password for the email account
+            port: The port used by the SMTP server
+            name: The name of the agent (optional)
         """
+
         super().__init__(name=name)
         self.sender_name = sender_name
         self.smtp = smtp
@@ -422,18 +433,30 @@ class EmailSenderAgent(Agent):
         return f"EmailSenderAgent(name={self.name})"
 
     def sendPlainEmail(self, recipient_email: str, subject: str, content: str) -> None:
+        """
+        DEPRECATED: see send_plain_email
+        Args:
+            recipient_email: The person receiving the email
+            subject: Email subject
+            content: The plain text context for the email
+
+        Returns:
+
+        """
         # TODO deprecating this to be more Pythonic with naming conventions.
-        print('sendPlainEmail() is deprecated. Use send_plain_email instead.')
+        warn('sendPlainEmail() is deprecated. Use send_plain_email instead.')
         self.send_plain_email(recipient_email, subject, content)
 
     def send_plain_email(self, recipient_email: str, subject: str, content: str) -> None:
         """
         Sends an email encoded as plain text.
+        Args:
+            recipient_email: The person receiving the email
+            subject: Email subject
+            content: The plain text context for the email
 
-        Keywords arguments:
-        recipient_email -- the person receiving the email
-        subject -- email subject
-        content -- the plain text context for the email
+        Returns:
+
         """
         s = smtplib.SMTP(host=self.smtp, port=self.port)
         s.ehlo()
@@ -450,13 +473,15 @@ class EmailSenderAgent(Agent):
 
 
 class NewsSummaryAgent(Agent):
-    """
-    newsapi.org agent. Takes a query, calls the API, and gets news articles.
-    """
 
     def __init__(self, apikey: str = None, name: str = ''):
         """
-        Initializes the agent. Requires a newsapi.org API key.
+        Create a NewsSummaryAgent.
+
+        Takes a query, calls the API, and gets news articles.
+        Args:
+            apikey: The API key for newsapi.org
+            name: The name of the agent (optional)
         """
         super().__init__(name=name)
         self.apikey = apikey
@@ -471,8 +496,19 @@ class NewsSummaryAgent(Agent):
             include_descriptions: bool = True,
             max_articles: int = 25
     ) -> str:
+        """
+        DEPRECATED: see get_query
+        Args:
+            query: What keyword to look for in news articles
+            days_back: How far back we go with the query
+            include_descriptions: Will include article descriptions as well as titles; otherwise only titles
+            max_articles: How many articles to include in the summary
+
+        Returns:
+            A news summary string
+        """
         # TODO deprecating this to be more Pythonic with naming conventions.
-        print('getQuery() is deprecated. Use get_query instead.')
+        warn('getQuery() is deprecated. Use get_query instead.')
         return self.get_query(query, days_back, include_descriptions, max_articles)
 
     def get_query(
@@ -486,11 +522,14 @@ class NewsSummaryAgent(Agent):
         Gets all articles for a query for the # of days back. Returns a String with all the information so that an LLM
         can summarize it. Note that obtaining too many articles will likely cause an issue with prompt length.
 
-        Keyword arguments:
-        query -- what keyword to look for in news articles
-        days_back -- how far back we go with the query
-        include_descriptions -- will include article descriptions as well as titles; otherwise only titles 
-        max_articles -- how many articles to include in the summary
+        Args:
+            query: What keyword to look for in news articles
+            days_back: How far back we go with the query
+            include_descriptions: Will include article descriptions as well as titles; otherwise only titles
+            max_articles: How many articles to include in the summary
+
+        Returns:
+            A news summary string
         """
 
         start_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
