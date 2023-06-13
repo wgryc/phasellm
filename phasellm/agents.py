@@ -120,7 +120,7 @@ class SandboxedCodeExecutionAgent(Agent):
             name: str = '',
             docker_image: str = 'python:3',
             scratch_dir: Union[Path, str] = None,
-            module_package_mappings_whitelist: Dict[str, str] = None
+            module_package_mappings: Dict[str, str] = None
     ):
         """
         Creates a new SandboxedCodeExecutionAgent.
@@ -128,17 +128,59 @@ class SandboxedCodeExecutionAgent(Agent):
         This agent is for executing arbitrary code in a sandboxed environment. We choose to use docker for this, so if
         you're running this code, you'll need to have docker installed and running.
 
+        Examples:
+                >>> from typing import Generator
+                >>> from phasellm.agents import SandboxedCodeExecutionAgent
+            Managing the docker client yourself:
+                >>> agent = SandboxedCodeExecutionAgent()
+                >>> logs = agent.execute_code('print("Hello World!")')
+                >>> for log in logs:
+                ...     print(log)
+                Hello World!
+                >>> agent.close()
+            Using the context manager:
+                >>> with SandboxedCodeExecutionAgent() as agent:
+                ...     logs: Generator = agent.execute_code('print("Hello World!")')
+                ...     for log in logs:
+                ...         print(log)
+                Hello World!
+            Code with custom packages is possible! Note that the package must exist in the module_package_mappings
+            dictionary:
+                >>> module_package_mappings = {
+                ...     "numpy": "numpy"
+                ...}
+                >>> with SandboxedCodeExecutionAgent(module_package_mappings=module_package_mappings) as agent:
+                ...     logs = agent.execute_code('import numpy as np; print(np.__version__)')
+                ...     for log in logs:
+                ...         print(log)
+                1.24.3
+            Disable log streaming (waits for code to finish executing before returning logs):
+                >>> with SandboxedCodeExecutionAgent() as agent:
+                ...     logs = agent.execute_code('print("Hello World!")', stream=False)
+                ...     print(logs)
+                Hello World!
+            Custom docker image:
+                >>> with SandboxedCodeExecutionAgent(docker_image='python:3.7') as agent:
+                Hello World!
+            Custom scratch directory:
+                >>> with SandboxedCodeExecutionAgent(scratch_dir='my_dir') as agent:
+            Stop container after each call to agent.execute_code()
+                >>> with SandboxedCodeExecutionAgent() as agent:
+                ...     logs = agent.execute_code('print("Hello 1")', auto_stop_container=True)
+                ...     assert agent._container is None
+                ...     logs = agent.execute_code('print("Hello 2")', auto_stop_container=True)
+                ...     assert agent._container is None
         Args:
             name: Name of the agent.
             docker_image: Docker image to use for the sandboxed environment.
             scratch_dir: Scratch directory to use for copying files (bind mounting) to the sandboxed environment.
-            module_package_mappings_whitelist: Dictionary of module to package mappings. This is used to determine
+            module_package_mappings: Dictionary of module to package mappings. This is used to determine
             which packages are allowed to be installed in the sandboxed environment.
         """
         super().__init__(name=name)
 
-        if module_package_mappings_whitelist is None:
-            module_package_mappings_whitelist = {
+        if module_package_mappings is None:
+            module_package_mappings = {
                 "numpy": "numpy",
                 "pandas": "pandas",
                 "scipy": "scipy",
@@ -149,7 +191,7 @@ class SandboxedCodeExecutionAgent(Agent):
                 "tensorflow": "tensorflow",
                 "torch": "torch",
             }
-        self.module_package_mappings_whitelist = module_package_mappings_whitelist
+        self.module_package_mappings = module_package_mappings
 
         self.docker_image = docker_image
 
@@ -256,8 +298,8 @@ class SandboxedCodeExecutionAgent(Agent):
         final_packages = []
         for module in modules:
             try:
-                if self.module_package_mappings_whitelist[module] is not None:
-                    final_packages.append(self.module_package_mappings_whitelist[module])
+                if self.module_package_mappings[module] is not None:
+                    final_packages.append(self.module_package_mappings[module])
             except KeyError:
                 pass
         return final_packages
@@ -299,7 +341,7 @@ class SandboxedCodeExecutionAgent(Agent):
     def _execute(self, code: str, auto_stop_container: bool) -> Generator:
         """
         Starts the container, installs packages defined in the code (if they are provided in the
-        module_package_mappings_whitelist), and executes the provided code inside the container.
+        module_package_mappings), and executes the provided code inside the container.
         Args:
             code: The code string to execute.
             auto_stop_container: Whether or not to automatically stop the container after execution.
