@@ -91,8 +91,10 @@ def _get_stop_sequences_from_messages(messages: List[Message]):
 
 def _format_sse(content: str) -> str:
     """
-    Returns the string that indicates that the response should be formatted as an SSE.
+    Returns the string that indicates that the response should be formatted as an SSE. Additionally handles \n
+    characters gracefully.
     """
+    content = content.replace("\n", "\ndata:")
     return f"data: {content}\n\n"
 
 
