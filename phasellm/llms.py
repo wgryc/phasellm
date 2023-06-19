@@ -48,6 +48,16 @@ class EnhancedMessage(Message):
 
 
 def _fill_variables(source: str, **kwargs) -> str:
+    """
+    Fills variables in a string with the values provided in kwargs.
+    Args:
+        source: The string to fill.
+        **kwargs: The values to fill the string with.
+
+    Returns:
+        The filled string.
+
+    """
     # Collect the variables present in the source that need to be filled.
     variables = re.findall(variable_regex, source)
     # Create a copy of the source to be filled.
@@ -64,6 +74,12 @@ def _clean_messages_to_prompt(messages: List[Message]) -> str:
     Converts an array of messages in the form {"role": <str>, "content":<str>} into a String.
 
     This is influenced by the OpenAI chat completion API.
+    Args:
+        messages: The messages to convert.
+
+    Returns:
+        The messages as a String.
+
     """
     return "\n".join([f"{str(m['role'])}: {str(m['content'])}" for m in messages])
 
@@ -71,6 +87,12 @@ def _clean_messages_to_prompt(messages: List[Message]) -> str:
 def _truncate_completion(completion: str) -> str:
     """
     Truncates a completion to the first newline character.
+    Args:
+        completion: The completion to truncate.
+
+    Returns:
+        The truncated completion.
+
     """
     newline_location = completion.find("\n")
     if newline_location > 0:
@@ -78,10 +100,16 @@ def _truncate_completion(completion: str) -> str:
     return completion
 
 
-def _get_stop_sequences_from_messages(messages: List[Message]):
+def _get_stop_sequences_from_messages(messages: List[Message]) -> List[str]:
     """
     Generates a list of strings of stop sequences from an array of messages in the form
     {"role": <str>, "content":<str>}.
+    Args:
+        messages: The messages to generate stop sequences from.
+
+    Returns:
+        A list of stop sequences.
+
     """
     roles = set()
     for m in messages:
@@ -91,24 +119,37 @@ def _get_stop_sequences_from_messages(messages: List[Message]):
 
 def _format_sse(content: str) -> str:
     """
-    Returns the string that indicates that the response should be formatted as an SSE. Additionally handles \n
+    Returns the string that indicates that the response should be formatted as an SSE. Additionally handles '\n'
     characters gracefully.
+    Args:
+        content: The content to format.
+
+    Returns:
+        The formatted content.
+
     """
+    # TODO consider adding id and event fields to the SSE.
     content = content.replace("\n", "\ndata:")
     return f"data: {content}\n\n"
 
 
 def _conditional_format_sse_response(content: str, format_sse: bool) -> str:
+    """
+    Conditionally formats the response as an SSE.
+    Args:
+        content: The content to format.
+        format_sse: Whether or not to format the response as an SSE.
+
+    Returns:
+        The formatted content.
+
+    """
     if format_sse:
         return _format_sse(content)
     return content
 
 
 class LanguageModelWrapper(ABC):
-    """
-    Abstract Class for interacting with large language models.
-    """
-
     # default chat completion preamble
     chat_completion_preamble: str = (
         "You are a friendly chat assistant. "
@@ -116,6 +157,9 @@ class LanguageModelWrapper(ABC):
     )
 
     def __init__(self):
+        """
+        Abstract Class for interacting with large language models.
+        """
         pass
 
     def __repr__(self):
@@ -127,6 +171,14 @@ class LanguageModelWrapper(ABC):
         Takes an array of messages in the form {"role": <str>, "content":<str>} and generate a response.
 
         This is influenced by the OpenAI chat completion API.
+        Args:
+            messages: The messages to generate a response from.
+            append_role: The role to append to the end of the prompt.
+
+        Returns:
+            The chat completion string or generator, depending on if the class is implemented as a streaming language
+            model wrapper.
+
         """
         pass
 
@@ -134,6 +186,13 @@ class LanguageModelWrapper(ABC):
     def text_completion(self, prompt: str) -> Union[str, Generator]:
         """
         Standardizes text completion for large language models.
+        Args:
+            prompt: The prompt to generate a response from.
+
+        Returns:
+            The text completion string or generator, depending on if the class is implemented as a streaming language
+            model wrapper.
+
         """
         pass
 
@@ -145,6 +204,14 @@ class LanguageModelWrapper(ABC):
     ) -> str:
         """
         Prepares the prompt for an LLM API call.
+        Args:
+            messages: The messages to prepare the prompt from.
+            append_role: The role to append to the end of the prompt.
+            include_preamble: Whether or not to include the chat completion preamble.
+
+        Returns:
+            The prepared prompt.
+
         """
         # Convert the messages to a prompt.
         prompt_text = _clean_messages_to_prompt(messages)
@@ -162,12 +229,16 @@ class LanguageModelWrapper(ABC):
 
 
 class StreamingLanguageModelWrapper(LanguageModelWrapper):
-    """
-    Abstract class for streaming language models. Extends the regular LanguageModelWrapper.
-    """
 
     @abstractmethod
     def __init__(self, format_sse: bool, append_stop_token: bool = True, stop_token: str = STOP_TOKEN):
+        """
+        Abstract class for streaming language models. Extends the regular LanguageModelWrapper.
+        Args:
+            format_sse: Whether or not to format the response as an SSE.
+            append_stop_token: Whether or not to append a stop token to the end of the prompt.
+            stop_token: The stop token to append to the end of the prompt.
+        """
         super().__init__()
         self.format_sse = format_sse
         self.append_stop_token = append_stop_token
@@ -175,12 +246,14 @@ class StreamingLanguageModelWrapper(LanguageModelWrapper):
 
 
 class ChatPrompt:
-    """
-    This is used to generate messages for a ChatBot. Like the Prompt class, it enables you to to have variables that get
-    replaced. This can be done for roles and messages.
-    """
 
     def __init__(self, messages: List[Message] = None):
+        """
+        This is used to generate messages for a ChatBot. Like the Prompt class, it enables you to to have variables that
+        get replaced. This can be done for roles and messages.
+        Args:
+            messages: The messages to generate a chat prompt from.
+        """
         # Set the messages
         if messages is None:
             self.messages = []
@@ -191,9 +264,22 @@ class ChatPrompt:
         return "ChatPrompt()"
 
     def chat_repr(self):
+        """
+        Returns a string representation of the chat prompt.
+        Returns:
+            The string representation of the chat prompt.
+        """
         return _clean_messages_to_prompt(self.messages)
 
     def fill(self, **kwargs):
+        """
+        Fills the variables in the chat prompt.
+        Args:
+            **kwargs: The variables to fill.
+
+        Returns:
+            The filled chat prompt.
+        """
         filled_messages = []
         for i in range(0, len(self.messages)):
             new_role = _fill_variables(self.messages[i]["role"], **kwargs)
@@ -204,18 +290,19 @@ class ChatPrompt:
 
 
 class Prompt:
-    """
-    Prompts are used to generate text completions. Prompts can be simple Strings. They can also include variables
-    surrounded by curly braces.
-
-    For example:
-    > Hello {name}!
-
-    In this case, 'name' can be filled using the fill() function. This makes it easier to loop through prompts
-    that follow a specific pattern or structure.
-    """
 
     def __init__(self, prompt: str):
+        """
+        Prompts are used to generate text completions. Prompts can be simple Strings. They can also include variables
+        surrounded by curly braces.
+
+        Example:
+            >>> Prompt("Hello {name}!")
+            In this case, 'name' can be filled using the fill() function. This makes it easier to loop through prompts
+            that follow a specific pattern or structure.
+        Args:
+            prompt: The prompt to generate a text completion from.
+        """
         self.prompt = prompt
 
     def __repr__(self):
@@ -224,12 +311,20 @@ class Prompt:
     def get_prompt(self):
         """
         Return the raw prompt command (i.e., does not fill in variables.)
+        Returns:
+            The raw prompt command.
         """
         return self.prompt
 
     def fill(self, **kwargs):
         """
         Return a prompt with variables filled in.
+        Args:
+            **kwargs: The variables to fill.
+
+        Returns:
+            The filled prompt.
+
         """
         return _fill_variables(source=self.prompt, **kwargs)
 
