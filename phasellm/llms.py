@@ -156,14 +156,14 @@ class LanguageModelWrapper(ABC):
         "You are speaking to the 'user' below and will respond at the end, where it says 'assistant'.\n"
     )
 
-    def __init__(self, temperature: float, **kwargs: Any):
+    def __init__(self, temperature: Optional[float] = None, **kwargs: Any):
         """
         Abstract Class for interacting with large language models.
         Args:
             temperature: The temperature to use for the language model.
             **kwargs: Keyword arguments to pass to the underlying language model APIs.
         """
-        self.temperature: float = temperature
+        self.temperature: Optional[float] = temperature
         self.kwargs: Any = kwargs
 
     def __repr__(self):
@@ -383,19 +383,18 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
             include_preamble=True
         )
 
-        headers = {
-            "Authorization": f"Bearer {self.apikey}"
+        # https://huggingface.co/docs/api-inference/detailed_parameters#text-generation-task
+        headers = {"Authorization": f"Bearer {self.apikey}"}
+        payload = {
+            "inputs": prompt_text,
+            **self.kwargs
         }
+        if self.temperature:
+            payload["temperature"] = self.temperature
 
-        response = requests.post(
-            self.model_url,
-            headers=headers,
-            json={
-                "inputs": prompt_text
-            }
-        ).json()
+        response = requests.post(self.model_url, headers=headers, json=payload).json()
         new_text = response[0]['generated_text']
-
+        # TODO why do we only return the first line of text?
         # We only return the first line of text.
         return _truncate_completion(new_text)
 
@@ -409,8 +408,15 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
             The text completion.
 
         """
+        # https://huggingface.co/docs/api-inference/detailed_parameters#text-generation-task
         headers = {"Authorization": f"Bearer {self.apikey}"}
-        response = requests.post(self.model_url, headers=headers, json={"inputs": prompt}).json()
+        payload = {
+            "inputs": prompt,
+            **self.kwargs
+        }
+        if self.temperature:
+            payload["temperature"] = self.temperature
+        response = requests.post(self.model_url, headers=headers, json=payload).json()
         return response[0]['generated_text']
 
 
@@ -450,14 +456,21 @@ class BloomWrapper(LanguageModelWrapper):
             include_preamble=True
         )
 
+        # https://huggingface.co/docs/api-inference/detailed_parameters#text-generation-task
         headers = {"Authorization": f"Bearer {self.apikey}"}
-
-        response = requests.post(self.API_URL, headers=headers, json={"inputs": prompt_text}).json()
+        payload = {
+            "inputs": prompt_text,
+            **self.kwargs
+        }
+        if self.temperature:
+            payload["temperature"] = self.temperature
+        response = requests.post(self.API_URL, headers=headers, json=payload).json()
 
         all_text = response[0]['generated_text']
         new_text = all_text[len(prompt_text):]
 
         # We only return the first line of text.
+        # TODO why do we only return the first line of text?
         return _truncate_completion(new_text)
 
     def text_completion(self, prompt) -> str:
@@ -470,9 +483,16 @@ class BloomWrapper(LanguageModelWrapper):
             The text completion.
 
         """
+        # https://huggingface.co/docs/api-inference/detailed_parameters#text-generation-task
         headers = {"Authorization": f"Bearer {self.apikey}"}
+        payload = {
+            "inputs": prompt,
+            **self.kwargs
+        }
+        if self.temperature:
+            payload["temperature"] = self.temperature
 
-        response = requests.post(self.API_URL, headers=headers, json={"inputs": prompt}).json()
+        response = requests.post(self.API_URL, headers=headers, json=payload).json()
         all_text = response[0]['generated_text']
         return all_text[len(prompt):]
 
@@ -513,6 +533,28 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
     def __repr__(self):
         return f"StreamingOpenAIGPTWrapper(model={self.model})"
 
+    def _yield_response(self, response: dict) -> Generator:
+        """
+        Yields the response content. Can handle multiple API versions.
+        Args:
+            response: The response to yield text from.
+
+        Returns:
+            Text generator
+        """
+        for chunk in response:
+            text = None
+            if "text" in chunk["choices"][0]:
+                text = chunk["choices"][0]["text"]
+            elif "delta" in chunk["choices"][0] and "text" in chunk["choices"][0]["delta"]:
+                text = chunk["choices"][0]["delta"]["text"]
+            elif "delta" in chunk["choices"][0] and "content" in chunk["choices"][0]["delta"]:
+                text = chunk["choices"][0]["delta"]["content"]
+            if text:
+                yield _conditional_format_sse_response(content=text, format_sse=self.format_sse)
+        if self.format_sse and self.append_stop_token:
+            yield _format_sse(content=self.stop_token)
+
     def complete_chat(self, messages, append_role=None) -> Generator:
         """
         Completes chat with OpenAI. If using GPT 3.5 or 4, will simply send the list of {"role": <str>, "content":<str>}
@@ -529,38 +571,28 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             The chat completion generator.
 
         """
+        # https://platform.openai.com/docs/api-reference/chat/create
+        kwargs = {
+            "model": self.model,
+            "stream": True,
+            **self.kwargs
+        }
+        if self.temperature:
+            kwargs["temperature"] = self.temperature
         if ('gpt-4' in self.model) or ('gpt-3.5' in self.model):
-            response = openai.ChatCompletion.create(
-                model=self.model,
-                messages=messages,
-                stream=True
-            )
-            for chunk in response:
-                if "content" in chunk["choices"][0]["delta"]:
-                    content = chunk["choices"][0]["delta"]["content"]
-                    yield _conditional_format_sse_response(content=content, format_sse=self.format_sse)
-            if self.format_sse and self.append_stop_token:
-                yield _format_sse(content=self.stop_token)
+            kwargs["messages"] = messages
+            response = openai.ChatCompletion.create(**kwargs)
+            yield from self._yield_response(response)
         else:
             prompt_text = self.prep_prompt_from_messages(
                 messages=messages,
                 append_role=append_role,
                 include_preamble=False
             )
-
-            response = openai.Completion.create(
-                model=self.model,
-                prompt=prompt_text,
-                stop=_get_stop_sequences_from_messages(messages),
-                stream=True
-            )
-
-            for chunk in response:
-                if "text" in chunk["choices"][0]["delta"]:
-                    text = chunk["choices"][0]["delta"]["text"]
-                    yield _conditional_format_sse_response(content=text, format_sse=self.format_sse)
-            if self.format_sse and self.append_stop_token:
-                yield _format_sse(content=self.stop_token)
+            kwargs["prompt"] = prompt_text
+            kwargs["stop"] = _get_stop_sequences_from_messages(messages)
+            response = openai.Completion.create(**kwargs)
+            yield from self._yield_response(response)
 
     # TODO Consider error handling for chat models.
     def text_completion(self, prompt, stop_sequences=None) -> Generator:
@@ -578,27 +610,20 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
         """
         if stop_sequences is None:
             stop_sequences = []
+        # https://platform.openai.com/docs/api-reference/completions/create
+        kwargs = {
+            "model": self.model,
+            "prompt": prompt,
+            "stream": True,
+            **self.kwargs
+        }
+        if self.temperature:
+            kwargs["temperature"] = self.temperature
+        if len(stop_sequences) != 0:
+            kwargs["stop"] = stop_sequences
+        response = openai.Completion.create(**kwargs)
 
-        if len(stop_sequences) == 0:
-            response = openai.Completion.create(
-                model=self.model,
-                prompt=prompt,
-                stream=True
-            )
-        else:
-            response = openai.Completion.create(
-                model=self.model,
-                prompt=prompt,
-                stop=stop_sequences,
-                stream=True
-            )
-
-        for chunk in response:
-            if "text" in chunk["choices"][0]:
-                text = chunk["choices"][0]["text"]
-                yield _conditional_format_sse_response(content=text, format_sse=self.format_sse)
-        if self.format_sse and self.append_stop_token:
-            yield _format_sse(content=self.stop_token)
+        yield from self._yield_response(response)
 
 
 class OpenAIGPTWrapper(LanguageModelWrapper):
@@ -633,27 +658,25 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             The chat completion.
 
         """
-
+        # https://platform.openai.com/docs/api-reference/chat/create
+        kwargs = {
+            "model": self.model,
+            **self.kwargs
+        }
+        if self.temperature:
+            kwargs["temperature"] = self.temperature
         if ('gpt-4' in self.model) or ('gpt-3.5' in self.model):
-            response = openai.ChatCompletion.create(
-                model=self.model,
-                messages=messages
-            )
-            top_response_content = response['choices'][0]['message']['content']
-            return top_response_content
+            kwargs["messages"] = messages
+            response = openai.ChatCompletion.create(**kwargs)
+            return response['choices'][0]['message']['content']
         else:
             prompt_text = self.prep_prompt_from_messages(
                 messages=messages,
                 append_role=append_role,
                 include_preamble=False
             )
-
-            response = openai.Completion.create(
-                model=self.model,
-                prompt=prompt_text,
-                stop=_get_stop_sequences_from_messages(messages)
-            )
-
+            kwargs["prompt"] = prompt_text
+            response = openai.Completion.create(**kwargs)
             return response['choices'][0]['text']
 
     # TODO Consider error handling for chat models.
@@ -670,18 +693,17 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
         """
         if stop_sequences is None:
             stop_sequences = []
-
-        if len(stop_sequences) == 0:
-            response = openai.Completion.create(
-                model=self.model,
-                prompt=prompt
-            )
-        else:
-            response = openai.Completion.create(
-                model=self.model,
-                prompt=prompt,
-                stop=stop_sequences
-            )
+        # https://platform.openai.com/docs/api-reference/completions/create
+        kwargs = {
+            "model": self.model,
+            "prompt": prompt,
+            **self.kwargs
+        }
+        if self.temperature:
+            kwargs["temperature"] = self.temperature
+        if len(stop_sequences) != 0:
+            kwargs["stop"] = stop_sequences
+        response = openai.Completion.create(**kwargs)
         return response['choices'][0]['text']
 
 
@@ -737,18 +759,21 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
             The text completion generator.
 
         """
+        # https://docs.anthropic.com/claude/reference/complete_post
         headers = {
             "X-API-Key": self.apikey,
             "Accept": "text/event-stream"
         }
-
         payload = {
             "prompt": prompt,
             "model": self.model,
             "max_tokens_to_sample": 500,
             "stop_sequences": stop_sequences,
-            "stream": True
+            "stream": True,
+            **self.kwargs
         }
+        if self.temperature:
+            payload["temperature"] = self.temperature
 
         resp = requests.post(self.API_URL, headers=headers, json=payload, stream=True)
         client = SSEClient(resp)
@@ -846,17 +871,20 @@ class ClaudeWrapper(LanguageModelWrapper):
         Returns:
 
         """
+        # https://docs.anthropic.com/claude/reference/complete_post
         headers = {
             "X-API-Key": self.apikey,
             "Accept": "application/json"
         }
-
         payload = {
             "prompt": prompt,
             "model": self.model,
             "max_tokens_to_sample": 500,
-            "stop_sequences": _get_stop_sequences_from_messages(messages)
+            "stop_sequences": _get_stop_sequences_from_messages(messages),
+            **self.kwargs
         }
+        if self.temperature:
+            payload["temperature"] = self.temperature
 
         resp = requests.post("https://api.anthropic.com/v1/complete", headers=headers, json=payload)
         return json.loads(resp.text)["completion"].strip()
@@ -912,9 +940,10 @@ class GPT2Wrapper(LanguageModelWrapper):
         """
         super().__init__(temperature=temperature, **kwargs)
         self.model_name = "GPT-2"
+        self.pipeline = pipeline('text-generation', model='gpt2')
 
     def __repr__(self):
-        return f"GPT2Wrapper()"
+        return f"GPT2Wrapper({self.model_name})"
 
     def complete_chat(self, messages, append_role=None, max_length=300) -> str:
         """
@@ -934,11 +963,18 @@ class GPT2Wrapper(LanguageModelWrapper):
             append_role=append_role,
             include_preamble=True
         )
-
-        generator = pipeline('text-generation', model='gpt2')
-        resps = generator(prompt_text, max_length=max_length, num_return_sequences=1)
-        resp = resps[0]['generated_text']
-        return resp[len(prompt_text):]  # Strip out the original text.
+        # https://huggingface.co/docs/transformers/v4.30.0/en/main_classes/text_generation#transformers.GenerationConfig
+        kwargs = {
+            "text_inputs": prompt_text,
+            "max_length": max_length,
+            "num_return_sequences": 1,
+            **self.kwargs
+        }
+        if self.temperature:
+            kwargs["temperature"] = self.temperature
+        res = self.pipeline(**kwargs)
+        res = res[0]['generated_text']
+        return res[len(prompt_text):]  # Strip out the original text.
 
     def text_completion(self, prompt, max_length=200) -> str:
         """
@@ -951,10 +987,17 @@ class GPT2Wrapper(LanguageModelWrapper):
             The text completion.
 
         """
-        generator = pipeline('text-generation', model='gpt2')
-        resps = generator(prompt, max_length=max_length, num_return_sequences=1)
-        resp = resps[0]['generated_text']
-        return resp[len(prompt):]  # Strip out the original text.
+        kwargs = {
+            "text_inputs": prompt,
+            "max_length": max_length,
+            "num_return_sequences": 1,
+            **self.kwargs
+        }
+        if self.temperature:
+            kwargs["temperature"] = self.temperature
+        res = self.pipeline(**kwargs)
+        res = res[0]['generated_text']
+        return res[len(prompt):]  # Strip out the original text.
 
 
 class DollyWrapper(LanguageModelWrapper):
@@ -968,8 +1011,13 @@ class DollyWrapper(LanguageModelWrapper):
         """
         super().__init__(temperature=temperature, **kwargs)
         self.model_name = 'dolly-v2-12b'
-        self.generate_text = pipeline(model="databricks/dolly-v2-12b", torch_dtype=torch.bfloat16,
-                                      trust_remote_code=True, device_map="auto")
+        self.pipeline = pipeline(
+            "text-generation",
+            model="databricks/dolly-v2-12b",
+            torch_dtype=torch.bfloat16,
+            trust_remote_code=True,
+            device_map="auto"
+        )
 
     def __repr__(self):
         return f"DollyWrapper(model={self.model_name})"
@@ -991,8 +1039,13 @@ class DollyWrapper(LanguageModelWrapper):
             append_role=append_role,
             include_preamble=True
         )
-
-        return self.generate_text(prompt_text)
+        kwargs = {
+            "text_inputs": prompt_text,
+            **self.kwargs
+        }
+        if self.temperature:
+            kwargs["temperature"] = self.temperature
+        return self.pipeline(**kwargs)
 
     def text_completion(self, prompt) -> str:
         """
@@ -1004,7 +1057,13 @@ class DollyWrapper(LanguageModelWrapper):
             The text completion.
 
         """
-        return self.generate_text(prompt)
+        kwargs = {
+            "text_inputs": prompt,
+            **self.kwargs
+        }
+        if self.temperature:
+            kwargs["temperature"] = self.temperature
+        return self.pipeline(**kwargs)
 
 
 class CohereWrapper(LanguageModelWrapper):
@@ -1019,8 +1078,8 @@ class CohereWrapper(LanguageModelWrapper):
             **kwargs: Keyword arguments to pass to the Cohere API.
         """
         super().__init__(temperature=temperature, **kwargs)
-        self.apikey = apikey
         self.model = model
+        self.co = cohere.Client(apikey)
 
     def __repr__(self):
         return f"CohereWrapper(model={self.model})"
@@ -1042,13 +1101,16 @@ class CohereWrapper(LanguageModelWrapper):
             append_role=append_role,
             include_preamble=False
         )
-
-        co = cohere.Client(self.apikey)
-        response = co.generate(
-            prompt=prompt_text,
-            max_tokens=300,
-            stop_sequences=_get_stop_sequences_from_messages(messages)
-        )
+        # https://docs.cohere.com/reference/generate
+        kwargs = {
+            "prompt": prompt_text,
+            "max_tokens": 300,
+            "stop_sequences": _get_stop_sequences_from_messages(messages),
+            **self.kwargs
+        }
+        if self.temperature:
+            kwargs["temperature"] = self.temperature
+        response = self.co.generate(**kwargs)
 
         resp = response.generations[0].text
 
@@ -1071,13 +1133,16 @@ class CohereWrapper(LanguageModelWrapper):
 
         if stop_sequences is None:
             stop_sequences = []
-
-        co = cohere.Client(self.apikey)
-        response = co.generate(
-            prompt=prompt,
-            max_tokens=300,
-            stop_sequences=stop_sequences
-        )
+        # https://docs.cohere.com/reference/generate
+        kwargs = {
+            "prompt": prompt,
+            "max_tokens": 300,
+            "stop_sequences": stop_sequences,
+            **self.kwargs
+        }
+        if self.temperature:
+            kwargs["temperature"] = self.temperature
+        response = self.co.generate(**kwargs)
         return response.generations[0].text
 
 
