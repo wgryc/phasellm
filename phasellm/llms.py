@@ -7,7 +7,7 @@ import json
 import requests
 
 # Typing imports
-from typing import Optional, List, Union, Generator
+from typing import Optional, List, Union, Generator, Any
 from typing_extensions import TypedDict
 
 # Abstract class imports
@@ -47,7 +47,7 @@ class EnhancedMessage(Message):
     log_time_seconds: float
 
 
-def _fill_variables(source: str, **kwargs) -> str:
+def _fill_variables(source: str, **kwargs: Any) -> str:
     """
     Fills variables in a string with the values provided in kwargs.
     Args:
@@ -156,11 +156,15 @@ class LanguageModelWrapper(ABC):
         "You are speaking to the 'user' below and will respond at the end, where it says 'assistant'.\n"
     )
 
-    def __init__(self):
+    def __init__(self, temperature: float, **kwargs: Any):
         """
         Abstract Class for interacting with large language models.
+        Args:
+            temperature: The temperature to use for the language model.
+            **kwargs: Keyword arguments to pass to the underlying language model APIs.
         """
-        pass
+        self.temperature: float = temperature
+        self.kwargs: Any = kwargs
 
     def __repr__(self):
         pass
@@ -231,15 +235,23 @@ class LanguageModelWrapper(ABC):
 class StreamingLanguageModelWrapper(LanguageModelWrapper):
 
     @abstractmethod
-    def __init__(self, format_sse: bool, append_stop_token: bool = True, stop_token: str = STOP_TOKEN):
+    def __init__(
+            self,
+            temperature: float,
+            format_sse: bool,
+            append_stop_token: bool = True,
+            stop_token: str = STOP_TOKEN,
+            **kwargs: Any):
         """
         Abstract class for streaming language models. Extends the regular LanguageModelWrapper.
         Args:
+            temperature: The temperature to use for the language model.
             format_sse: Whether or not to format the response as an SSE.
             append_stop_token: Whether or not to append a stop token to the end of the prompt.
             stop_token: The stop token to append to the end of the prompt.
+            **kwargs: Keyword arguments to pass to the underlying language model APIs.
         """
-        super().__init__()
+        super().__init__(temperature=temperature, **kwargs)
         self.format_sse = format_sse
         self.append_stop_token = append_stop_token
         self.stop_token = stop_token
@@ -271,7 +283,7 @@ class ChatPrompt:
         """
         return _clean_messages_to_prompt(self.messages)
 
-    def fill(self, **kwargs):
+    def fill(self, **kwargs: Any):
         """
         Fills the variables in the chat prompt.
         Args:
@@ -316,7 +328,7 @@ class Prompt:
         """
         return self.prompt
 
-    def fill(self, **kwargs):
+    def fill(self, **kwargs: Any):
         """
         Return a prompt with variables filled in.
         Args:
@@ -331,14 +343,22 @@ class Prompt:
 
 class HuggingFaceInferenceWrapper(LanguageModelWrapper):
 
-    def __init__(self, apikey, model_url="https://api-inference.huggingface.co/models/bigscience/bloom"):
+    def __init__(
+            self,
+            apikey,
+            model_url="https://api-inference.huggingface.co/models/bigscience/bloom",
+            temperature: float = None,
+            **kwargs: Any
+    ):
         """
         Wrapper for Hugging Face's Inference API. Requires access to Hugging Face's inference API.
         Args:
             apikey: The API key to access the Hugging Face Inference API.
             model_url: The model URL to use for the Hugging Face Inference API.
+            temperature: The temperature to use for the language model.
+            **kwargs: Keyword arguments to pass to the Hugging Face Inference API.
         """
-        super().__init__()
+        super().__init__(temperature=temperature, **kwargs)
         self.apikey = apikey
         self.model_url = model_url
 
@@ -367,7 +387,13 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
             "Authorization": f"Bearer {self.apikey}"
         }
 
-        response = requests.post(self.model_url, headers=headers, json={"inputs": prompt_text}).json()
+        response = requests.post(
+            self.model_url,
+            headers=headers,
+            json={
+                "inputs": prompt_text
+            }
+        ).json()
         new_text = response[0]['generated_text']
 
         # We only return the first line of text.
@@ -392,13 +418,15 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
 class BloomWrapper(LanguageModelWrapper):
     API_URL = "https://api-inference.huggingface.co/models/bigscience/bloom"
 
-    def __init__(self, apikey):
+    def __init__(self, apikey, temperature: float = None, **kwargs: Any):
         """
         Wrapper for Hugging Face's BLOOM model. Requires access to Hugging Face's inference API.
         Args:
             apikey: The API key to access the Hugging Face Inference API.
+            temperature: The temperature to use for the language model.
+            **kwargs: Keyword arguments to pass to the underlying language model API.
         """
-        super().__init__()
+        super().__init__(temperature=temperature, **kwargs)
         self.apikey = apikey
 
     def __repr__(self):
@@ -451,7 +479,16 @@ class BloomWrapper(LanguageModelWrapper):
 
 class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
 
-    def __init__(self, apikey, model="gpt-3.5-turbo", format_sse=False, append_stop_token=True, stop_token=STOP_TOKEN):
+    def __init__(
+            self,
+            apikey,
+            model="gpt-3.5-turbo",
+            format_sse=False,
+            append_stop_token=True,
+            stop_token=STOP_TOKEN,
+            temperature: float = None,
+            **kwargs: Any
+    ):
         """
         Streaming compliant wrapper for the OpenAI API. Supports all major text and chat completion models by OpenAI.
         Args:
@@ -460,8 +497,16 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             format_sse: Whether to format the SSE response from OpenAI. Defaults to False.
             append_stop_token: Whether to append the stop token to the end of the prompt. Defaults to True.
             stop_token: The stop token to use. Defaults to <|END|>.
+            temperature: The temperature to use for the language model.
+            **kwargs: Keyword arguments to pass to the OpenAI API.
         """
-        super().__init__(format_sse=format_sse, append_stop_token=append_stop_token, stop_token=stop_token)
+        super().__init__(
+            format_sse=format_sse,
+            append_stop_token=append_stop_token,
+            stop_token=stop_token,
+            temperature=temperature,
+            **kwargs
+        )
         openai.api_key = apikey
         self.model: str = model
 
@@ -558,14 +603,16 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
 
 class OpenAIGPTWrapper(LanguageModelWrapper):
 
-    def __init__(self, apikey, model="gpt-3.5-turbo"):
+    def __init__(self, apikey, model="gpt-3.5-turbo", temperature: float = None, **kwargs: Any):
         """
         Wrapper for the OpenAI API. Supports all major text and chat completion models by OpenAI.
         Args:
             apikey: The API key to access the OpenAI API.
             model: The model to use. Defaults to "gpt-3.5-turbo".
+            temperature: The temperature to use for the language model.
+            **kwargs: Keyword arguments to pass to the OpenAI API.
         """
-        super().__init__()
+        super().__init__(temperature=temperature, **kwargs)
         openai.api_key = apikey
         self.model = model
 
@@ -641,7 +688,16 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
 class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
     API_URL = "https://api.anthropic.com/v1/complete"
 
-    def __init__(self, apikey, model="claude-v1", format_sse=False, append_stop_token=True, stop_token=STOP_TOKEN):
+    def __init__(
+            self,
+            apikey,
+            model="claude-v1",
+            format_sse=False,
+            append_stop_token=True,
+            stop_token=STOP_TOKEN,
+            temperature: float = None,
+            **kwargs: Any
+    ):
         """
         Streaming wrapper for Anthropic's Claude large language model.
 
@@ -654,8 +710,16 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
             format_sse: Whether to format the SSE response. Defaults to False.
             append_stop_token: Whether to append the stop token to the end of the prompt. Defaults to True.
             stop_token: The stop token to use. Defaults to <|END|>.
+            temperature: The temperature to use for the language model.
+            **kwargs: Keyword arguments to pass to the Anthropic API.
         """
-        super().__init__(format_sse=format_sse, append_stop_token=append_stop_token, stop_token=stop_token)
+        super().__init__(
+            format_sse=format_sse,
+            append_stop_token=append_stop_token,
+            stop_token=stop_token,
+            temperature=temperature,
+            **kwargs
+        )
         self.apikey = apikey
         self.model = model
 
@@ -754,7 +818,7 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
 class ClaudeWrapper(LanguageModelWrapper):
     API_URL = "https://api.anthropic.com/v1/complete"
 
-    def __init__(self, apikey, model="claude-v1"):
+    def __init__(self, apikey, model="claude-v1", temperature: float = None, **kwargs: Any):
         """
         Wrapper for Anthropic's Claude large language model.
 
@@ -762,8 +826,10 @@ class ClaudeWrapper(LanguageModelWrapper):
         Args:
             apikey: The API key to access the Anthropic API.
             model: The model to use. Defaults to "claude-v1".
+            temperature: The temperature to use for the language model.
+            **kwargs: Keyword arguments to pass to the Anthropic API.
         """
-        super().__init__()
+        super().__init__(temperature=temperature, **kwargs)
         self.apikey = apikey
         self.model = model
 
@@ -837,11 +903,14 @@ class ClaudeWrapper(LanguageModelWrapper):
 # TODO Might want to add stop sequences (new lines, roles) to make this better.
 class GPT2Wrapper(LanguageModelWrapper):
 
-    def __init__(self):
+    def __init__(self, temperature: float = None, **kwargs: Any):
         """
         Wrapper for GPT-2 implementation (via Hugging Face).
+        Args:
+            temperature: The temperature to use for the language model.
+            **kwargs: Keyword arguments to pass to the GPT-2 model.
         """
-        super().__init__()
+        super().__init__(temperature=temperature, **kwargs)
         self.model_name = "GPT-2"
 
     def __repr__(self):
@@ -890,11 +959,14 @@ class GPT2Wrapper(LanguageModelWrapper):
 
 class DollyWrapper(LanguageModelWrapper):
 
-    def __init__(self):
+    def __init__(self, temperature: float = None, **kwargs: Any):
         """
         Wrapper for Dolly 2.0 (via Hugging Face).
+        Args:
+            temperature: The temperature to use for the language model.
+            **kwargs: Keyword arguments to pass to the Dolly model.
         """
-        super().__init__()
+        super().__init__(temperature=temperature, **kwargs)
         self.model_name = 'dolly-v2-12b'
         self.generate_text = pipeline(model="databricks/dolly-v2-12b", torch_dtype=torch.bfloat16,
                                       trust_remote_code=True, device_map="auto")
@@ -937,14 +1009,16 @@ class DollyWrapper(LanguageModelWrapper):
 
 class CohereWrapper(LanguageModelWrapper):
 
-    def __init__(self, apikey, model="xlarge"):
+    def __init__(self, apikey, model="xlarge", temperature: float = None, **kwargs: Any):
         """
         Wrapper for Cohere's API.
         Args:
             apikey: The API key to use.
             model: The model to use. Defaults to "xlarge".
+            temperature: The temperature to use for the language model.
+            **kwargs: Keyword arguments to pass to the Cohere API.
         """
-        super().__init__()
+        super().__init__(temperature=temperature, **kwargs)
         self.apikey = apikey
         self.model = model
 
