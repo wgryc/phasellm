@@ -1,10 +1,12 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.0.11"
+VERSION = "0.0.12"
 
-DESCRIPTION = "Wrappers for common large langugae models (LLMs) with support for evaluation."
+DESCRIPTION = "Wrappers for common large language models (LLMs) with support for evaluation."
 
-LONG_DESCRIPTION = "PhaseLLM provides wrappers for common large language models and use cases. This makes it easy to swap models in and out as needed. We also provide support for evaluation of models so you can choose which models are better to use."
+LONG_DESCRIPTION = "PhaseLLM provides wrappers for common large language models and use cases. This makes it easy to " \
+                   "swap models in and out as needed. We also provide support for evaluation of models so you can " \
+                   "choose which models are better to use."
 
 setup(
     name="phasellm",
@@ -24,9 +26,12 @@ setup(
         "accelerate>=0.16.0",
         "torch>=1.0.0",
         "python-dotenv",
-        "sseclient-py==1.7.2",
         "pandas>=2.0.0",
         "openpyxl>=3.1.0",
+        "typing-extensions>=4.6.3",
+        "urllib3==1.26.6",
+        "sseclient-py>=1.7.2",
+        "docker>=6.1.3"
     ],
     python_requires=">=3.8.0",
     keywords="llm, nlp, evaluation, ai",

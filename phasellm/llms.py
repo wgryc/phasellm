@@ -312,7 +312,7 @@ class ChatPrompt:
     def __repr__(self):
         return "ChatPrompt()"
 
-    def chat_repr(self):
+    def chat_repr(self) -> str:
         """
         Returns a string representation of the chat prompt.
         Returns:
@@ -320,7 +320,7 @@ class ChatPrompt:
         """
         return _clean_messages_to_prompt(self.messages)
 
-    def fill(self, **kwargs: Any):
+    def fill(self, **kwargs) -> List[Message]:
         """
         Fills the variables in the chat prompt.
         Args:
@@ -357,7 +357,7 @@ class Prompt:
     def __repr__(self):
         return self.prompt
 
-    def get_prompt(self):
+    def get_prompt(self) -> str:
         """
         Return the raw prompt command (i.e., does not fill in variables.)
         Returns:
@@ -365,7 +365,7 @@ class Prompt:
         """
         return self.prompt
 
-    def fill(self, **kwargs: Any):
+    def fill(self, **kwargs: Any) -> str:
         """
         Return a prompt with variables filled in.
         Args:
@@ -382,8 +382,8 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
 
     def __init__(
             self,
-            apikey,
-            model_url="https://api-inference.huggingface.co/models/bigscience/bloom",
+            apikey: str,
+            model_url: str = "https://api-inference.huggingface.co/models/bigscience/bloom",
             temperature: float = None,
             **kwargs: Any
     ):
@@ -427,7 +427,7 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
             completion=response[0]['generated_text']
         )
 
-    def complete_chat(self, messages: List[Message], append_role=None) -> str:
+    def complete_chat(self, messages: List[Message], append_role: str = None) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
         Args:
@@ -451,7 +451,7 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
         # Truncate the completion to the first new line since this model tends to pretend to be the user.
         return _truncate_completion(res)
 
-    def text_completion(self, prompt) -> str:
+    def text_completion(self, prompt: str) -> str:
         """
         Generates a text completion from a prompt.
         Args:
@@ -468,7 +468,7 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
 class BloomWrapper(LanguageModelWrapper):
     API_URL = "https://api-inference.huggingface.co/models/bigscience/bloom"
 
-    def __init__(self, apikey, temperature: float = None, **kwargs: Any):
+    def __init__(self, apikey: str, temperature: float = None, **kwargs: Any):
         """
         Wrapper for Hugging Face's BLOOM model. Requires access to Hugging Face's inference API.
         Args:
@@ -507,7 +507,7 @@ class BloomWrapper(LanguageModelWrapper):
             completion=response[0]['generated_text']
         )
 
-    def complete_chat(self, messages: List[Message], append_role=None) -> str:
+    def complete_chat(self, messages: List[Message], append_role: str = None) -> str:
         """
         Mimics a chat scenario with BLOOM, via a list of {"role": <str>, "content":<str>} objects.
         Args:
@@ -531,7 +531,7 @@ class BloomWrapper(LanguageModelWrapper):
         # Truncate the completion to the first new line since this model tends to pretend to be the user.
         return _truncate_completion(res)
 
-    def text_completion(self, prompt) -> str:
+    def text_completion(self, prompt: str) -> str:
         """
         Completes text via BLOOM (Hugging Face).
         Args:
@@ -548,11 +548,11 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
 
     def __init__(
             self,
-            apikey,
-            model="gpt-3.5-turbo",
-            format_sse=False,
-            append_stop_token=True,
-            stop_token=STOP_TOKEN,
+            apikey: str,
+            model: str = "gpt-3.5-turbo",
+            format_sse: bool = False,
+            append_stop_token: bool = True,
+            stop_token: str = STOP_TOKEN,
             temperature: float = None,
             **kwargs: Any
     ):
@@ -602,7 +602,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
         if self.format_sse and self.append_stop_token:
             yield _format_sse(content=self.stop_token)
 
-    def complete_chat(self, messages, append_role=None) -> Generator:
+    def complete_chat(self, messages: List[Message], append_role: str = None) -> Generator:
         """
         Completes chat with OpenAI. If using GPT 3.5 or 4, will simply send the list of {"role": <str>, "content":<str>}
         objects to the API.
@@ -642,7 +642,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             yield from self._yield_response(response)
 
     # TODO Consider error handling for chat models.
-    def text_completion(self, prompt, stop_sequences=None) -> Generator:
+    def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> Generator:
         """
         Completes text via OpenAI. Note that this doesn't support GPT 3.5 or later, as they are chat models.
 
@@ -674,8 +674,11 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
 
 
 class OpenAIGPTWrapper(LanguageModelWrapper):
+    """
+    Wrapper for the OpenAI API. Supports all major text and chat completion models by OpenAI.
+    """
 
-    def __init__(self, apikey, model="gpt-3.5-turbo", temperature: float = None, **kwargs: Any):
+    def __init__(self, apikey: str, model: str = "gpt-3.5-turbo", temperature: float = None, **kwargs: Any):
         """
         Wrapper for the OpenAI API. Supports all major text and chat completion models by OpenAI.
         Args:
@@ -691,7 +694,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
     def __repr__(self):
         return f"OpenAIGPTWrapper(model={self.model})"
 
-    def complete_chat(self, messages, append_role=None) -> str:
+    def complete_chat(self, messages: List[Message], append_role: str = None) -> str:
         """
         Completes chat with OpenAI. If using GPT 3.5 or 4, will simply send the list of {"role": <str>, "content":<str>}
         objects to the API.
@@ -727,7 +730,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             return response['choices'][0]['text']
 
     # TODO Consider error handling for chat models.
-    def text_completion(self, prompt, stop_sequences=None) -> str:
+    def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> str:
         """
         Completes text via OpenAI. Note that this doesn't support GPT 3.5 or later, as they are chat models.
         Args:
@@ -759,11 +762,11 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
 
     def __init__(
             self,
-            apikey,
-            model="claude-v1",
-            format_sse=False,
-            append_stop_token=True,
-            stop_token=STOP_TOKEN,
+            apikey: str,
+            model: str = "claude-v1",
+            format_sse: bool = False,
+            append_stop_token: bool = True,
+            stop_token: str = STOP_TOKEN,
             temperature: float = None,
             **kwargs: Any
     ):
@@ -840,7 +843,7 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
         if self.format_sse and self.append_stop_token:
             yield _format_sse(content=self.stop_token)
 
-    def complete_chat(self, messages: List[Message], append_role="Assistant:") -> Generator:
+    def complete_chat(self, messages: List[Message], append_role: str = "Assistant:") -> Generator:
         """
         Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via the a
         prompt.
@@ -864,7 +867,7 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
             stop_sequences=_get_stop_sequences_from_messages(messages)
         )
 
-    def text_completion(self, prompt, stop_sequences=None) -> Generator:
+    def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> Generator:
         """
         Completes text based on provided prompt.
 
@@ -890,7 +893,7 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
 class ClaudeWrapper(LanguageModelWrapper):
     API_URL = "https://api.anthropic.com/v1/complete"
 
-    def __init__(self, apikey, model="claude-v1", temperature: float = None, **kwargs: Any):
+    def __init__(self, apikey: str, model: str = "claude-v1", temperature: float = None, **kwargs: Any):
         """
         Wrapper for Anthropic's Claude large language model.
 
@@ -936,7 +939,7 @@ class ClaudeWrapper(LanguageModelWrapper):
         resp = requests.post("https://api.anthropic.com/v1/complete", headers=headers, json=payload)
         return json.loads(resp.text)["completion"].strip()
 
-    def complete_chat(self, messages, append_role="Assistant:") -> str:
+    def complete_chat(self, messages: List[Message], append_role: str = "Assistant:") -> str:
         """
         Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via the a
         prompt.
@@ -957,7 +960,7 @@ class ClaudeWrapper(LanguageModelWrapper):
 
         return self._call_model(prompt_text, messages)
 
-    def text_completion(self, prompt, stop_sequences=None) -> str:
+    def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> str:
         """
         Completes text based on provided prompt.
         Args:
@@ -1014,7 +1017,7 @@ class GPT2Wrapper(LanguageModelWrapper):
         res = self.pipeline(**kwargs)
         return _remove_prompt_from_completion(prompt, res[0]['generated_text'])
 
-    def complete_chat(self, messages, append_role=None, max_length=300) -> str:
+    def complete_chat(self, messages: List[Message], append_role: str = None, max_length: int = 300) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
         Args:
@@ -1034,7 +1037,7 @@ class GPT2Wrapper(LanguageModelWrapper):
         )
         return self._call_model(prompt=prompt, max_length=max_length)
 
-    def text_completion(self, prompt, max_length=200) -> str:
+    def text_completion(self, prompt: str, max_length: int = 200) -> str:
         """
         Completes text via GPT-2.
         Args:
@@ -1087,7 +1090,7 @@ class DollyWrapper(LanguageModelWrapper):
             kwargs["temperature"] = self.temperature
         return self.pipeline(**kwargs)
 
-    def complete_chat(self, messages, append_role=None) -> str:
+    def complete_chat(self, messages: List[Message], append_role: str = None) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
         Args:
@@ -1106,7 +1109,7 @@ class DollyWrapper(LanguageModelWrapper):
         )
         return self._call_model(prompt=prompt)
 
-    def text_completion(self, prompt) -> str:
+    def text_completion(self, prompt: str) -> str:
         """
         Completes text via Dolly.
         Args:
@@ -1121,7 +1124,7 @@ class DollyWrapper(LanguageModelWrapper):
 
 class CohereWrapper(LanguageModelWrapper):
 
-    def __init__(self, apikey, model="xlarge", temperature: float = None, **kwargs: Any):
+    def __init__(self, apikey: str, model: str = "xlarge", temperature: float = None, **kwargs: Any):
         """
         Wrapper for Cohere's API.
         Args:
@@ -1160,7 +1163,7 @@ class CohereWrapper(LanguageModelWrapper):
 
         return response.generations[0].text
 
-    def complete_chat(self, messages, append_role=None) -> str:
+    def complete_chat(self, messages: List[Message], append_role: str = None) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
         Args:
@@ -1186,7 +1189,7 @@ class CohereWrapper(LanguageModelWrapper):
 
         return res
 
-    def text_completion(self, prompt, stop_sequences=None) -> str:
+    def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> str:
         """
         Completes text via Cohere.
         Args:
@@ -1206,7 +1209,7 @@ class CohereWrapper(LanguageModelWrapper):
 
 class ChatBot:
 
-    def __init__(self, llm: LanguageModelWrapper, initial_system_prompt="You are a friendly chatbot assistant."):
+    def __init__(self, llm: LanguageModelWrapper, initial_system_prompt: str = "You are a friendly chatbot assistant."):
         """
         Allows you to have a chat conversation with an LLM wrapper.
 
@@ -1258,7 +1261,7 @@ class ChatBot:
             yield chunk
         self._append_message('assistant', full_response, log_time_seconds=time.time() - start_time)
 
-    def _append_message(self, role: str, message: str, log_time_seconds=None) -> None:
+    def _append_message(self, role: str, message: str, log_time_seconds: float = None) -> None:
         """
         Saves a message to the ChatBot message stack.
         Args:
@@ -1301,7 +1304,7 @@ class ChatBot:
         else:
             self.messages.append(last_message)
 
-    def chat(self, message) -> Union[str, Generator]:
+    def chat(self, message: str) -> Union[str, Generator]:
         """
         Chats with the chatbot.
         Args:
