@@ -164,6 +164,27 @@ def _conditional_format_sse_response(content: str, format_sse: bool) -> str:
         return _format_sse(content)
     return content
 
+def swap_roles(messages: List[Message], new_prompt: str) -> List[Message]:
+    """
+    Creates a new messages stack with the new_prompt as the system prompt and the 'user' and 'assistant' roles swapped. All other messages are ignored.
+    Args:
+        messages: the current messages.
+        new_prompt: the new system prompt.
+
+    Returns:
+        A new list of messages with the new_prompt as the system prompt and user/assistant prompts swapped out.
+    """
+    new_messages = [{"role":"system", "content":new_prompt}]
+    for m in messages:
+        if m["role"] in ["user", "assistant"]:
+            new_message = m.copy()
+            if m["role"] == "user":
+                new_role = "assistant"
+            elif m["role"] == "assistant":
+                new_role = "user"
+            new_message["role"] = new_role
+            new_messages.append(new_message)
+    return new_messages
 
 class LanguageModelWrapper(ABC):
     # default chat completion preamble

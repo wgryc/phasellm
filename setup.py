@@ -25,6 +25,8 @@ setup(
         "torch>=1.0.0",
         "python-dotenv",
         "sseclient-py==1.7.2",
+        "pandas>=2.0.0",
+        "openpyxl>=3.1.0",
     ],
     python_requires=">=3.7.1",
     keywords="llm, nlp, evaluation, ai",

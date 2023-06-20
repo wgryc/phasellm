@@ -2,9 +2,38 @@
 Support for LLM evaluation.
 """
 
-from .llms import OpenAIGPTWrapper
+from typing import Optional, List
+
+from .llms import OpenAIGPTWrapper, ChatBot
+
+import pandas as pd
 
 import random
+
+def simulate_n_chat_simulations(chatbot: ChatBot, n: int, out_path_excel: Optional[str] = None) -> List[str]:
+    """
+    Reruns a chat message n times, returning a list of responses. Note that this will query an external API n times, so please be careful with costs.
+    Args:
+        chatbot: the chat sequence to rerun. The last message will be resent.
+        n: number of times to run the simulation.
+        out_path_excel: if provides, the output will also be written to an Excel file.
+    Returns:
+        A list of messages representing the responses in the chat.
+    """
+
+    original_chat_messages = chatbot.messages.copy()
+    responses = []
+
+    for i in range(0, n):
+        r = chatbot.resend()
+        responses.append(r)
+        chatbot.messages = original_chat_messages.copy()
+
+    if out_path_excel:
+        df = pd.DataFrame({'responses': responses})
+        df.to_excel(out_path_excel, sheet_name='responses', index=False)
+
+    return responses
 
 class BinaryPreference():
     """

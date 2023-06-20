@@ -154,3 +154,16 @@ cb = ChatBot(oaiw)
 m = [{'role': 'system', 'content': "You are a robot that adds 'YO!' to the end of every sentence."}, {'role': 'user', 'content': 'Tell me about Poland.'}]
 cb.messages = m
 cb.resend()
+
+##########################################################################################
+# EVAL simulations TO EXCEL
+#
+
+from phasellm.llms import ChatBot, OpenAIGPTWrapper
+from phasellm.eval import *
+
+o = OpenAIGPTWrapper(openai_api_key)
+c = ChatBot(o)
+c.messages = [ {"role":"system", "content":"You're a mathbot."}, {"role":"user", "content":"What is 3*4*5*zebra?"} ]
+
+x = simulate_n_chat_simulations(c, 4, 'responses.xlsx')
