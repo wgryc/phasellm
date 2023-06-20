@@ -28,7 +28,7 @@ setup(
         "pandas>=2.0.0",
         "openpyxl>=3.1.0",
     ],
-    python_requires=">=3.7.1",
+    python_requires=">=3.8.0",
     keywords="llm, nlp, evaluation, ai",
     classifiers=[
         "Development Status :: 3 - Alpha",
