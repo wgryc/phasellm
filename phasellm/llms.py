@@ -397,7 +397,7 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
             "inputs": prompt,
             **self.kwargs
         }
-        if self.temperature:
+        if self.temperature is not None:
             payload["temperature"] = self.temperature
 
         response = requests.post(self.model_url, headers=headers, json=payload).json()
@@ -477,7 +477,7 @@ class BloomWrapper(LanguageModelWrapper):
             "inputs": prompt,
             **self.kwargs
         }
-        if self.temperature:
+        if self.temperature is not None:
             payload["temperature"] = self.temperature
 
         response = requests.post(self.API_URL, headers=headers, json=payload).json()
@@ -603,7 +603,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             "stream": True,
             **self.kwargs
         }
-        if self.temperature:
+        if self.temperature is not None:
             kwargs["temperature"] = self.temperature
         if ('gpt-4' in self.model) or ('gpt-3.5' in self.model):
             kwargs["messages"] = messages
@@ -643,7 +643,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             "stream": True,
             **self.kwargs
         }
-        if self.temperature:
+        if self.temperature is not None:
             kwargs["temperature"] = self.temperature
         if len(stop_sequences) != 0:
             kwargs["stop"] = stop_sequences
@@ -689,7 +689,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             "model": self.model,
             **self.kwargs
         }
-        if self.temperature:
+        if self.temperature is not None:
             kwargs["temperature"] = self.temperature
         if ('gpt-4' in self.model) or ('gpt-3.5' in self.model):
             kwargs["messages"] = messages
@@ -725,7 +725,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             "prompt": prompt,
             **self.kwargs
         }
-        if self.temperature:
+        if self.temperature is not None:
             kwargs["temperature"] = self.temperature
         if len(stop_sequences) != 0:
             kwargs["stop"] = stop_sequences
@@ -798,7 +798,7 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
             "stream": True,
             **self.kwargs
         }
-        if self.temperature:
+        if self.temperature is not None:
             payload["temperature"] = self.temperature
 
         resp = requests.post(self.API_URL, headers=headers, json=payload, stream=True)
@@ -909,7 +909,7 @@ class ClaudeWrapper(LanguageModelWrapper):
             "stop_sequences": _get_stop_sequences_from_messages(messages),
             **self.kwargs
         }
-        if self.temperature:
+        if self.temperature is not None:
             payload["temperature"] = self.temperature
 
         resp = requests.post("https://api.anthropic.com/v1/complete", headers=headers, json=payload)
@@ -988,7 +988,7 @@ class GPT2Wrapper(LanguageModelWrapper):
             "num_return_sequences": 1,
             **self.kwargs
         }
-        if self.temperature:
+        if self.temperature is not None:
             kwargs["temperature"] = self.temperature
         res = self.pipeline(**kwargs)
         return _remove_prompt_from_completion(prompt, res[0]['generated_text'])
@@ -1062,7 +1062,7 @@ class DollyWrapper(LanguageModelWrapper):
             "text_inputs": prompt,
             **self.kwargs
         }
-        if self.temperature:
+        if self.temperature is not None:
             kwargs["temperature"] = self.temperature
         return self.pipeline(**kwargs)
 
@@ -1133,7 +1133,7 @@ class CohereWrapper(LanguageModelWrapper):
             "stop_sequences": stop_sequences,
             **self.kwargs
         }
-        if self.temperature:
+        if self.temperature is not None:
             kwargs["temperature"] = self.temperature
         response = self.co.generate(**kwargs)
 
