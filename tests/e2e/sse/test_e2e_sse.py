@@ -42,7 +42,7 @@ def mock_generator_failure() -> Generator:
     yield "data: 7\n\n"
     yield "data: 8\n\n\n\n\n"
     yield "data: 9\n\n"
-    yield "data: <|STOP|>\n\n"
+    yield "data: <|END|>\n\n"
 
 
 def mock_generator_success() -> Generator:
@@ -67,7 +67,7 @@ def mock_generator_success() -> Generator:
     yield "data: 7\n\n"
     yield "data: 8\ndata:\ndata:\ndata:\n\n"
     yield "data: 9\n\n"
-    yield "data: <|STOP|>\n\n"
+    yield "data: <|END|>\n\n"
 
 
 def mock_generator_success_format_sse() -> Generator:
@@ -92,7 +92,7 @@ def mock_generator_success_format_sse() -> Generator:
     yield _format_sse("7")
     yield _format_sse("8\n\n\n")
     yield _format_sse("9")
-    yield _format_sse("<|STOP|>")
+    yield _format_sse("<|END|>")
 
 
 def server_mock(generator: Generator):
