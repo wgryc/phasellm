@@ -2,6 +2,20 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.11 (2023-06-19)
+
+### New Features
+
+- All LLMs now support `temperature` setting
+- All LLMs now accept `kwargs` that they pass on to their various APIs
+- `phasellm.llms.swap_roles()` helper funtion where `user` and `assistant` get swapped. Extremely useful for testing/evaluations and running simulations
+- `phasellm.eval.simulate_n_chat_simulations()` allows you to resend the same chat history multiple times to generate an array of responses (for testing purposes)
+
+### Fixes
+
+- Fixed Server Side Event streaming bug where new lines weren't being escaped properly.
+- Updating `requirements.txt` and `setup.py` to include all new relevant packages.
+
 # 0.0.10 (2023-06-12)
 
 ### New Features
