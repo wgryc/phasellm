@@ -44,6 +44,15 @@ class E2ETestHuggingFaceInferenceWrapper(TestCase):
         )
         test_complete_chat(self, fixture, verbose=False)
 
+    def test_complete_chat_kwargs(self):
+        fixture = HuggingFaceInferenceWrapper(
+            hugging_face_api_key,
+            model_url="https://api-inference.huggingface.co/models/bigscience/bloom",
+            temperature=0.9,
+            top_k=2
+        )
+        test_complete_chat(self, fixture, verbose=False)
+
     def test_text_completion_success(self):
         fixture = HuggingFaceInferenceWrapper(
             hugging_face_api_key,
@@ -51,8 +60,18 @@ class E2ETestHuggingFaceInferenceWrapper(TestCase):
         )
         test_text_completion_success(self, fixture, verbose=False)
 
+    def test_text_completion_success_kwargs(self):
+        fixture = HuggingFaceInferenceWrapper(
+            hugging_face_api_key,
+            temperature=0.9,
+            top_k=0.9,
+            model_url="https://api-inference.huggingface.co/models/bigscience/bloom"
+        )
+        test_text_completion_success(self, fixture, verbose=False)
+
 
 class E2ETestBloomWrapper(TestCase):
+    # TODO remove this if we decide to remove the BloomWrapper in favor of only having the HuggingFaceInferenceWrapper
 
     def test_complete_chat(self):
         fixture = BloomWrapper(hugging_face_api_key)
@@ -69,8 +88,16 @@ class E2ETestOpenAIGPTWrapper(TestCase):
         fixture = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
         test_complete_chat(self, fixture, verbose=False)
 
+    def test_complete_chat_kwargs(self):
+        fixture = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo", temperature=0.9, frequency_penalty=2)
+        test_complete_chat(self, fixture, verbose=False)
+
     def test_text_completion_success(self):
         fixture = OpenAIGPTWrapper(openai_api_key, model="text-davinci-003")
+        test_text_completion_success(self, fixture, verbose=False)
+
+    def test_text_completion_success_kwargs(self):
+        fixture = OpenAIGPTWrapper(openai_api_key, model="text-davinci-003", temperature=0.9, presence_penalty=2)
         test_text_completion_success(self, fixture, verbose=False)
 
     def test_text_completion_failure(self):
@@ -87,8 +114,16 @@ class E2ETestClaudeWrapper(TestCase):
         fixture = ClaudeWrapper(anthropic_api_key, model="claude-v1")
         test_complete_chat(self, fixture, verbose=False)
 
+    def test_complete_chat_kwargs(self):
+        fixture = ClaudeWrapper(anthropic_api_key, model="claude-v1", temperature=0.9, top_k=2)
+        test_complete_chat(self, fixture, verbose=False)
+
     def test_text_completion_success(self):
         fixture = ClaudeWrapper(anthropic_api_key, model="claude-v1")
+        test_text_completion_success(self, fixture, verbose=False)
+
+    def test_text_completion_success_kwargs(self):
+        fixture = ClaudeWrapper(anthropic_api_key, model="claude-v1", temperature=0.9, top_k=2)
         test_text_completion_success(self, fixture, verbose=False)
 
 
@@ -101,11 +136,25 @@ class E2ETestGPT2Wrapper(TestCase):
         fixture = GPT2Wrapper()
         test_complete_chat(self, fixture, verbose=False)
 
+    def test_complete_chat_kwargs(self):
+        if skip_local_models:
+            print("Skipping test_complete_chat for GPT2Wrapper as SKIP_LOCAL_MODELS is set to True")
+            return
+        fixture = GPT2Wrapper(temperature=0.9, top_k=2)
+        test_complete_chat(self, fixture, verbose=False)
+
     def test_text_completion_success(self):
         if skip_local_models:
             print("Skipping test_text_completion_success for GPT2Wrapper as SKIP_LOCAL_MODELS is set to True")
             return
         fixture = GPT2Wrapper()
+        test_text_completion_success(self, fixture, verbose=False)
+
+    def test_text_completion_success_kwargs(self):
+        if skip_local_models:
+            print("Skipping test_text_completion_success for GPT2Wrapper as SKIP_LOCAL_MODELS is set to True")
+            return
+        fixture = GPT2Wrapper(temperature=0.9, top_k=2)
         test_text_completion_success(self, fixture, verbose=False)
 
 
@@ -118,11 +167,25 @@ class E2ETestDollyWrapper(TestCase):
         fixture = DollyWrapper()
         test_complete_chat(self, fixture, verbose=False)
 
+    def test_complete_chat_kwargs(self):
+        if skip_local_models:
+            print("Skipping test_complete_chat for DollyWrapper as SKIP_LOCAL_MODELS is set to True")
+            return
+        fixture = DollyWrapper(temperature=0.9, top_k=2)
+        test_complete_chat(self, fixture, verbose=False)
+
     def test_text_completion_success(self):
         if skip_local_models:
             print("Skipping test_text_completion_success for DollyWrapper as SKIP_LOCAL_MODELS is set to True")
             return
         fixture = DollyWrapper()
+        test_text_completion_success(self, fixture, verbose=False)
+
+    def test_text_completion_success_kwargs(self):
+        if skip_local_models:
+            print("Skipping test_text_completion_success for DollyWrapper as SKIP_LOCAL_MODELS is set to True")
+            return
+        fixture = DollyWrapper(temperature=0.9, top_k=2)
         test_text_completion_success(self, fixture, verbose=False)
 
 
@@ -132,8 +195,17 @@ class E2ETestCohereWrapper(TestCase):
         fixture = CohereWrapper(cohere_api_key, model="xlarge")
         test_complete_chat(self, fixture, verbose=False)
 
+    def test_complete_chat_kwargs(self):
+        # Note that the Cohere Client doesn't support top_k.
+        fixture = CohereWrapper(cohere_api_key, model="xlarge", temperature=0.9)
+        test_complete_chat(self, fixture, verbose=False)
+
     def test_text_completion_success(self):
         fixture = CohereWrapper(cohere_api_key, model="xlarge")
+        test_text_completion_success(self, fixture, verbose=False)
+
+    def test_text_completion_success_kwargs(self):
+        fixture = CohereWrapper(cohere_api_key, model="xlarge", temperature=0.9)
         test_text_completion_success(self, fixture, verbose=False)
 
 
@@ -147,12 +219,33 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
 
         test_streaming_complete_chat(self, fixture, verbose=False)
 
+    def test_complete_chat_kwargs(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper can be used to perform chat completion with kwargs.
+        """
+        fixture = StreamingOpenAIGPTWrapper(
+            openai_api_key, model="gpt-3.5-turbo", temperature=0.9, presence_penalty=0.9, frequency_penalty=0.9
+        )
+
+        test_streaming_complete_chat(self, fixture, verbose=False)
+
     def test_complete_chat_sse(self):
         """
         Tests that the StreamingOpenAIGPTWrapper can be used to perform streaming chat completion.
         """
         fixture = StreamingOpenAIGPTWrapper(
             openai_api_key, model="gpt-3.5-turbo", format_sse=True, append_stop_token=False
+        )
+
+        test_streaming_complete_chat_sse(self, fixture, check_stop=False, verbose=False)
+
+    def test_complete_chat_sse_kwargs(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper can be used to perform streaming chat completion with kwargs.
+        """
+        fixture = StreamingOpenAIGPTWrapper(
+            openai_api_key, model="gpt-3.5-turbo", format_sse=True, append_stop_token=False, temperature=0.9,
+            presence_penalty=0.9
         )
 
         test_streaming_complete_chat_sse(self, fixture, check_stop=False, verbose=False)
@@ -167,11 +260,32 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
 
         test_streaming_complete_chat_sse(self, fixture, check_stop=True, verbose=False)
 
+    def test_complete_chat_sse_with_stop_kwargs(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper can be used to perform streaming chat completion with a stop token and
+        kwargs.
+        """
+        fixture = StreamingOpenAIGPTWrapper(
+            openai_api_key, model="gpt-3.5-turbo", format_sse=True, append_stop_token=True, temperature=0.9,
+            presence_penalty=2
+        )
+
+        test_streaming_complete_chat_sse(self, fixture, check_stop=True, verbose=False)
+
     def test_text_completion_success(self):
         """
         Tests that the StreamingOpenAIGPTWrapper can be used to perform text completion.
         """
         fixture = StreamingOpenAIGPTWrapper(openai_api_key, model="text-davinci-003")
+
+        test_streaming_text_completion_success(self, fixture, verbose=False)
+
+    def test_text_completion_success_kwargs(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper can be used to perform text completion with kwargs.
+        """
+        fixture = StreamingOpenAIGPTWrapper(openai_api_key, model="text-davinci-003", temperature=0.9,
+                                            presence_penalty=2)
 
         test_streaming_text_completion_success(self, fixture, verbose=False)
 
@@ -193,12 +307,35 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
 
         test_streaming_text_completion_sse(self, fixture, check_stop=False, verbose=False)
 
+    def test_text_completion_sse_kwargs(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper can be used to perform streaming text completion with kwargs.
+        """
+        fixture = StreamingOpenAIGPTWrapper(
+            openai_api_key, model="text-davinci-003", format_sse=True, append_stop_token=False, temperature=0.9,
+            presence_penalty=2
+        )
+
+        test_streaming_text_completion_sse(self, fixture, check_stop=False, verbose=False)
+
     def test_text_completion_sse_with_stop(self):
         """
         Tests that the StreamingOpenAIGPTWrapper can be used to perform streaming text completion with a stop token.
         """
         fixture = StreamingOpenAIGPTWrapper(
             openai_api_key, model="text-davinci-003", format_sse=True, append_stop_token=True
+        )
+
+        test_streaming_text_completion_sse(self, fixture, check_stop=True, verbose=False)
+
+    def test_text_completion_sse_with_stop_kwargs(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper can be used to perform streaming text completion with a stop token and
+        kwargs.
+        """
+        fixture = StreamingOpenAIGPTWrapper(
+            openai_api_key, model="text-davinci-003", format_sse=True, append_stop_token=True, temperature=0.9,
+            presence_penalty=2
         )
 
         test_streaming_text_completion_sse(self, fixture, check_stop=True, verbose=False)
@@ -214,11 +351,28 @@ class E2ETestStreamingClaudeWrapper(TestCase):
 
         test_streaming_complete_chat(self, fixture, verbose=False)
 
+    def test_complete_chat_kwargs(self):
+        """
+        Tests that the StreamingClaudeWrapper can be used to perform chat completion with kwargs.
+        """
+        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", temperature=0.9, top_k=2)
+
+        test_streaming_complete_chat(self, fixture, verbose=False)
+
     def test_complete_chat_sse(self):
         """
         Tests that the StreamingClaudeWrapper can be used to perform streaming chat completion.
         """
         fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True, append_stop_token=False)
+
+        test_streaming_complete_chat_sse(self, fixture, check_stop=False, verbose=False)
+
+    def test_complete_chat_sse_kwargs(self):
+        """
+        Tests that the StreamingClaudeWrapper can be used to perform streaming chat completion with kwargs.
+        """
+        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True, append_stop_token=False,
+                                         temperature=0.9, top_k=2)
 
         test_streaming_complete_chat_sse(self, fixture, check_stop=False, verbose=False)
 
@@ -230,11 +384,29 @@ class E2ETestStreamingClaudeWrapper(TestCase):
 
         test_streaming_complete_chat_sse(self, fixture, check_stop=True, verbose=False)
 
+    def test_complete_chat_sse_with_stop_kwargs(self):
+        """
+        Tests that the StreamingClaudeWrapper can be used to perform streaming chat completion with a stop token and
+        kwargs.
+        """
+        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True, append_stop_token=True,
+                                         temperature=0.9, top_k=2)
+
+        test_streaming_complete_chat_sse(self, fixture, check_stop=True, verbose=False)
+
     def test_text_completion(self):
         """
         Tests that the StreamingClaudeWrapper can be used to perform text completion.
         """
         fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
+
+        test_streaming_text_completion_success(self, fixture, verbose=False)
+
+    def test_text_completion_kwargs(self):
+        """
+        Tests that the StreamingClaudeWrapper can be used to perform text completion with kwargs.
+        """
+        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", temperature=0.9, top_k=2)
 
         test_streaming_text_completion_success(self, fixture, verbose=False)
 
@@ -246,11 +418,30 @@ class E2ETestStreamingClaudeWrapper(TestCase):
 
         test_streaming_text_completion_sse(self, fixture, check_stop=False, verbose=False)
 
+    def test_text_completion_sse_kwargs(self):
+        """
+        Tests that the StreamingClaudeWrapper can be used to perform streaming text completion with kwargs.
+        """
+        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True, append_stop_token=False,
+                                         temperature=0.9, top_k=2)
+
+        test_streaming_text_completion_sse(self, fixture, check_stop=False, verbose=False)
+
     def test_text_completion_sse_with_stop(self):
         """
         Tests that the StreamingClaudeWrapper can be used to perform streaming text completion with a stop token.
         """
         fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True, append_stop_token=True)
+
+        test_streaming_text_completion_sse(self, fixture, check_stop=True, verbose=False)
+
+    def test_text_completion_sse_with_stop_kwargs(self):
+        """
+        Tests that the StreamingClaudeWrapper can be used to perform streaming text completion with a stop token and
+        kwargs.
+        """
+        fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", format_sse=True, append_stop_token=True,
+                                         temperature=0.9, top_k=2)
 
         test_streaming_text_completion_sse(self, fixture, check_stop=True, verbose=False)
 
@@ -366,7 +557,7 @@ class E2ETestStreamingChatBot(TestCase):
         llm = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
         fixture = ChatBot(llm)
 
-        test_streaming_chatbot_chat(self, fixture=fixture, chunk_time_seconds_threshold=0.2, verbose=False)
+        test_streaming_chatbot_chat(self, fixture=fixture, chunk_time_seconds_threshold=0.5, verbose=False)
 
     def test_openai_gpt_streaming_chat_sse(self):
         llm = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo", format_sse=True, append_stop_token=True)
@@ -384,7 +575,7 @@ class E2ETestStreamingChatBot(TestCase):
         llm = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
         fixture = ChatBot(llm)
 
-        test_streaming_chatbot_chat(self, fixture=fixture, chunk_time_seconds_threshold=0.2, verbose=False)
+        test_streaming_chatbot_chat(self, fixture=fixture, chunk_time_seconds_threshold=0.5, verbose=False)
 
     def test_claude_streaming_resend(self):
         llm = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")

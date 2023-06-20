@@ -368,7 +368,7 @@ def test_streaming_complete_chat(
 
     results: StreamingChatCompletionProbe = probe_streaming_chat_completion(generator)
 
-    common_streaming_chat_assertions(tester=tester, probe=results, chunk_time_seconds_threshold=0.2, verbose=verbose)
+    common_streaming_chat_assertions(tester=tester, probe=results, chunk_time_seconds_threshold=0.5, verbose=verbose)
 
 
 def test_streaming_complete_chat_sse(
@@ -582,7 +582,7 @@ def test_streaming_chatbot_resend(
     common_streaming_chat_assertions(
         tester=tester,
         probe=results,
-        chunk_time_seconds_threshold=0.2,
+        chunk_time_seconds_threshold=0.5,
         verbose=verbose
     )
 

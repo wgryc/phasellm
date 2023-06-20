@@ -100,6 +100,22 @@ def _truncate_completion(completion: str) -> str:
     return completion
 
 
+def _remove_prompt_from_completion(prompt: str, completion: str) -> str:
+    """
+    Remove the prompt from the completion.
+    Args:
+        prompt: The prompt to remove.
+        completion: The completion to remove the prompt from.
+
+    Returns:
+        The completion without the prompt.
+
+    """
+    if not completion.startswith(prompt):
+        return completion
+    return completion[len(prompt):]
+
+
 def _get_stop_sequences_from_messages(messages: List[Message]) -> List[str]:
     """
     Generates a list of strings of stop sequences from an array of messages in the form
@@ -161,7 +177,7 @@ class LanguageModelWrapper(ABC):
         Abstract Class for interacting with large language models.
         Args:
             temperature: The temperature to use for the language model.
-            **kwargs: Keyword arguments to pass to the underlying language model APIs.
+            **kwargs: Keyword arguments to pass to the underlying language model API.
         """
         self.temperature: Optional[float] = temperature
         self.kwargs: Any = kwargs
@@ -365,6 +381,31 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
     def __repr__(self):
         return f"HuggingFaceInferenceWrapper()"
 
+    def _call_model(self, prompt: str) -> str:
+        """
+        This method is used to call the Hugging Face Inference API. It is used by the complete_chat() and
+        text_completion() methods.
+        Args:
+            prompt: The prompt to call the model with.
+
+        Returns:
+            The response from the Hugging Face Inference API.
+        """
+        # https://huggingface.co/docs/api-inference/detailed_parameters#text-generation-task
+        headers = {"Authorization": f"Bearer {self.apikey}"}
+        payload = {
+            "inputs": prompt,
+            **self.kwargs
+        }
+        if self.temperature:
+            payload["temperature"] = self.temperature
+
+        response = requests.post(self.model_url, headers=headers, json=payload).json()
+        return _remove_prompt_from_completion(
+            prompt=prompt,
+            completion=response[0]['generated_text']
+        )
+
     def complete_chat(self, messages: List[Message], append_role=None) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
@@ -377,26 +418,17 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
 
         """
 
-        prompt_text = self.prep_prompt_from_messages(
+        prompt = self.prep_prompt_from_messages(
             messages=messages,
             append_role=append_role,
             include_preamble=True
         )
 
-        # https://huggingface.co/docs/api-inference/detailed_parameters#text-generation-task
-        headers = {"Authorization": f"Bearer {self.apikey}"}
-        payload = {
-            "inputs": prompt_text,
-            **self.kwargs
-        }
-        if self.temperature:
-            payload["temperature"] = self.temperature
+        res = self._call_model(prompt=prompt)
 
-        response = requests.post(self.model_url, headers=headers, json=payload).json()
-        new_text = response[0]['generated_text']
-        # TODO why do we only return the first line of text?
-        # We only return the first line of text.
-        return _truncate_completion(new_text)
+        # TODO consider making this more robust by truncating at first "role" using _get_stop_sequences_from_messages
+        # Truncate the completion to the first new line since this model tends to pretend to be the user.
+        return _truncate_completion(res)
 
     def text_completion(self, prompt) -> str:
         """
@@ -408,16 +440,7 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
             The text completion.
 
         """
-        # https://huggingface.co/docs/api-inference/detailed_parameters#text-generation-task
-        headers = {"Authorization": f"Bearer {self.apikey}"}
-        payload = {
-            "inputs": prompt,
-            **self.kwargs
-        }
-        if self.temperature:
-            payload["temperature"] = self.temperature
-        response = requests.post(self.model_url, headers=headers, json=payload).json()
-        return response[0]['generated_text']
+        return self._call_model(prompt=prompt)
 
 
 # TODO consider deleting the BloomWrapper class since this functionality is in HuggingFaceInferenceWrapper
@@ -438,6 +461,31 @@ class BloomWrapper(LanguageModelWrapper):
     def __repr__(self):
         return f"BloomWrapper()"
 
+    def _call_model(self, prompt: str) -> str:
+        """
+        This method is used to call the Hugging Face Inference API. It is used by the complete_chat() and
+        text_completion() methods.
+        Args:
+            prompt: The prompt to call the model with.
+
+        Returns:
+            The response from the Hugging Face Inference API.
+        """
+        # https://huggingface.co/docs/api-inference/detailed_parameters#text-generation-task
+        headers = {"Authorization": f"Bearer {self.apikey}"}
+        payload = {
+            "inputs": prompt,
+            **self.kwargs
+        }
+        if self.temperature:
+            payload["temperature"] = self.temperature
+
+        response = requests.post(self.API_URL, headers=headers, json=payload).json()
+        return _remove_prompt_from_completion(
+            prompt=prompt,
+            completion=response[0]['generated_text']
+        )
+
     def complete_chat(self, messages: List[Message], append_role=None) -> str:
         """
         Mimics a chat scenario with BLOOM, via a list of {"role": <str>, "content":<str>} objects.
@@ -450,28 +498,17 @@ class BloomWrapper(LanguageModelWrapper):
 
         """
 
-        prompt_text = self.prep_prompt_from_messages(
+        prompt = self.prep_prompt_from_messages(
             messages=messages,
             append_role=append_role,
             include_preamble=True
         )
 
-        # https://huggingface.co/docs/api-inference/detailed_parameters#text-generation-task
-        headers = {"Authorization": f"Bearer {self.apikey}"}
-        payload = {
-            "inputs": prompt_text,
-            **self.kwargs
-        }
-        if self.temperature:
-            payload["temperature"] = self.temperature
-        response = requests.post(self.API_URL, headers=headers, json=payload).json()
+        res = self._call_model(prompt=prompt)
 
-        all_text = response[0]['generated_text']
-        new_text = all_text[len(prompt_text):]
-
-        # We only return the first line of text.
-        # TODO why do we only return the first line of text?
-        return _truncate_completion(new_text)
+        # TODO consider making this more robust by truncating at first "role" using _get_stop_sequences_from_messages
+        # Truncate the completion to the first new line since this model tends to pretend to be the user.
+        return _truncate_completion(res)
 
     def text_completion(self, prompt) -> str:
         """
@@ -483,18 +520,7 @@ class BloomWrapper(LanguageModelWrapper):
             The text completion.
 
         """
-        # https://huggingface.co/docs/api-inference/detailed_parameters#text-generation-task
-        headers = {"Authorization": f"Bearer {self.apikey}"}
-        payload = {
-            "inputs": prompt,
-            **self.kwargs
-        }
-        if self.temperature:
-            payload["temperature"] = self.temperature
-
-        response = requests.post(self.API_URL, headers=headers, json=payload).json()
-        all_text = response[0]['generated_text']
-        return all_text[len(prompt):]
+        return self._call_model(prompt=prompt)
 
 
 class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
@@ -945,6 +971,28 @@ class GPT2Wrapper(LanguageModelWrapper):
     def __repr__(self):
         return f"GPT2Wrapper({self.model_name})"
 
+    def _call_model(self, prompt: str, max_length: int = 300) -> str:
+        """
+        Calls the model with the given prompt.
+        Args:
+            prompt: The prompt to call the model with.
+            max_length: The maximum length of the completion. Defaults to 300.
+
+        Returns:
+            The completion.
+        """
+        # https://huggingface.co/docs/transformers/v4.30.0/en/main_classes/text_generation#transformers.GenerationConfig
+        kwargs = {
+            "text_inputs": prompt,
+            "max_length": max_length,
+            "num_return_sequences": 1,
+            **self.kwargs
+        }
+        if self.temperature:
+            kwargs["temperature"] = self.temperature
+        res = self.pipeline(**kwargs)
+        return _remove_prompt_from_completion(prompt, res[0]['generated_text'])
+
     def complete_chat(self, messages, append_role=None, max_length=300) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
@@ -958,23 +1006,12 @@ class GPT2Wrapper(LanguageModelWrapper):
 
         """
 
-        prompt_text = self.prep_prompt_from_messages(
+        prompt = self.prep_prompt_from_messages(
             messages=messages,
             append_role=append_role,
             include_preamble=True
         )
-        # https://huggingface.co/docs/transformers/v4.30.0/en/main_classes/text_generation#transformers.GenerationConfig
-        kwargs = {
-            "text_inputs": prompt_text,
-            "max_length": max_length,
-            "num_return_sequences": 1,
-            **self.kwargs
-        }
-        if self.temperature:
-            kwargs["temperature"] = self.temperature
-        res = self.pipeline(**kwargs)
-        res = res[0]['generated_text']
-        return res[len(prompt_text):]  # Strip out the original text.
+        return self._call_model(prompt=prompt, max_length=max_length)
 
     def text_completion(self, prompt, max_length=200) -> str:
         """
@@ -987,17 +1024,7 @@ class GPT2Wrapper(LanguageModelWrapper):
             The text completion.
 
         """
-        kwargs = {
-            "text_inputs": prompt,
-            "max_length": max_length,
-            "num_return_sequences": 1,
-            **self.kwargs
-        }
-        if self.temperature:
-            kwargs["temperature"] = self.temperature
-        res = self.pipeline(**kwargs)
-        res = res[0]['generated_text']
-        return res[len(prompt):]  # Strip out the original text.
+        return self._call_model(prompt=prompt, max_length=max_length)
 
 
 class DollyWrapper(LanguageModelWrapper):
@@ -1022,6 +1049,23 @@ class DollyWrapper(LanguageModelWrapper):
     def __repr__(self):
         return f"DollyWrapper(model={self.model_name})"
 
+    def _call_model(self, prompt: str) -> str:
+        """
+        Calls the model with the given prompt.
+        Args:
+            prompt: The prompt to call the model with.
+
+        Returns:
+            The completion.
+        """
+        kwargs = {
+            "text_inputs": prompt,
+            **self.kwargs
+        }
+        if self.temperature:
+            kwargs["temperature"] = self.temperature
+        return self.pipeline(**kwargs)
+
     def complete_chat(self, messages, append_role=None) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
@@ -1034,18 +1078,12 @@ class DollyWrapper(LanguageModelWrapper):
 
         """
 
-        prompt_text = self.prep_prompt_from_messages(
+        prompt = self.prep_prompt_from_messages(
             messages=messages,
             append_role=append_role,
             include_preamble=True
         )
-        kwargs = {
-            "text_inputs": prompt_text,
-            **self.kwargs
-        }
-        if self.temperature:
-            kwargs["temperature"] = self.temperature
-        return self.pipeline(**kwargs)
+        return self._call_model(prompt=prompt)
 
     def text_completion(self, prompt) -> str:
         """
@@ -1057,13 +1095,7 @@ class DollyWrapper(LanguageModelWrapper):
             The text completion.
 
         """
-        kwargs = {
-            "text_inputs": prompt,
-            **self.kwargs
-        }
-        if self.temperature:
-            kwargs["temperature"] = self.temperature
-        return self.pipeline(**kwargs)
+        return self._call_model(prompt=prompt)
 
 
 class CohereWrapper(LanguageModelWrapper):
@@ -1084,6 +1116,29 @@ class CohereWrapper(LanguageModelWrapper):
     def __repr__(self):
         return f"CohereWrapper(model={self.model})"
 
+    def _call_model(self, prompt, stop_sequences: List[str]):
+        """
+        Calls the model with the given prompt.
+        Args:
+            prompt: The prompt to call the model with.
+            stop_sequences: The stop sequences to use.
+
+        Returns:
+            The completion.
+        """
+        # https://docs.cohere.com/reference/generate
+        kwargs = {
+            "prompt": prompt,
+            "max_tokens": 300,
+            "stop_sequences": stop_sequences,
+            **self.kwargs
+        }
+        if self.temperature:
+            kwargs["temperature"] = self.temperature
+        response = self.co.generate(**kwargs)
+
+        return response.generations[0].text
+
     def complete_chat(self, messages, append_role=None) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
@@ -1101,23 +1156,14 @@ class CohereWrapper(LanguageModelWrapper):
             append_role=append_role,
             include_preamble=False
         )
-        # https://docs.cohere.com/reference/generate
-        kwargs = {
-            "prompt": prompt_text,
-            "max_tokens": 300,
-            "stop_sequences": _get_stop_sequences_from_messages(messages),
-            **self.kwargs
-        }
-        if self.temperature:
-            kwargs["temperature"] = self.temperature
-        response = self.co.generate(**kwargs)
+        stop_sequences = _get_stop_sequences_from_messages(messages)
 
-        resp = response.generations[0].text
+        res = self._call_model(prompt=prompt_text, stop_sequences=stop_sequences)
 
-        for s in _get_stop_sequences_from_messages(messages):
-            resp = resp.replace(s, "").strip()
+        for s in stop_sequences:
+            res = res.replace(s, "").strip()
 
-        return resp
+        return res
 
     def text_completion(self, prompt, stop_sequences=None) -> str:
         """
@@ -1133,17 +1179,8 @@ class CohereWrapper(LanguageModelWrapper):
 
         if stop_sequences is None:
             stop_sequences = []
-        # https://docs.cohere.com/reference/generate
-        kwargs = {
-            "prompt": prompt,
-            "max_tokens": 300,
-            "stop_sequences": stop_sequences,
-            **self.kwargs
-        }
-        if self.temperature:
-            kwargs["temperature"] = self.temperature
-        response = self.co.generate(**kwargs)
-        return response.generations[0].text
+
+        return self._call_model(prompt=prompt, stop_sequences=stop_sequences)
 
 
 class ChatBot:
