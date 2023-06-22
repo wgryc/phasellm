@@ -1063,6 +1063,7 @@ class DollyWrapper(LanguageModelWrapper):
         super().__init__(temperature=temperature, **kwargs)
         self.model_name = 'dolly-v2-12b'
         self.pipeline = pipeline(
+            'text-generation',
             model="databricks/dolly-v2-12b",
             torch_dtype=torch.bfloat16,
             trust_remote_code=True,
@@ -1083,11 +1084,13 @@ class DollyWrapper(LanguageModelWrapper):
         """
         kwargs = {
             "inputs": prompt,
+            "num_return_sequences": 1,
             **self.kwargs
         }
         if self.temperature is not None:
             kwargs["temperature"] = self.temperature
-        return self.pipeline(**kwargs)
+        res = self.pipeline(**kwargs)
+        return _remove_prompt_from_completion(prompt, res[0]['generated_text'])
 
     def complete_chat(self, messages: List[Message], append_role: str = None) -> str:
         """
