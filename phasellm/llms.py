@@ -1007,7 +1007,7 @@ class GPT2Wrapper(LanguageModelWrapper):
         """
         # https://huggingface.co/docs/transformers/v4.30.0/en/main_classes/text_generation#transformers.GenerationConfig
         kwargs = {
-            "text_inputs": prompt,
+            "inputs": prompt,
             "max_length": max_length,
             "num_return_sequences": 1,
             **self.kwargs
@@ -1063,7 +1063,6 @@ class DollyWrapper(LanguageModelWrapper):
         super().__init__(temperature=temperature, **kwargs)
         self.model_name = 'dolly-v2-12b'
         self.pipeline = pipeline(
-            "text-generation",
             model="databricks/dolly-v2-12b",
             torch_dtype=torch.bfloat16,
             trust_remote_code=True,
@@ -1083,7 +1082,7 @@ class DollyWrapper(LanguageModelWrapper):
             The completion.
         """
         kwargs = {
-            "text_inputs": prompt,
+            "inputs": prompt,
             **self.kwargs
         }
         if self.temperature is not None:
