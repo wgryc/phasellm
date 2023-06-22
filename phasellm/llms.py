@@ -1007,7 +1007,7 @@ class GPT2Wrapper(LanguageModelWrapper):
         """
         # https://huggingface.co/docs/transformers/v4.30.0/en/main_classes/text_generation#transformers.GenerationConfig
         kwargs = {
-            "inputs": prompt,
+            "text_inputs": prompt,
             "max_length": max_length,
             "num_return_sequences": 1,
             **self.kwargs
