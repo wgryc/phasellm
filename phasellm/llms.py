@@ -1063,7 +1063,7 @@ class DollyWrapper(LanguageModelWrapper):
         super().__init__(temperature=temperature, **kwargs)
         self.model_name = 'dolly-v2-12b'
         self.pipeline = pipeline(
-            'text-generation',
+            "text-generation",
             model="databricks/dolly-v2-12b",
             torch_dtype=torch.bfloat16,
             trust_remote_code=True,
