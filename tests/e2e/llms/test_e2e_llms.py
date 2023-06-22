@@ -1,5 +1,6 @@
 import os
 import gc
+import torch
 
 from unittest import TestCase
 
@@ -144,6 +145,7 @@ class E2ETestClaudeWrapper(TestCase):
 class E2ETestGPT2Wrapper(TestCase):
 
     def setUp(self) -> None:
+        torch.cuda.empty_cache()
         gc.collect()
 
     def test_complete_chat(self):
@@ -177,6 +179,7 @@ class E2ETestGPT2Wrapper(TestCase):
 
 class E2ETestDollyWrapper(TestCase):
     def setUp(self) -> None:
+        torch.cuda.empty_cache()
         gc.collect()
 
     def test_complete_chat(self):
@@ -477,6 +480,7 @@ class E2ETestStreamingClaudeWrapper(TestCase):
 class E2ETestChatBot(TestCase):
 
     def setUp(self) -> None:
+        torch.cuda.empty_cache()
         gc.collect()
 
     def test_openai_gpt_chat(self):
