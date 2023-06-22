@@ -1,4 +1,5 @@
 import os
+import gc
 
 from unittest import TestCase
 
@@ -38,6 +39,9 @@ skip_local_models = skip_local_models is not None and skip_local_models.lower() 
 
 class E2ETestHuggingFaceInferenceWrapper(TestCase):
 
+    def setUp(self) -> None:
+        gc.collect()
+
     def test_complete_chat(self):
         fixture = HuggingFaceInferenceWrapper(
             hugging_face_api_key,
@@ -74,6 +78,9 @@ class E2ETestHuggingFaceInferenceWrapper(TestCase):
 class E2ETestBloomWrapper(TestCase):
     # TODO remove this if we decide to remove the BloomWrapper in favor of only having the HuggingFaceInferenceWrapper
 
+    def setUp(self) -> None:
+        gc.collect()
+
     def test_complete_chat(self):
         fixture = BloomWrapper(hugging_face_api_key)
         test_complete_chat(self, fixture, verbose=False)
@@ -84,6 +91,9 @@ class E2ETestBloomWrapper(TestCase):
 
 
 class E2ETestOpenAIGPTWrapper(TestCase):
+
+    def setUp(self) -> None:
+        gc.collect()
 
     def test_complete_chat(self):
         fixture = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
@@ -111,6 +121,9 @@ class E2ETestOpenAIGPTWrapper(TestCase):
 
 class E2ETestClaudeWrapper(TestCase):
 
+    def setUp(self) -> None:
+        gc.collect()
+
     def test_complete_chat(self):
         fixture = ClaudeWrapper(anthropic_api_key, model="claude-v1")
         test_complete_chat(self, fixture, verbose=False)
@@ -129,6 +142,9 @@ class E2ETestClaudeWrapper(TestCase):
 
 
 class E2ETestGPT2Wrapper(TestCase):
+
+    def setUp(self) -> None:
+        gc.collect()
 
     def test_complete_chat(self):
         if skip_local_models:
@@ -160,6 +176,8 @@ class E2ETestGPT2Wrapper(TestCase):
 
 
 class E2ETestDollyWrapper(TestCase):
+    def setUp(self) -> None:
+        gc.collect()
 
     def test_complete_chat(self):
         if skip_local_models:
@@ -192,6 +210,9 @@ class E2ETestDollyWrapper(TestCase):
 
 class E2ETestCohereWrapper(TestCase):
 
+    def setUp(self) -> None:
+        gc.collect()
+
     def test_complete_chat(self):
         fixture = CohereWrapper(cohere_api_key, model="xlarge")
         test_complete_chat(self, fixture, verbose=False)
@@ -211,6 +232,9 @@ class E2ETestCohereWrapper(TestCase):
 
 
 class E2ETestStreamingOpenAIGPTWrapper(TestCase):
+
+    def setUp(self) -> None:
+        gc.collect()
 
     def test_complete_chat(self):
         """
@@ -344,6 +368,9 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
 
 class E2ETestStreamingClaudeWrapper(TestCase):
 
+    def setUp(self) -> None:
+        gc.collect()
+
     def test_complete_chat(self):
         """
         Tests that the StreamingClaudeWrapper can be used to perform chat completion.
@@ -449,6 +476,9 @@ class E2ETestStreamingClaudeWrapper(TestCase):
 
 class E2ETestChatBot(TestCase):
 
+    def setUp(self) -> None:
+        gc.collect()
+
     def test_openai_gpt_chat(self):
         llm = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
         fixture = ChatBot(llm)
@@ -553,6 +583,9 @@ class E2ETestChatBot(TestCase):
 
 
 class E2ETestStreamingChatBot(TestCase):
+
+    def setUp(self) -> None:
+        gc.collect()
 
     def test_openai_gpt_streaming_chat(self):
         llm = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
