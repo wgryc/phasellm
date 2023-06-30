@@ -2,6 +2,16 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.12 (2023-06-30)
+
+### New Features
+
+_None_
+
+### Fixes
+
+- ChatPrompt fills were losing additional data (e.g., time stamps); this is now fixed.
+
 # 0.0.11 (2023-06-19)
 
 ### New Features
