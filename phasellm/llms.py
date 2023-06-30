@@ -333,8 +333,10 @@ class ChatPrompt:
         for i in range(0, len(self.messages)):
             new_role = _fill_variables(self.messages[i]["role"], **kwargs)
             new_content = _fill_variables(self.messages[i]["content"], **kwargs)
-
-            filled_messages.append({"role": new_role, "content": new_content})
+            new_message = self.messages[i].copy()
+            new_message["role"] = new_role 
+            new_message["content"] = new_content 
+            filled_messages.append(new_message)
         return filled_messages
 
 
