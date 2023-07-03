@@ -15,7 +15,11 @@ from pathlib import Path
 
 from warnings import warn
 
+from bs4 import BeautifulSoup
+
 from abc import ABC, abstractmethod
+
+from fake_useragent import UserAgent
 
 from contextlib import contextmanager
 
@@ -614,3 +618,127 @@ class NewsSummaryAgent(Agent):
         return_me += "---------------"
 
         return return_me
+
+
+class WebpageAgent(Agent):
+
+    def __init__(self, name: str = ''):
+        super().__init__(name=name)
+
+        self.session = requests.Session()
+
+    def __repr__(self):
+        return f"WebpageAgent(name={self.name})"
+
+    @staticmethod
+    def _validate(url: str):
+        """
+        This method validates that a url can be used by the agent.
+        Returns:
+
+        """
+        if not url.startswith('http'):
+            raise ValueError(f"Url must use HTTP(S). Invalid URL: {url}")
+
+        if url.endswith('.pdf'):
+            raise ValueError(f"WebpageAgent cannot process PDFs. Invalid URL: {url}")
+
+    @staticmethod
+    def _handle_errors(res: requests.Response) -> None:
+        """
+        This method handles errors that occur during a request.
+        Args:
+            res: The response from the request.
+
+        Returns:
+
+        """
+        if res.status_code != 200:
+            raise Exception(f"WebpageAgent received a non-200 status code: {res.status_code}\n"
+                            f"{res.reason}")
+
+    @staticmethod
+    def _parse_html(res: requests.Response, text_only: bool = False) -> str:
+        """
+        This method parses the html from a response.
+        Args:
+            res: The response from the request.
+            text_only: Whether to return only the text from the html.
+
+        Returns:
+            The string containing the webpage text or html.
+
+        """
+        # Extract the content from the response.
+        text = res.content
+
+        if text_only:
+            soup = BeautifulSoup(text, features='lxml')
+            text = soup.get_text()
+        else:
+            text = text.decode('utf-8')
+
+        return text
+
+    @staticmethod
+    def _prep_headers(headers: Dict = None) -> Dict:
+        """
+        This method prepares the headers for a request. It fills in missing headers with default values. It also
+        adds a fake user agent to reduce the likelihood of being blocked.
+        Args:
+            headers: The headers to use for the request.
+
+        Returns:
+            The headers to use for the request.
+        """
+        if headers is None:
+            headers = {}
+
+        if 'Accept' not in headers:
+            headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        if 'User-Agent' not in headers:
+            headers['User-Agent'] = UserAgent().random
+        if 'Referrer' not in headers:
+            headers['Referrer'] = 'https://www.google.com/'
+        if 'Accept-Language' not in headers:
+            headers['Accept-Language'] = 'en-US,en;q=0.5'
+        if 'Accept-Encoding' not in headers:
+            headers['Accept-Encoding'] = 'gzip, deflate, br'
+        if 'Connection' not in headers:
+            headers['Connection'] = 'keep-alive'
+        if 'Upgrade-Insecure-Requests' not in headers:
+            headers['Upgrade-Insecure-Requests'] = '1'
+        if 'Cache-Control' not in headers:
+            headers['Cache-Control'] = 'max-age=0'
+
+        return headers
+
+    def scrape(self, url: str, headers: Dict = None, text_only: bool = False) -> str:
+        """
+        This method scrapes a webpage and returns a string containing the text of the webpage.
+        Args:
+            url: The URL of the webpage to scrape.
+            headers: A dictionary of headers to use for the request.
+            text_only: If True, only the text of the webpage is returned. If False, the entire HTML is returned.
+
+        Returns:
+            A string containing the text of the webpage.
+        """
+
+        self._validate(url=url)
+
+        res = self.session.get(
+            url=url,
+            headers=self._prep_headers(
+                headers=headers
+            )
+        )
+
+        self._handle_errors(res=res)
+
+        text = self._parse_html(
+            res=res,
+            text_only=text_only
+        )
+
+        return text
