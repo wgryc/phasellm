@@ -1,5 +1,6 @@
 import os
 import shutil
+import time
 
 from pathlib import Path
 
@@ -9,7 +10,7 @@ import docker.errors
 
 from phasellm.exceptions import LLMCodeException
 
-from phasellm.agents import SandboxedCodeExecutionAgent
+from phasellm.agents import SandboxedCodeExecutionAgent, WebpageAgent
 
 
 class TestE2ESandboxedCodeExecutionAgent(TestCase):
@@ -134,7 +135,6 @@ class TestE2ESandboxedCodeExecutionAgent(TestCase):
         )
 
         with SandboxedCodeExecutionAgent(scratch_dir=self.scratch_dir) as fixture:
-
             expected = "1\n"
             logs = fixture.execute_code(code_1, stream=False)
             self.assertTrue(logs == expected, f"\n{logs}\n!=\n{expected}")
@@ -170,3 +170,84 @@ class TestE2ESandboxedCodeExecutionAgent(TestCase):
             logs = fixture.execute_code(code_2, stream=False, auto_stop_container=True)
             self.assertTrue(logs == expected, f"\n{logs}\n!=\n{expected}")
             self.assertTrue(fixture._container is None, f"Container should be None, got {fixture._container}")
+
+
+class TestE2EWebpageAgent(TestCase):
+
+    def setUp(self):
+        self.fixture = WebpageAgent()
+
+    def test_scrape_single_html_text(self):
+        text = self.fixture.scrape(
+            url='https://www.sec.gov/Archives/edgar/data/1045810/000122520823007007/0001225208-23-007007-index.htm',
+            text_only=True
+        )
+        self.assertTrue(
+            'NVIDIA CORP' in
+            text, f"Text does not contain expected string.\n{text}"
+        )
+
+    def test_scrape_single_html(self):
+        text = self.fixture.scrape(
+            url='https://www.sec.gov/Archives/edgar/data/320193/000119312514383437/d783162d10k.htm',
+            text_only=False
+        )
+        self.assertTrue(
+            'APPLE INC.'
+            in text, f"Text does not contain expected string.\n{text}"
+        )
+
+    def test_scrape_single_html_javascript(self):
+        text = self.fixture.scrape(
+            url='https://www.sec.gov/ix?doc=/Archives/edgar/data/1318605/000095017023013890/tsla-20230331.htm',
+            text_only=False
+        )
+        print(text)
+        self.assertTrue(
+            'Tesla'
+            in text, f"Text does not contain expected string.\n{text}"
+        )
+
+    def test_scrape_single_xml_text(self):
+        text = self.fixture.scrape(
+            url='https://www.sec.gov/Archives/edgar/data/1045810/000122520823007007/doc4.xml',
+            text_only=True
+        )
+        self.assertTrue(
+            'NVIDIA CORP'
+            in text, f"Text does not contain expected string.\n{text}"
+        )
+
+    def test_scrape_single_xml(self):
+        text = self.fixture.scrape(
+            url='https://www.sec.gov/Archives/edgar/data/320193/000032019318000145/aapl-20180929.xml',
+            text_only=False
+        )
+        self.assertTrue(
+            '<xbrli:identifier scheme="http://www.sec.gov/CIK">0000320193</xbrli:identifier>'
+            in text, f"Text does not contain expected string.\n{text}"
+        )
+
+    def test_scrape_invalid(self):
+        exception = False
+        try:
+            self.fixture.scrape(
+                url='https://arxiv.org/pdf/2306.17759.pdf',
+                text_only=True
+            )
+        except ValueError:
+            exception = True
+
+        self.assertTrue(exception, "Expected ValueError, got nothing.")
+
+    def test_scrape_multiple(self):
+        urls = [
+            'https://www.cbc.ca/news/canada/google-facebook-canadian-news-1.6894029',
+            'https://arxiv.org/abs/2306.17759'
+        ]
+        for url in urls:
+            text = self.fixture.scrape(url=url, text_only=True)
+            self.assertTrue(
+                len(text) > 0,
+                f"Text is empty.\n{text}"
+            )
