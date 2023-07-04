@@ -881,7 +881,10 @@ class WebSearchAgent(Agent):
                 ...     name='Google Search Agent',
                 ...     api_key='YOUR_API_KEY'
                 ... )
-                >>> results = agent.search_google(query='test')
+                >>> results = agent.search_google(
+                ...     query='test'
+                ...     custom_search_engine_id='YOUR_CUSTOM_SEARCH_ENGINE_ID'
+                ... )
             Search with Brave:
                 >>> agent = WebSearchAgent(
                 ...     name='Brave Search Agent',
