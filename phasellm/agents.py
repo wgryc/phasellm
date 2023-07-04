@@ -628,6 +628,38 @@ class NewsSummaryAgent(Agent):
 class WebpageAgent(Agent):
 
     def __init__(self, name: str = ''):
+        """
+        Create a WebpageAgent.
+
+        This agent helps you scrape webpages.
+
+        Examples:
+            >>> from phasellm.agents import WebpageAgent
+            Use default parameters:
+                >>> agent = WebpageAgent()
+                >>> text = agent.scrape('https://10millionsteps.com/ai-inflection')
+            Keep html tags:
+                >>> agent = WebpageAgent()
+                >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', text_only=False, body_only=False)
+            Keep html tags, but only return body content:
+                >>> agent = WebpageAgent()
+                >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', text_only=False, body_only=True)
+            Use a headless browser to enable scraping of dynamic content:
+                >>> agent = WebpageAgent()
+                >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', text_only=False, body_only=True,
+                ...                     use_browser=True)
+            Pass custom headers:
+                >>> agent = WebpageAgent()
+                >>> headers = {'Example': 'header'}
+                >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', headers=headers)
+            Wait for a selector to load (useful for dynamic content, only works when use_browser=True):
+                >>> agent = WebpageAgent()
+                >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', use_browser=True,
+                ...                     wait_for_selector='#dynamic')
+
+        Args:
+            name: The name of the agent (optional)
+        """
         super().__init__(name=name)
 
         self.session = requests.Session()
