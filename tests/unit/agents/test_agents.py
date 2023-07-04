@@ -175,18 +175,6 @@ class TestNewsSummaryAgent(TestCase):
         # TODO consider mocking networking calls and making assertions on string output.
         pass
 
-# if text_only or body_only:
-#     soup = BeautifulSoup(html, features='lxml')
-#     if text_only and body_only:
-#         text = soup.body.get_text()
-#     elif text_only:
-#         text = soup.get_text()
-#     else:
-#         text = str(soup.body)
-# else:
-#     text = html
-# return text.strip()
-
 
 class TestWebpageAgent(TestCase):
     test_html_str = (
