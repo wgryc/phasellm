@@ -636,7 +636,7 @@ class WebpageAgent(Agent):
         return f"WebpageAgent(name={self.name})"
 
     @staticmethod
-    def _validate(url: str):
+    def _validate_url(url: str) -> None:
         """
         This method validates that a url can be used by the agent.
         Returns:
@@ -645,8 +645,7 @@ class WebpageAgent(Agent):
         if not url.startswith('http'):
             raise ValueError(f"Url must use HTTP(S). Invalid URL: {url}")
 
-        if url.endswith('.pdf'):
-            raise ValueError(f"WebpageAgent cannot process PDFs. Invalid URL: {url}")
+        # TODO consider adding more validations.
 
     @staticmethod
     def _handle_errors(res: requests.Response) -> None:
@@ -742,7 +741,7 @@ class WebpageAgent(Agent):
             A string containing the html of the webpage.
 
         """
-        # Ensure chromium is installed.
+        # Ensure chromium is installed for the headless browser.
         subprocess.call('playwright install chromium')
 
         with sync_playwright() as p:
@@ -783,7 +782,7 @@ class WebpageAgent(Agent):
             A string containing the text of the webpage.
         """
 
-        self._validate(url=url)
+        self._validate_url(url=url)
 
         if use_javascript:
             data = self._scrape_html_and_js(url=url, wait_for_selector=wait_for_selector)
@@ -791,8 +790,6 @@ class WebpageAgent(Agent):
             data = self._scrape_html(url=url, headers=headers)
 
         if text_only:
-            data = self._parse_html(
-                html=data
-            )
+            data = self._parse_html(html=data)
 
         return data
