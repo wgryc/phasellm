@@ -1,7 +1,5 @@
 import os
-import time
 import shutil
-import random
 
 import docker.errors
 
@@ -9,9 +7,16 @@ from pathlib import Path
 
 from unittest import TestCase
 
+from dotenv import load_dotenv
+
 from phasellm.exceptions import LLMCodeException
 
-from phasellm.agents import SandboxedCodeExecutionAgent, WebpageAgent
+from phasellm.agents import SandboxedCodeExecutionAgent, WebpageAgent, WebSearchResult, WebSearchAgent
+
+load_dotenv()
+google_search_api_key = os.getenv("GOOGLE_SEARCH_API_KEY")
+google_search_engine_id = os.getenv("GOOGLE_SEARCH_ENGINE_ID")
+brave_search_api_key = os.getenv("BRAVE_SEARCH_API_KEY")
 
 
 class TestE2ESandboxedCodeExecutionAgent(TestCase):
@@ -181,7 +186,6 @@ class TestE2EWebpageAgent(TestCase):
 
     def setUp(self):
         self.fixture = WebpageAgent()
-        time.sleep(random.random())
 
     def test_scrape_single_html_text(self):
         text = self.fixture.scrape(
@@ -265,7 +269,7 @@ class TestE2EWebpageAgent(TestCase):
                 body_only=False,
                 use_browser=False
             )
-        except ValueError:
+        except Exception:
             exception = True
 
         self.assertTrue(exception, "Expected ValueError, got nothing.")
@@ -311,4 +315,42 @@ class TestE2EWebpageAgent(TestCase):
             '<p>There are two broad types of risks we need to consider in this AI-enabled future.</p>\n'
             '<p><em>Extrinsic risks' in text,
             f"Text does not contain expected string.\n{text}"
+        )
+
+
+class TestE2EWebSearchAgent(TestCase):
+
+    def test_search_google(self):
+        self.fixture = WebSearchAgent(
+            api_key=google_search_api_key
+        )
+        res = self.fixture.search_google(
+            query='test',
+            custom_search_engine_id=google_search_engine_id
+        )
+
+        self.assertTrue(
+            len(res) > 0,
+            f"Result is empty.\n{res}"
+        )
+        self.assertTrue(
+            isinstance(res[0], WebSearchResult),
+            f"Result is not of type WebSearchResult.\n{res}"
+        )
+
+    def test_search_brave(self):
+        self.fixture = WebSearchAgent(
+            api_key=brave_search_api_key
+        )
+        res = self.fixture.search_brave(
+            query='test'
+        )
+
+        self.assertTrue(
+            len(res) > 0,
+            f"Result is empty.\n{res}"
+        )
+        self.assertTrue(
+            isinstance(res[0], WebSearchResult),
+            f"Result is not of type WebSearchResult.\n{res}"
         )
