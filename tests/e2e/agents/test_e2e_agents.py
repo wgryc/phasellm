@@ -1,12 +1,13 @@
 import os
-import shutil
 import time
+import shutil
+import random
+
+import docker.errors
 
 from pathlib import Path
 
 from unittest import TestCase
-
-import docker.errors
 
 from phasellm.exceptions import LLMCodeException
 
@@ -180,55 +181,68 @@ class TestE2EWebpageAgent(TestCase):
 
     def setUp(self):
         self.fixture = WebpageAgent()
+        time.sleep(random.random())
 
     def test_scrape_single_html_text(self):
         text = self.fixture.scrape(
-            url='https://www.sec.gov/Archives/edgar/data/1045810/000122520823007007/0001225208-23-007007-index.htm',
+            url='https://www.cbc.ca/news/canada/google-facebook-canadian-news-1.6894029',
             text_only=True
         )
         self.assertTrue(
-            'NVIDIA CORP' in
+            'Government says law will apply to companies with' in
             text, f"Text does not contain expected string.\n{text}"
         )
 
     def test_scrape_single_html(self):
         text = self.fixture.scrape(
-            url='https://www.sec.gov/Archives/edgar/data/320193/000119312514383437/d783162d10k.htm',
+            url='https://www.cbc.ca/news/canada/google-facebook-canadian-news-1.6894029',
             text_only=False
         )
         self.assertTrue(
-            'APPLE INC.'
+            '<title data-rh="true">When will Canadian news disappear from Google, Facebook? What the Bill C-18 rift '
+            'means for you | CBC News</title>'
             in text, f"Text does not contain expected string.\n{text}"
         )
 
     def test_scrape_single_html_javascript(self):
         text = self.fixture.scrape(
-            url='https://www.sec.gov/ix?doc=/Archives/edgar/data/1318605/000095017023013890/tsla-20230331.htm',
-            text_only=False
+            url='https://github.com/facebook/react',
+            text_only=False,
+            use_javascript=True
         )
-        print(text)
         self.assertTrue(
-            'Tesla'
+            'Go to file\n</a>'
+            in text, f"Text does not contain expected string.\n{text}"
+        )
+
+    def test_scrape_single_html_text_javascript(self):
+        text = self.fixture.scrape(
+            url='https://github.com/facebook/react',
+            text_only=True,
+            use_javascript=True
+        )
+        self.assertTrue(
+            'Go to file'
             in text, f"Text does not contain expected string.\n{text}"
         )
 
     def test_scrape_single_xml_text(self):
         text = self.fixture.scrape(
-            url='https://www.sec.gov/Archives/edgar/data/1045810/000122520823007007/doc4.xml',
+            url='https://www.w3schools.com/xml/note.xml',
             text_only=True
         )
         self.assertTrue(
-            'NVIDIA CORP'
+            'Tove'
             in text, f"Text does not contain expected string.\n{text}"
         )
 
     def test_scrape_single_xml(self):
         text = self.fixture.scrape(
-            url='https://www.sec.gov/Archives/edgar/data/320193/000032019318000145/aapl-20180929.xml',
+            url='https://www.w3schools.com/xml/note.xml',
             text_only=False
         )
         self.assertTrue(
-            '<xbrli:identifier scheme="http://www.sec.gov/CIK">0000320193</xbrli:identifier>'
+            '<to>Tove</to>'
             in text, f"Text does not contain expected string.\n{text}"
         )
 
