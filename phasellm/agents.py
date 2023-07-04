@@ -662,18 +662,29 @@ class WebpageAgent(Agent):
                             f"{res.reason}")
 
     @staticmethod
-    def _parse_html(html: str) -> str:
+    def _parse_html(html: str, text_only: bool = True, body_only: bool = False) -> str:
         """
         This method parses the given html string.
         Args:
             html: The html to parse.
+            text_only: If True, only the text of the webpage is returned. If False, the entire HTML is returned.
+            body_only: If True, only the body of the webpage is returned. If False, the entire HTML is returned.
 
         Returns:
             The string containing the webpage text or html.
 
         """
-        soup = BeautifulSoup(html, features='lxml')
-        return soup.get_text()
+        if text_only or body_only:
+            soup = BeautifulSoup(html, features='lxml')
+            if text_only and body_only:
+                text = soup.body.get_text()
+            elif text_only:
+                text = soup.get_text()
+            else:
+                text = str(soup.body)
+        else:
+            text = html
+        return text.strip()
 
     @staticmethod
     def _prep_headers(headers: Dict = None) -> Dict:
@@ -764,7 +775,8 @@ class WebpageAgent(Agent):
             headers: Dict = None,
             use_javascript: bool = False,
             wait_for_selector: str = None,
-            text_only: bool = False
+            text_only: bool = True,
+            body_only: bool = True
     ) -> str:
         """
         This method scrapes a webpage and returns a string containing the text of the webpage.
@@ -777,6 +789,7 @@ class WebpageAgent(Agent):
             should be on the page but it is not there yet since it needs to be rendered by javascript. Only used if
             use_javascript is True.
             text_only: If True, only the text of the webpage is returned. If False, the entire HTML is returned.
+            body_only: If True, only the body of the webpage is returned. If False, the entire HTML is returned.
 
         Returns:
             A string containing the text of the webpage.
@@ -789,7 +802,6 @@ class WebpageAgent(Agent):
         else:
             data = self._scrape_html(url=url, headers=headers)
 
-        if text_only:
-            data = self._parse_html(html=data)
+        data = self._parse_html(html=data, text_only=text_only, body_only=body_only)
 
         return data
