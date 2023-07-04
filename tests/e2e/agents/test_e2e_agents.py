@@ -186,17 +186,21 @@ class TestE2EWebpageAgent(TestCase):
     def test_scrape_single_html_text(self):
         text = self.fixture.scrape(
             url='https://www.cbc.ca/news/canada/google-facebook-canadian-news-1.6894029',
-            text_only=True
+            text_only=True,
+            body_only=False,
+            use_javascript=False
         )
         self.assertTrue(
-            'Government says law will apply to companies with' in
+            'Canadian journalism.Government says' in
             text, f"Text does not contain expected string.\n{text}"
         )
 
     def test_scrape_single_html(self):
         text = self.fixture.scrape(
             url='https://www.cbc.ca/news/canada/google-facebook-canadian-news-1.6894029',
-            text_only=False
+            text_only=False,
+            body_only=False,
+            use_javascript=False
         )
         self.assertTrue(
             '<title data-rh="true">When will Canadian news disappear from Google, Facebook? What the Bill C-18 rift '
@@ -208,6 +212,7 @@ class TestE2EWebpageAgent(TestCase):
         text = self.fixture.scrape(
             url='https://github.com/facebook/react',
             text_only=False,
+            body_only=False,
             use_javascript=True
         )
         self.assertTrue(
@@ -219,6 +224,7 @@ class TestE2EWebpageAgent(TestCase):
         text = self.fixture.scrape(
             url='https://github.com/facebook/react',
             text_only=True,
+            body_only=False,
             use_javascript=True
         )
         self.assertTrue(
@@ -229,7 +235,9 @@ class TestE2EWebpageAgent(TestCase):
     def test_scrape_single_xml_text(self):
         text = self.fixture.scrape(
             url='https://www.w3schools.com/xml/note.xml',
-            text_only=True
+            text_only=True,
+            body_only=False,
+            use_javascript=False
         )
         self.assertTrue(
             'Tove'
@@ -239,7 +247,9 @@ class TestE2EWebpageAgent(TestCase):
     def test_scrape_single_xml(self):
         text = self.fixture.scrape(
             url='https://www.w3schools.com/xml/note.xml',
-            text_only=False
+            text_only=False,
+            body_only=False,
+            use_javascript=False
         )
         self.assertTrue(
             '<to>Tove</to>'
@@ -251,7 +261,9 @@ class TestE2EWebpageAgent(TestCase):
         try:
             self.fixture.scrape(
                 url='https://arxiv.org/pdf/2306.17759.pdf',
-                text_only=True
+                text_only=True,
+                body_only=False,
+                use_javascript=False
             )
         except ValueError:
             exception = True
@@ -264,8 +276,39 @@ class TestE2EWebpageAgent(TestCase):
             'https://arxiv.org/abs/2306.17759'
         ]
         for url in urls:
-            text = self.fixture.scrape(url=url, text_only=True)
+            text = self.fixture.scrape(
+                url=url,
+                text_only=True,
+                body_only=False,
+                use_javascript=False
+            )
             self.assertTrue(
                 len(text) > 0,
                 f"Text is empty.\n{text}"
             )
+
+    def test_scrape_single_html_text_only_body_only(self):
+        text = self.fixture.scrape(
+            url='https://10millionsteps.com/ai-inflection',
+            text_only=True,
+            body_only=True,
+            use_javascript=False
+        )
+        self.assertTrue(
+            'There are two broad types of risks we need to consider in this AI-enabled future.\n'
+            'Extrinsic risks' in text,
+            f"Text does not contain expected string.\n{text}"
+        )
+
+    def test_scrape_single_html_only_body(self):
+        text = self.fixture.scrape(
+            url='https://10millionsteps.com/ai-inflection',
+            text_only=False,
+            body_only=True,
+            use_javascript=False
+        )
+        self.assertTrue(
+            '<p>There are two broad types of risks we need to consider in this AI-enabled future.</p>\n'
+            '<p><em>Extrinsic risks' in text,
+            f"Text does not contain expected string.\n{text}"
+        )
