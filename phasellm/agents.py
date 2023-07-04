@@ -5,9 +5,12 @@ Agents to help with workflows.
 import re
 import os
 import sys
+import time
+
 import docker
 import smtplib
 import requests
+import subprocess
 
 from io import StringIO
 
@@ -24,6 +27,8 @@ from fake_useragent import UserAgent
 from contextlib import contextmanager
 
 from datetime import datetime, timedelta
+
+from playwright.sync_api import sync_playwright
 
 from docker import DockerClient
 from docker.models.containers import Container, ExecResult
@@ -658,27 +663,18 @@ class WebpageAgent(Agent):
                             f"{res.reason}")
 
     @staticmethod
-    def _parse_html(res: requests.Response, text_only: bool = False) -> str:
+    def _parse_html(html: str) -> str:
         """
-        This method parses the html from a response.
+        This method parses the given html string.
         Args:
-            res: The response from the request.
-            text_only: Whether to return only the text from the html.
+            html: The html to parse.
 
         Returns:
             The string containing the webpage text or html.
 
         """
-        # Extract the content from the response.
-        text = res.content
-
-        if text_only:
-            soup = BeautifulSoup(text, features='lxml')
-            text = soup.get_text()
-        else:
-            text = text.decode('utf-8')
-
-        return text
+        soup = BeautifulSoup(html, features='lxml')
+        return soup.get_text()
 
     @staticmethod
     def _prep_headers(headers: Dict = None) -> Dict:
@@ -697,7 +693,7 @@ class WebpageAgent(Agent):
         if 'Accept' not in headers:
             headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
         if 'User-Agent' not in headers:
-            headers['User-Agent'] = UserAgent().random
+            headers['User-Agent'] = UserAgent().chrome
         if 'Referrer' not in headers:
             headers['Referrer'] = 'https://www.google.com/'
         if 'Accept-Language' not in headers:
@@ -713,12 +709,74 @@ class WebpageAgent(Agent):
 
         return headers
 
-    def scrape(self, url: str, headers: Dict = None, text_only: bool = False) -> str:
+    def _scrape_html(self, url: str, headers: Dict = None) -> str:
+        """
+        This method scrapes a webpage and returns a string containing the html of the webpage.
+        Args:
+            url: The URL of the webpage to scrape.
+            headers: A dictionary of headers to use for the request.
+
+        Returns:
+            A string containing the html of the webpage.
+        """
+
+        headers = self._prep_headers(headers=headers)
+
+        res = self.session.get(url=url, headers=headers)
+
+        self._handle_errors(res=res)
+
+        return res.content.decode('utf-8')
+
+    @staticmethod
+    def _scrape_html_and_js(url: str, wait_for_selector: str = None) -> str:
+        """
+        This method scrapes a webpage and returns a string containing the html of the webpage. It uses a headless
+        browser to render the webpage and execute javascript.
+        Args:
+            url: The URL of the webpage to scrape.
+            wait_for_selector: The selector to wait for before returning the HTML. Useful for when you know something
+            should be on the page but it is not there yet since it needs to be rendered by javascript.
+
+        Returns:
+            A string containing the html of the webpage.
+
+        """
+        # Ensure chromium is installed.
+        subprocess.call('playwright install chromium')
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(url)
+            if wait_for_selector is None:
+                # Wait until there are no network connections for at least `500` ms.
+                page.wait_for_load_state('networkidle')
+            else:
+                # Wait until the `selector` defined by 'wait_for_selector' is added to the DOM.
+                page.wait_for_selector(wait_for_selector)
+            data = page.content()
+            browser.close()
+        return data
+
+    def scrape(
+            self,
+            url: str,
+            headers: Dict = None,
+            use_javascript: bool = False,
+            wait_for_selector: str = None,
+            text_only: bool = False
+    ) -> str:
         """
         This method scrapes a webpage and returns a string containing the text of the webpage.
         Args:
             url: The URL of the webpage to scrape.
             headers: A dictionary of headers to use for the request.
+            use_javascript: If True, the webpage is rendered using a headless browser, allowing javascript to run and
+            hydrate the page. If False, the webpage is scraped as-is.
+            wait_for_selector: The selector to wait for before returning the HTML. Useful for when you know something
+            should be on the page but it is not there yet since it needs to be rendered by javascript. Only used if
+            use_javascript is True.
             text_only: If True, only the text of the webpage is returned. If False, the entire HTML is returned.
 
         Returns:
@@ -727,18 +785,14 @@ class WebpageAgent(Agent):
 
         self._validate(url=url)
 
-        res = self.session.get(
-            url=url,
-            headers=self._prep_headers(
-                headers=headers
+        if use_javascript:
+            data = self._scrape_html_and_js(url=url, wait_for_selector=wait_for_selector)
+        else:
+            data = self._scrape_html(url=url, headers=headers)
+
+        if text_only:
+            data = self._parse_html(
+                html=data
             )
-        )
 
-        self._handle_errors(res=res)
-
-        text = self._parse_html(
-            res=res,
-            text_only=text_only
-        )
-
-        return text
+        return data
