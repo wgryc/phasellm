@@ -774,21 +774,21 @@ class WebpageAgent(Agent):
             self,
             url: str,
             headers: Dict = None,
-            use_javascript: bool = False,
+            use_browser: bool = False,
             wait_for_selector: str = None,
             text_only: bool = True,
             body_only: bool = True
     ) -> str:
         """
-        This method scrapes a webpage and returns a string containing the text of the webpage.
+        This method scrapes a webpage and returns a string containing the html or text of the webpage.
         Args:
             url: The URL of the webpage to scrape.
             headers: A dictionary of headers to use for the request.
-            use_javascript: If True, the webpage is rendered using a headless browser, allowing javascript to run and
+            use_browser: If True, the webpage is rendered using a headless browser, allowing javascript to run and
             hydrate the page. If False, the webpage is scraped as-is.
             wait_for_selector: The selector to wait for before returning the HTML. Useful for when you know something
             should be on the page but it is not there yet since it needs to be rendered by javascript. Only used if
-            use_javascript is True.
+            use_browser is True.
             text_only: If True, only the text of the webpage is returned. If False, the entire HTML is returned.
             body_only: If True, only the body of the webpage is returned. If False, the entire HTML is returned.
 
@@ -800,7 +800,7 @@ class WebpageAgent(Agent):
 
         headers = self._prep_headers(headers=headers)
 
-        if use_javascript:
+        if use_browser:
             data = self._scrape_html_and_js(url=url, headers=headers, wait_for_selector=wait_for_selector)
         else:
             data = self._scrape_html(url=url, headers=headers)

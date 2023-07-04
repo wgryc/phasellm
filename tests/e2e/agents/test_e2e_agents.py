@@ -184,7 +184,7 @@ class TestE2EWebpageAgent(TestCase):
             url='https://www.cbc.ca/news/canada/google-facebook-canadian-news-1.6894029',
             text_only=True,
             body_only=False,
-            use_javascript=False
+            use_browser=False
         )
         self.assertTrue(
             'Canadian journalism.Government says' in
@@ -196,7 +196,7 @@ class TestE2EWebpageAgent(TestCase):
             url='https://www.cbc.ca/news/canada/google-facebook-canadian-news-1.6894029',
             text_only=False,
             body_only=False,
-            use_javascript=False
+            use_browser=False
         )
         self.assertTrue(
             '<title data-rh="true">When will Canadian news disappear from Google, Facebook? What the Bill C-18 rift '
@@ -209,7 +209,7 @@ class TestE2EWebpageAgent(TestCase):
             url='https://github.com/facebook/react',
             text_only=False,
             body_only=False,
-            use_javascript=True
+            use_browser=True
         )
         self.assertTrue(
             'Go to file\n</a>'
@@ -221,7 +221,7 @@ class TestE2EWebpageAgent(TestCase):
             url='https://github.com/facebook/react',
             text_only=True,
             body_only=False,
-            use_javascript=True
+            use_browser=True
         )
         self.assertTrue(
             'Go to file'
@@ -233,7 +233,7 @@ class TestE2EWebpageAgent(TestCase):
             url='https://www.w3schools.com/xml/note.xml',
             text_only=True,
             body_only=False,
-            use_javascript=False
+            use_browser=False
         )
         self.assertTrue(
             'Tove'
@@ -245,7 +245,7 @@ class TestE2EWebpageAgent(TestCase):
             url='https://www.w3schools.com/xml/note.xml',
             text_only=False,
             body_only=False,
-            use_javascript=False
+            use_browser=False
         )
         self.assertTrue(
             '<to>Tove</to>'
@@ -259,7 +259,7 @@ class TestE2EWebpageAgent(TestCase):
                 url='https://arxiv.org/pdf/2306.17759.pdf',
                 text_only=True,
                 body_only=False,
-                use_javascript=False
+                use_browser=False
             )
         except ValueError:
             exception = True
@@ -276,7 +276,7 @@ class TestE2EWebpageAgent(TestCase):
                 url=url,
                 text_only=True,
                 body_only=False,
-                use_javascript=False
+                use_browser=False
             )
             self.assertTrue(
                 len(text) > 0,
@@ -288,7 +288,7 @@ class TestE2EWebpageAgent(TestCase):
             url='https://10millionsteps.com/ai-inflection',
             text_only=True,
             body_only=True,
-            use_javascript=False
+            use_browser=False
         )
         self.assertTrue(
             'There are two broad types of risks we need to consider in this AI-enabled future.\n'
@@ -301,7 +301,7 @@ class TestE2EWebpageAgent(TestCase):
             url='https://10millionsteps.com/ai-inflection',
             text_only=False,
             body_only=True,
-            use_javascript=False
+            use_browser=False
         )
         self.assertTrue(
             '<p>There are two broad types of risks we need to consider in this AI-enabled future.</p>\n'
