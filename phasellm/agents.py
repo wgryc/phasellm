@@ -730,8 +730,6 @@ class WebpageAgent(Agent):
             A string containing the html of the webpage.
         """
 
-        headers = self._prep_headers(headers=headers)
-
         res = self.session.get(url=url, headers=headers)
 
         self._handle_errors(res=res)
@@ -739,12 +737,13 @@ class WebpageAgent(Agent):
         return res.content.decode('utf-8')
 
     @staticmethod
-    def _scrape_html_and_js(url: str, wait_for_selector: str = None) -> str:
+    def _scrape_html_and_js(url: str, headers: Dict, wait_for_selector: str = None) -> str:
         """
         This method scrapes a webpage and returns a string containing the html of the webpage. It uses a headless
         browser to render the webpage and execute javascript.
         Args:
             url: The URL of the webpage to scrape.
+            headers: A dictionary of headers to use for the request.
             wait_for_selector: The selector to wait for before returning the HTML. Useful for when you know something
             should be on the page but it is not there yet since it needs to be rendered by javascript.
 
@@ -757,7 +756,9 @@ class WebpageAgent(Agent):
 
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
+            page = browser.new_page(
+                extra_http_headers=headers
+            )
             page.goto(url)
             if wait_for_selector is None:
                 # Wait until there are no network connections for at least `500` ms.
@@ -797,8 +798,10 @@ class WebpageAgent(Agent):
 
         self._validate_url(url=url)
 
+        headers = self._prep_headers(headers=headers)
+
         if use_javascript:
-            data = self._scrape_html_and_js(url=url, wait_for_selector=wait_for_selector)
+            data = self._scrape_html_and_js(url=url, headers=headers, wait_for_selector=wait_for_selector)
         else:
             data = self._scrape_html(url=url, headers=headers)
 
