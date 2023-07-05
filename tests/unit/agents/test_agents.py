@@ -2,7 +2,8 @@ from unittest import TestCase
 
 from unittest.mock import patch
 
-from phasellm.agents import CodeExecutionAgent, SandboxedCodeExecutionAgent, EmailSenderAgent, NewsSummaryAgent
+from phasellm.agents import CodeExecutionAgent, SandboxedCodeExecutionAgent, EmailSenderAgent, NewsSummaryAgent, \
+    WebpageAgent
 
 
 class TestCodeExecutionAgent(TestCase):
@@ -173,3 +174,88 @@ class TestNewsSummaryAgent(TestCase):
     def test_get_query(self):
         # TODO consider mocking networking calls and making assertions on string output.
         pass
+
+
+class TestWebpageAgent(TestCase):
+    test_html_str = (
+        "<html>"
+        "<head>"
+        "<meta charset=\"utf-8\">"
+        "<script src=\"https://test.com\"></script>"
+        "<link rel=\"stylesheet\" href=\"https://test.com\">"
+        "<style> body { background-color: #000000; } </style>"
+        "<title>Test</title>"
+        "</head>"
+        "<body>"
+        "<p>Hello, world!</p>"
+        "</body>"
+        "</html>"
+    )
+
+    def setUp(self) -> None:
+        self.fixture = WebpageAgent()
+
+    def test_parse_html(self):
+        actual = self.fixture._parse_html(
+            html=self.test_html_str,
+            text_only=False,
+            body_only=False
+        )
+        expected = self.test_html_str
+        self.assertEqual(actual, expected)
+
+    def test_parse_html_text_only(self):
+        actual = self.fixture._parse_html(
+            html=self.test_html_str,
+            text_only=True,
+            body_only=False
+        )
+        expected = "TestHello, world!"
+        self.assertEqual(actual, expected)
+
+    def test_parse_html_body_only(self):
+        actual = self.fixture._parse_html(
+            html=self.test_html_str,
+            text_only=False,
+            body_only=True
+        )
+        expected = "<body><p>Hello, world!</p></body>"
+        self.assertEqual(actual, expected)
+
+    def test_parse_html_text_only_body_only(self):
+        actual = self.fixture._parse_html(
+            html=self.test_html_str,
+            text_only=True,
+            body_only=True
+        )
+        expected = "Hello, world!"
+        self.assertEqual(actual, expected)
+
+    def test_prep_headers(self):
+        actual = self.fixture._prep_headers(
+            headers={
+                'test': 'test'
+            }
+        )
+        expected = {
+            'test': 'test',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            # 'User-Agent': UserAgent().chrome, // This is here for reference only. It is added by _prep_headers.
+            'Referrer': 'https://www.google.com/',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'max-age=0'
+        }
+        self.assertEqual(actual['test'], expected['test'])
+        self.assertEqual(actual['Accept'], expected['Accept'])
+        self.assertEqual(actual['Referrer'], expected['Referrer'])
+        self.assertEqual(actual['Accept-Language'], expected['Accept-Language'])
+        self.assertEqual(actual['Accept-Encoding'], expected['Accept-Encoding'])
+        self.assertEqual(actual['Connection'], expected['Connection'])
+        self.assertEqual(actual['Upgrade-Insecure-Requests'], expected['Upgrade-Insecure-Requests'])
+        self.assertEqual(actual['Cache-Control'], expected['Cache-Control'])
+
+        self.assertTrue('User-Agent' in actual)
+        self.assertTrue('Chrome' in actual['User-Agent'])

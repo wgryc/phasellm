@@ -31,7 +31,11 @@ setup(
         "typing-extensions>=4.6.3",
         "urllib3==1.26.6",
         "sseclient-py>=1.7.2",
-        "docker>=6.1.3"
+        "docker>=6.1.3",
+        "beautifulsoup4>=4.12.2",
+        "lxml>=4.9.2",
+        "fake-useragent>=1.1.3",
+        "playwright>=1.35.0"
     ],
     python_requires=">=3.8.0",
     keywords="llm, nlp, evaluation, ai",
