@@ -22,9 +22,6 @@ setup(
         "requests>=2.24.0",
         "openai>=0.26.0",
         "cohere>=4.0.0",
-        "transformers>=4.25.0",
-        "accelerate>=0.16.0",
-        "torch>=1.0.0",
         "python-dotenv",
         "pandas>=2.0.0",
         "openpyxl>=3.1.0",
@@ -37,6 +34,13 @@ setup(
         "fake-useragent>=1.1.3",
         "playwright>=1.35.0"
     ],
+    extras_require={
+        "complete": [
+            "transformers>=4.25.0",
+            "accelerate>=0.16.0",
+            "torch>=1.0.0",
+        ]
+    },
     python_requires=">=3.8.0",
     keywords="llm, nlp, evaluation, ai",
     classifiers=[
