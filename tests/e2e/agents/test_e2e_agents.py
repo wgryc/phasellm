@@ -95,30 +95,34 @@ class TestE2ESandboxedCodeExecutionAgent(TestCase):
         expected = 'Hello, world!\n'
 
         fixture = SandboxedCodeExecutionAgent()
-        logs = fixture.execute_code(code, stream=False)
-
-        # Check the output
-        self.assertTrue(logs == expected, f"\n{logs}\n!=\n{expected}")
-
-        # Check that the container is still running
-        self.assertTrue(fixture._container.status == 'created', f"{fixture._container.status} != created")
-
-        # Get the container name for the next assertions
-        container_name = fixture._container.name
-
-        # Close the client & container
-        fixture.close()
-
-        # Check that the container was removed from the object.
-        self.assertTrue(fixture._container is None, f"Container should be None, got {fixture._container}")
-
-        # Check that the container was shut down.
-        container_not_found = True
         try:
-            fixture._client.containers.get(container_name)
-        except docker.errors.NotFound:
-            container_not_found = False
-        self.assertFalse(container_not_found, f"Container {container_name} should not exist.")
+            logs = fixture.execute_code(code, stream=False)
+
+            # Check the output
+            self.assertTrue(logs == expected, f"\n{logs}\n!=\n{expected}")
+
+            # Check that the container is still running
+            self.assertTrue(fixture._container.status == 'created', f"{fixture._container.status} != created")
+
+            # Get the container name for the next assertions
+            container_name = fixture._container.name
+
+            # Close the client & container
+            fixture.close()
+
+            # Check that the container was removed from the object.
+            self.assertTrue(fixture._container is None, f"Container should be None, got {fixture._container}")
+
+            # Check that the container was shut down.
+            container_not_found = True
+            try:
+                fixture._client.containers.get(container_name)
+            except docker.errors.NotFound:
+                container_not_found = False
+            self.assertFalse(container_not_found, f"Container {container_name} should not exist.")
+        except Exception as e:
+            fixture.close()
+            raise e
 
     def test_execute_code_multiple_executions_one_container(self):
         """

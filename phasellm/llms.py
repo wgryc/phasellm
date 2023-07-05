@@ -1085,12 +1085,14 @@ class DollyWrapper(LanguageModelWrapper):
             The completion.
         """
         kwargs = {
-            "text_inputs": prompt,
+            "inputs": prompt,
+            "num_return_sequences": 1,
             **self.kwargs
         }
         if self.temperature is not None:
             kwargs["temperature"] = self.temperature
-        return self.pipeline(**kwargs)
+        res = self.pipeline(**kwargs)
+        return _remove_prompt_from_completion(prompt, res[0]['generated_text'])
 
     def complete_chat(self, messages: List[Message], append_role: str = None) -> str:
         """
