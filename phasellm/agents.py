@@ -5,9 +5,11 @@ Agents to help with workflows.
 import re
 import os
 import sys
+import time
 import docker
 import smtplib
 import requests
+import subprocess
 
 from io import StringIO
 
@@ -15,11 +17,19 @@ from pathlib import Path
 
 from warnings import warn
 
+from bs4 import BeautifulSoup
+
+from dataclasses import dataclass
+
 from abc import ABC, abstractmethod
+
+from fake_useragent import UserAgent
 
 from contextlib import contextmanager
 
 from datetime import datetime, timedelta
+
+from playwright.sync_api import sync_playwright
 
 from docker import DockerClient
 from docker.models.containers import Container, ExecResult
@@ -129,8 +139,8 @@ class SandboxedCodeExecutionAgent(Agent):
         you're running this code, you'll need to have docker installed and running.
 
         Examples:
-                >>> from typing import Generator
-                >>> from phasellm.agents import SandboxedCodeExecutionAgent
+            >>> from typing import Generator
+            >>> from phasellm.agents import SandboxedCodeExecutionAgent
             Managing the docker client yourself:
                 >>> agent = SandboxedCodeExecutionAgent()
                 >>> logs = agent.execute_code('print("Hello World!")')
@@ -614,3 +624,495 @@ class NewsSummaryAgent(Agent):
         return_me += "---------------"
 
         return return_me
+
+
+class WebpageAgent(Agent):
+
+    def __init__(self, name: str = ''):
+        """
+        Create a WebpageAgent.
+
+        This agent helps you scrape webpages.
+
+        Examples:
+            >>> from phasellm.agents import WebpageAgent
+            Use default parameters:
+                >>> agent = WebpageAgent()
+                >>> text = agent.scrape('https://10millionsteps.com/ai-inflection')
+            Keep html tags:
+                >>> agent = WebpageAgent()
+                >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', text_only=False, body_only=False)
+            Keep html tags, but only return body content:
+                >>> agent = WebpageAgent()
+                >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', text_only=False, body_only=True)
+            Use a headless browser to enable scraping of dynamic content:
+                >>> agent = WebpageAgent()
+                >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', text_only=False, body_only=True,
+                ...                     use_browser=True)
+            Pass custom headers:
+                >>> agent = WebpageAgent()
+                >>> headers = {'Example': 'header'}
+                >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', headers=headers)
+            Wait for a selector to load (useful for dynamic content, only works when use_browser=True):
+                >>> agent = WebpageAgent()
+                >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', use_browser=True,
+                ...                     wait_for_selector='#dynamic')
+
+        Args:
+            name: The name of the agent (optional)
+        """
+        super().__init__(name=name)
+
+        self.session = requests.Session()
+
+    def __repr__(self):
+        return f"WebpageAgent(name={self.name})"
+
+    @staticmethod
+    def _validate_url(url: str) -> None:
+        """
+        This method validates that a url can be used by the agent.
+        Returns:
+
+        """
+        if not url.startswith('http'):
+            raise ValueError(f"Url must use HTTP(S). Invalid URL: {url}")
+
+        # TODO consider adding more validations.
+
+    @staticmethod
+    def _handle_errors(res: requests.Response) -> None:
+        """
+        This method handles errors that occur during a request.
+        Args:
+            res: The response from the request.
+
+        Returns:
+
+        """
+        if res.status_code != 200:
+            raise Exception(f"WebpageAgent received a non-200 status code: {res.status_code}\n"
+                            f"{res.reason}")
+
+    @staticmethod
+    def _parse_html(html: str, text_only: bool = True, body_only: bool = False) -> str:
+        """
+        This method parses the given html string.
+        Args:
+            html: The html to parse.
+            text_only: If True, only the text of the webpage is returned. If False, the entire HTML is returned.
+            body_only: If True, only the body of the webpage is returned. If False, the entire HTML is returned.
+
+        Returns:
+            The string containing the webpage text or html.
+
+        """
+        if text_only or body_only:
+            soup = BeautifulSoup(html, features='lxml')
+            if text_only and body_only:
+                text = soup.body.get_text()
+            elif text_only:
+                text = soup.get_text()
+            else:
+                text = str(soup.body)
+        else:
+            text = html
+        return text.strip()
+
+    @staticmethod
+    def _prep_headers(headers: Dict = None) -> Dict:
+        """
+        This method prepares the headers for a request. It fills in missing headers with default values. It also
+        adds a fake user agent to reduce the likelihood of being blocked.
+        Args:
+            headers: The headers to use for the request.
+
+        Returns:
+            The headers to use for the request.
+        """
+        if headers is None:
+            headers = {}
+
+        if 'Accept' not in headers:
+            headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        if 'User-Agent' not in headers:
+            headers['User-Agent'] = UserAgent().chrome
+        if 'Referrer' not in headers:
+            headers['Referrer'] = 'https://www.google.com/'
+        if 'Accept-Language' not in headers:
+            headers['Accept-Language'] = 'en-US,en;q=0.5'
+        if 'Accept-Encoding' not in headers:
+            headers['Accept-Encoding'] = 'gzip, deflate, br'
+        if 'Connection' not in headers:
+            headers['Connection'] = 'keep-alive'
+        if 'Upgrade-Insecure-Requests' not in headers:
+            headers['Upgrade-Insecure-Requests'] = '1'
+        if 'Cache-Control' not in headers:
+            headers['Cache-Control'] = 'max-age=0'
+
+        return headers
+
+    def _scrape_html(self, url: str, headers: Dict = None) -> str:
+        """
+        This method scrapes a webpage and returns a string containing the html of the webpage.
+        Args:
+            url: The URL of the webpage to scrape.
+            headers: A dictionary of headers to use for the request.
+
+        Returns:
+            A string containing the html of the webpage.
+        """
+
+        res = self.session.get(url=url, headers=headers)
+
+        self._handle_errors(res=res)
+
+        try:
+            return res.content.decode('utf-8')
+        except Exception as e:
+            raise Exception(f"WebpageAgent could not decode the response from the URL: {url}\n{e}")
+
+    @staticmethod
+    def _scrape_html_and_js(url: str, headers: Dict, wait_for_selector: str = None) -> str:
+        """
+        This method scrapes a webpage and returns a string containing the html of the webpage. It uses a headless
+        browser to render the webpage and execute javascript.
+        Args:
+            url: The URL of the webpage to scrape.
+            headers: A dictionary of headers to use for the request.
+            wait_for_selector: The selector to wait for before returning the HTML. Useful for when you know something
+            should be on the page but it is not there yet since it needs to be rendered by javascript.
+
+        Returns:
+            A string containing the html of the webpage.
+
+        """
+        # Ensure chromium is installed for the headless browser.
+        subprocess.call('playwright install chromium')
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page(
+                extra_http_headers=headers
+            )
+            page.goto(url)
+            if wait_for_selector is None:
+                # Wait until there are no network connections for at least `500` ms.
+                page.wait_for_load_state('networkidle')
+            else:
+                # Wait until the `selector` defined by 'wait_for_selector' is added to the DOM.
+                page.wait_for_selector(wait_for_selector)
+            data = page.content()
+            browser.close()
+        return data
+
+    def scrape(
+            self,
+            url: str,
+            headers: Dict = None,
+            use_browser: bool = False,
+            wait_for_selector: str = None,
+            text_only: bool = True,
+            body_only: bool = True
+    ) -> str:
+        """
+        This method scrapes a webpage and returns a string containing the html or text of the webpage.
+        Args:
+            url: The URL of the webpage to scrape.
+            headers: A dictionary of headers to use for the request.
+            use_browser: If True, the webpage is rendered using a headless browser, allowing javascript to run and
+            hydrate the page. If False, the webpage is scraped as-is.
+            wait_for_selector: The selector to wait for before returning the HTML. Useful for when you know something
+            should be on the page but it is not there yet since it needs to be rendered by javascript. Only used if
+            use_browser is True.
+            text_only: If True, only the text of the webpage is returned. If False, the entire HTML is returned.
+            body_only: If True, only the body of the webpage is returned. If False, the entire HTML is returned.
+
+        Returns:
+            A string containing the text of the webpage.
+        """
+
+        self._validate_url(url=url)
+
+        headers = self._prep_headers(headers=headers)
+
+        if use_browser:
+            data = self._scrape_html_and_js(url=url, headers=headers, wait_for_selector=wait_for_selector)
+        else:
+            data = self._scrape_html(url=url, headers=headers)
+
+        data = self._parse_html(html=data, text_only=text_only, body_only=body_only)
+
+        return data
+
+
+@dataclass
+class WebSearchResult:
+    """
+    This dataclass represents a single search result.
+    """
+    title: str
+    url: str
+    description: str
+    content: str
+
+
+class WebSearchAgent(Agent):
+
+    def __init__(
+            self,
+            name: str = '',
+            api_key: str = None,
+            rate_limit: float = 1,
+            text_only: bool = True,
+            body_only: bool = True,
+            use_browser: bool = False,
+            wait_for_selector: str = None
+    ):
+        """
+        Create a WebSearchAgent.
+
+        This agent helps you search the web using a web search API. Currently, the agent supports Google and Brave.
+
+        Examples:
+            >>> from phasellm.agents import WebSearchAgent
+            Search with Google:
+                >>> agent = WebSearchAgent(
+                ...     name='Google Search Agent',
+                ...     api_key='YOUR_API_KEY'
+                ... )
+                >>> results = agent.search_google(
+                ...     query='test'
+                ...     custom_search_engine_id='YOUR_CUSTOM_SEARCH_ENGINE_ID'
+                ... )
+            Search with Brave:
+                >>> agent = WebSearchAgent(
+                ...     name='Brave Search Agent',
+                ...     api_key='YOUR_API_KEY'
+                ... )
+                >>> results = agent.search_brave(query='test')
+            Iterate over the results:
+                >>> for result in results:
+                ...     print(result.title)
+                ...     print(result.url)
+                ...     print(result.description)
+                ...     print(result.content)
+
+        Args:
+            name: The name of the agent (optional).
+            api_key: The API key to use for the search engine.
+            rate_limit: The number of seconds to wait between requests for webpage content.
+            text_only: If True, only the text of the webpage is returned. If False, the entire HTML is returned.
+            body_only: If True, only the body of the webpage is returned. If False, the entire HTML is returned.
+            use_browser: If True, the webpage is rendered using a headless browser, allowing javascript to run and
+            hydrate the page. If False, the webpage is scraped as-is.
+            wait_for_selector: The selector to wait for before returning the HTML. Useful for when you know something
+            should be on the page but it is not there yet since it needs to be rendered by javascript. Only used if
+            use_browser is True.
+        """
+        super().__init__(name=name)
+
+        self.api_key = api_key
+        self.rate_limit = rate_limit
+
+        self.webpage_agent = WebpageAgent()
+        self.session = requests.Session()
+
+        # Parameters for the WebpageAgent
+        self.text_only = text_only
+        self.body_only = body_only
+        self.use_browser = use_browser
+        self.wait_for_selector = wait_for_selector
+
+    def __repr__(self):
+        return f"WebSearchAgent(name={self.name})"
+
+    @staticmethod
+    def _prepare_url(base_url: str, params: Dict) -> str:
+        """
+        This method prepares a URL for a request.
+        Args:
+            base_url: The base url.
+            params: A dictionary of parameters to use for the request.
+
+        Returns:
+            The prepared URL.
+        """
+        req = requests.PreparedRequest()
+        req.prepare_url(
+            url=base_url,
+            params=params
+        )
+        return req.url
+
+    @staticmethod
+    def _handle_errors(res: requests.Response) -> None:
+        """
+        This method handles errors that occur during a request.
+        Args:
+            res: The response from the request.
+
+        Returns:
+
+        """
+        if res.status_code != 200:
+            raise Exception(f"WebSearchAgent received a non-200 status code: {res.status_code}\n"
+                            f"{res.reason}")
+
+    def _send_request(self, base_url: str, headers: Dict = None, params: Dict = None) -> Dict:
+        """
+        This method sends a request to a URL.
+        Args:
+            base_url: The base URL to send the request to.
+            headers: A dictionary of headers to use for the request.
+            params: A dictionary of parameters to use for the request.
+
+        Returns:
+            The response from the request.
+        """
+        url = self._prepare_url(
+            base_url=base_url,
+            params=params
+        )
+
+        res = self.session.get(
+            url=url,
+            headers=headers
+        )
+
+        self._handle_errors(res=res)
+
+        return res.json()
+
+    def search_brave(self, query: str, **kwargs: Dict) -> List[WebSearchResult]:
+        """
+        This method performs a web search using Brave.
+
+        Get an API key here (credit card required):
+        https://api.search.brave.com/register
+
+        Args:
+            query: The query to search for.
+            **kwargs: Additional parameters to pass to the API.
+
+        Returns:
+            A list of WebSearchResult objects.
+        """
+        if kwargs is None:
+            kwargs = {}
+
+        headers = {
+            'X-Subscription-Token': self.api_key,
+            'Accept': 'application/json'
+        }
+        params = {
+            'q': query,
+            **kwargs
+        }
+
+        res = self._send_request(
+            base_url='https://api.search.brave.com/res/v1/web/search',
+            headers=headers,
+            params=params
+        )
+
+        # https://api.search.brave.com/app/documentation/query
+        categories = ['discussions', 'faq', 'infobox', 'news', 'query', 'videos', 'web', 'mixed']
+        results = []
+        for category in categories:
+            if category not in res:
+                continue
+            if 'results' not in res[category]:
+                continue
+            for result in res[category]['results']:
+                # Rate limit
+                time.sleep(self.rate_limit)
+
+                # Get the content of the webpage
+                try:
+                    content = self.webpage_agent.scrape(
+                        url=result['url'],
+                        text_only=self.text_only,
+                        body_only=self.body_only,
+                        use_browser=self.use_browser,
+                        wait_for_selector=self.wait_for_selector
+                    )
+                except Exception:
+                    # Skip when the webpage cannot be scraped.
+                    continue
+
+                results.append(
+                    WebSearchResult(
+                        title=result['title'],
+                        url=result['url'],
+                        description=result['description'],
+                        content=content
+                    )
+                )
+        return results
+
+    def search_google(self, query: str, custom_search_engine_id: str = None, **kwargs: Dict) -> List[WebSearchResult]:
+        """
+        This method performs a web search using Google.
+
+        Get an API key here:
+        https://developers.google.com/custom-search/v1/overview
+
+        You must create a custom search engine and pass its ID. To create or view custom search engines, visit:
+        https://programmablesearchengine.google.com/u/1/controlpanel/all
+
+        Args:
+            query: The search query.
+            custom_search_engine_id: The ID of the custom search engine to use.
+            **kwargs: Any additional keyword arguments to pass to the API.
+
+        Returns:
+            A list of WebSearchResult objects.
+        """
+        if kwargs is None:
+            kwargs = {}
+
+        headers = {
+            'Accept': 'application/json'
+        }
+
+        params = {
+            'q': query,
+            'key': self.api_key,
+            'cx': custom_search_engine_id,
+            **kwargs
+        }
+
+        res = self._send_request(
+            base_url='https://www.googleapis.com/customsearch/v1',
+            headers=headers,
+            params=params
+        )
+
+        results = []
+        for item in res['items']:
+            # Rate limit
+            time.sleep(self.rate_limit)
+
+            # Get the content of the webpage.
+            try:
+                content = self.webpage_agent.scrape(
+                    url=item['link'],
+                    text_only=self.text_only,
+                    body_only=self.body_only,
+                    use_browser=self.use_browser,
+                    wait_for_selector=self.wait_for_selector
+                )
+            except Exception:
+                # Skip when the webpage cannot be scraped.
+                continue
+
+            results.append(
+                WebSearchResult(
+                    title=item['title'],
+                    url=item['link'],
+                    description=item['snippet'],
+                    content=content
+                )
+            )
+        return results

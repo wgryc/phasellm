@@ -22,7 +22,7 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 
 def mock_generator_failure() -> Generator:
     """
-    Mock generator for a failure mode of sse streaming.
+    Mock generator for a failure modes of sse streaming.
 
     Desired output on client side is:
         '''
@@ -30,6 +30,13 @@ def mock_generator_failure() -> Generator:
 
         456
         78
+
+
+        9
+        10
+        id: 1
+        id: 2
+        event: test
         '''
     Returns:
 
@@ -41,7 +48,10 @@ def mock_generator_failure() -> Generator:
     yield "data: 6\n\n\n"
     yield "data: 7\n\n"
     yield "data: 8\n\n\n\n\n"
-    yield "data: 9\n\n"
+    yield "data: 9\n\n\n"
+    yield "data: 10\nid: 1\n\n\n"
+    yield "data: id: 2\n\n\n"
+    yield "data: event: test\n\n\n"
     yield "data: <|END|>\n\n"
 
 
@@ -55,6 +65,13 @@ def mock_generator_success() -> Generator:
 
         456
         78
+
+
+        9
+        10
+        id: 1
+        id: 2
+        event: test
         '''
     Returns:
 
@@ -66,7 +83,10 @@ def mock_generator_success() -> Generator:
     yield "data: 6\ndata:\n\n"
     yield "data: 7\n\n"
     yield "data: 8\ndata:\ndata:\ndata:\n\n"
-    yield "data: 9\n\n"
+    yield "data: 9\ndata:\n\n"
+    yield "data: 10\ndata:id: 1\ndata:\n\n"
+    yield "data: id: 2\ndata:\n\n"
+    yield "data: event: test\n\n"
     yield "data: <|END|>\n\n"
 
 
@@ -80,6 +100,13 @@ def mock_generator_success_format_sse() -> Generator:
 
         456
         78
+
+
+        9
+        10
+        id: 1
+        id: 2
+        event: test
         '''
     Returns:
 
@@ -91,7 +118,10 @@ def mock_generator_success_format_sse() -> Generator:
     yield _format_sse("6\n")
     yield _format_sse("7")
     yield _format_sse("8\n\n\n")
-    yield _format_sse("9")
+    yield _format_sse("9\n")
+    yield _format_sse("10\nid: 1\n")
+    yield _format_sse("id: 2\n")
+    yield _format_sse("event: test")
     yield _format_sse("<|END|>")
 
 
@@ -175,7 +205,20 @@ class TestSSE(TestCase):
 
         res = process_stream()
 
-        self.assertEqual(res, "123\n\n456\n78\n\n\n9")
+        expected = (
+            "123\n"
+            "\n"
+            "456\n"
+            "78\n"
+            "\n"
+            "\n"
+            "9\n"
+            "10\n"
+            "id: 1\n"
+            "id: 2\n"
+            "event: test"
+        )
+        self.assertEqual(res, expected)
 
         self.tearDown()
 
@@ -194,8 +237,9 @@ class TestSSE(TestCase):
 
         res = process_stream()
 
-        # Notice the missing 4. Notice the lack of newlines.
-        self.assertEqual(res, "12356789")
+        # Notice the missing 4. Notice the lack of '\n' and 'id: 1'
+        expected = "1235678910id: 2event: test"
+        self.assertEqual(res, expected)
 
         process.terminate()
         process.join()
