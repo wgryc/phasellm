@@ -1,6 +1,5 @@
 import os
 import gc
-import torch
 
 from unittest import TestCase
 
@@ -145,7 +144,14 @@ class E2ETestClaudeWrapper(TestCase):
 class E2ETestGPT2Wrapper(TestCase):
 
     def setUp(self) -> None:
+        if skip_local_models:
+            print("Skipping test_complete_chat for DollyWrapper as SKIP_LOCAL_MODELS is set to True")
+            return
+
+        # Dynamically import torch to avoid import errors for users who don't have phasellm[complete].
+        import torch
         torch.cuda.empty_cache()
+
         gc.collect()
 
     def test_complete_chat(self):
@@ -179,7 +185,14 @@ class E2ETestGPT2Wrapper(TestCase):
 
 class E2ETestDollyWrapper(TestCase):
     def setUp(self) -> None:
+        if skip_local_models:
+            print("Skipping test_complete_chat for DollyWrapper as SKIP_LOCAL_MODELS is set to True")
+            return
+
+        # Dynamically import torch to avoid import errors for users who don't have phasellm[complete].
+        import torch
         torch.cuda.empty_cache()
+
         gc.collect()
 
     def test_complete_chat(self):
@@ -480,7 +493,6 @@ class E2ETestStreamingClaudeWrapper(TestCase):
 class E2ETestChatBot(TestCase):
 
     def setUp(self) -> None:
-        torch.cuda.empty_cache()
         gc.collect()
 
     def test_openai_gpt_chat(self):
@@ -541,6 +553,11 @@ class E2ETestChatBot(TestCase):
         if skip_local_models:
             print("Skipping test_gpt2_chat as SKIP_LOCAL_MODELS is set to True")
             return
+
+        # Dynamically import torch to avoid import errors for users who don't have phasellm[complete].
+        import torch
+        torch.cuda.empty_cache()
+
         llm = GPT2Wrapper()
         fixture = ChatBot(llm)
 
@@ -550,6 +567,11 @@ class E2ETestChatBot(TestCase):
         if skip_local_models:
             print("Skipping test_gpt2_resend as SKIP_LOCAL_MODELS is set to True")
             return
+
+        # Dynamically import torch to avoid import errors for users who don't have phasellm[complete].
+        import torch
+        torch.cuda.empty_cache()
+
         llm = GPT2Wrapper()
         fixture = ChatBot(llm)
 
@@ -559,6 +581,11 @@ class E2ETestChatBot(TestCase):
         if skip_local_models:
             print("Skipping test_dolly_chat as SKIP_LOCAL_MODELS is set to True")
             return
+
+        # Dynamically import torch to avoid import errors for users who don't have phasellm[complete].
+        import torch
+        torch.cuda.empty_cache()
+
         llm = DollyWrapper()
         fixture = ChatBot(llm)
 
@@ -568,6 +595,11 @@ class E2ETestChatBot(TestCase):
         if skip_local_models:
             print("Skipping test_dolly_resend as SKIP_LOCAL_MODELS is set to True")
             return
+
+        # Dynamically import torch to avoid import errors for users who don't have phasellm[complete].
+        import torch
+        torch.cuda.empty_cache()
+
         llm = DollyWrapper()
         fixture = ChatBot(llm)
 
