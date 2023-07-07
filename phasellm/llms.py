@@ -20,10 +20,6 @@ from sseclient import SSEClient
 import openai
 import cohere
 
-# Hugging Face and PyTorch imports
-from transformers import pipeline
-import torch
-
 # Precompiled regex for variables.
 variable_pattern = r'\{\s*[a-zA-Z0-9_]+\s*\}'
 variable_regex = re.compile(variable_pattern)
@@ -164,6 +160,7 @@ def _conditional_format_sse_response(content: str, format_sse: bool) -> str:
         return _format_sse(content)
     return content
 
+
 def swap_roles(messages: List[Message], new_prompt: str) -> List[Message]:
     """
     Creates a new messages stack with the new_prompt as the system prompt and the 'user' and 'assistant' roles swapped. All other messages are ignored.
@@ -174,7 +171,7 @@ def swap_roles(messages: List[Message], new_prompt: str) -> List[Message]:
     Returns:
         A new list of messages with the new_prompt as the system prompt and user/assistant prompts swapped out.
     """
-    new_messages = [{"role":"system", "content":new_prompt}]
+    new_messages = [{"role": "system", "content": new_prompt}]
     for m in messages:
         if m["role"] in ["user", "assistant"]:
             new_message = m.copy()
@@ -185,6 +182,7 @@ def swap_roles(messages: List[Message], new_prompt: str) -> List[Message]:
             new_message["role"] = new_role
             new_messages.append(new_message)
     return new_messages
+
 
 class LanguageModelWrapper(ABC):
     # default chat completion preamble
@@ -334,8 +332,8 @@ class ChatPrompt:
             new_role = _fill_variables(self.messages[i]["role"], **kwargs)
             new_content = _fill_variables(self.messages[i]["content"], **kwargs)
             new_message = self.messages[i].copy()
-            new_message["role"] = new_role 
-            new_message["content"] = new_content 
+            new_message["role"] = new_role
+            new_message["content"] = new_content
             filled_messages.append(new_message)
         return filled_messages
 
@@ -986,11 +984,17 @@ class GPT2Wrapper(LanguageModelWrapper):
     def __init__(self, temperature: float = None, **kwargs: Any):
         """
         Wrapper for GPT-2 implementation (via Hugging Face).
+
+        Note that you must have the phasellm[complete] extra installed to use this wrapper.
         Args:
             temperature: The temperature to use for the language model.
             **kwargs: Keyword arguments to pass to the GPT-2 model.
         """
         super().__init__(temperature=temperature, **kwargs)
+
+        # Dynamically import torch and transformers to avoid import errors for users who don't have phasellm[complete].
+        from transformers import pipeline
+
         self.model_name = "GPT-2"
         self.pipeline = pipeline('text-generation', model='gpt2')
 
@@ -1058,11 +1062,18 @@ class DollyWrapper(LanguageModelWrapper):
     def __init__(self, temperature: float = None, **kwargs: Any):
         """
         Wrapper for Dolly 2.0 (via Hugging Face).
+
+        Note that you must have the phasellm[complete] extra installed to use this wrapper.
         Args:
             temperature: The temperature to use for the language model.
             **kwargs: Keyword arguments to pass to the Dolly model.
         """
         super().__init__(temperature=temperature, **kwargs)
+
+        # Dynamically import torch and transformers to avoid import errors for users who don't have phasellm[complete].
+        from transformers import pipeline
+        import torch
+
         self.model_name = 'dolly-v2-12b'
         self.pipeline = pipeline(
             "text-generation",
