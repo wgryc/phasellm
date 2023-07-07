@@ -8,7 +8,9 @@ from flask import Flask, request, render_template, jsonify
 
 load_dotenv()
 llm = ClaudeWrapper(os.getenv("ANTHROPIC_API_KEY"))
-web_search_agent = WebSearchAgent(api_key=os.getenv("GOOGLE_SEARCH_API_KEY"))
+web_search_agent = WebSearchAgent(
+    api_key=os.getenv("GOOGLE_SEARCH_API_KEY")
+)
 
 CHATBOT: ChatBot
 
@@ -32,44 +34,47 @@ reset_chatbot()
 
 @APP.route('/submit-chat-message', methods=['POST'])
 def route_send_chat():
-    global CHATBOT
-    message = request.json["input"]
+    try:
+        global CHATBOT
+        message = request.json["input"]
 
-    # Use the llm wrapper complete_chat method to determine a good google search query for the conversation so far.
-    messages = []
-    for m in CHATBOT.messages:
-        m_copy = {"role": m["role"], "content": m["content"]}
-        messages.append(m_copy)
-    search_query_message: Message = {
-        'role': 'user',
-        'content': f'Come up with a google search query that will provide more information to help answer the '
-                   f'question: "{message}". Respond with only the query.',
-    }
-    messages.append(search_query_message)
-    query = llm.complete_chat(messages)
-    print(f'Google search query: {query}')
+        # Use the llm wrapper complete_chat method to determine a good google search query for the conversation so far.
+        messages = []
+        for m in CHATBOT.messages:
+            m_copy = {"role": m["role"], "content": m["content"]}
+            messages.append(m_copy)
+        search_query_message: Message = {
+            'role': 'user',
+            'content': f'Come up with a google search query that will provide more information to help answer the '
+                       f'question: "{message}". Respond with only the query.',
+        }
+        messages.append(search_query_message)
+        query = llm.complete_chat(messages)
+        print(f'Google search query: {query}')
 
-    # Submit the query to the Google Search Agent.
-    results = web_search_agent.search_google(
-        message,
-        custom_search_engine_id=os.getenv("GOOGLE_SEARCH_ENGINE_ID"),
-        num=1
-    )
+        # Submit the query to the Google Search Agent.
+        results = web_search_agent.search_google(
+            message,
+            custom_search_engine_id=os.getenv("GOOGLE_SEARCH_ENGINE_ID"),
+            num=2
+        )
 
-    sources = []
-    # Add the contents of the top result into the chatbot message queue.
-    if len(results) >= 1:
-        for result in results:
-            CHATBOT._append_message(
-                role='search result',
-                message=result.content
-            )
-            sources.append(result.url)
+        sources = []
+        # Add the contents of the top result into the chatbot message queue.
+        if len(results) >= 1:
+            for result in results:
+                CHATBOT._append_message(
+                    role='search result',
+                    message=result.content
+                )
+                sources.append(result.url)
 
-    # Resubmit the message with the new search result as context.
-    response = CHATBOT.chat(message)
+        # Resubmit the message with the new search result as context.
+        response = CHATBOT.chat(message)
 
-    return {"status": "ok", "content": response, "sources": sources}
+        return {"status": "ok", "content": response, "sources": sources}
+    except Exception as e:
+        return {"status": "error", "message": e}
 
 
 @APP.route('/reset-chatbot')

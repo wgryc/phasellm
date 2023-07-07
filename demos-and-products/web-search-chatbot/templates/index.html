@@ -101,6 +101,7 @@ function append_message(msg, who, sources = null) {
 	let innerHTML = output_div.innerHTML;
     innerHTML = innerHTML + `<div class="chat-msg-${who}">${msg}`;
 	if (sources !== null && sources.length > 0) {
+        innerHTML = innerHTML + `</br></br><div>Source(s):</div>`;
 	    for (const source of sources) {
             innerHTML = innerHTML + `<div><a href="${source}" target="_blank">${source}</a></div></br>`;
         }

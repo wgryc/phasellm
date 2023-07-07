@@ -739,8 +739,6 @@ class WebpageAgent(Agent):
             headers['User-Agent'] = UserAgent().chrome
         if 'Referrer' not in headers:
             headers['Referrer'] = 'https://www.google.com/'
-        if 'Accept-Language' not in headers:
-            headers['Accept-Language'] = 'en-US,en;q=0.5'
         if 'Accept-Encoding' not in headers:
             headers['Accept-Encoding'] = 'gzip, deflate, br'
         if 'Connection' not in headers:
@@ -763,7 +761,7 @@ class WebpageAgent(Agent):
             A string containing the html of the webpage.
         """
 
-        res = self.session.get(url=url, headers=headers)
+        res = self.session.get(url=url, headers=headers, timeout=30)
 
         self._handle_errors(res=res)
 
