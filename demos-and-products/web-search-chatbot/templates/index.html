@@ -103,7 +103,7 @@ function append_message(msg, who, sources = null) {
 	if (sources !== null && sources.length > 0) {
         innerHTML = innerHTML + `</br></br><div>Source(s):</div>`;
 	    for (const source of sources) {
-            innerHTML = innerHTML + `<div><a href="${source}" target="_blank">${source}</a></div></br>`;
+            innerHTML = innerHTML + `<div><a href="${source}" target="_blank">${source}</a></div>`;
         }
 	}
 	innerHTML = innerHTML + `</div>`;
