@@ -984,7 +984,7 @@ class WebSearchAgent(Agent):
 
         return res.json()
 
-    def search_brave(self, query: str, **kwargs: Dict) -> List[WebSearchResult]:
+    def search_brave(self, query: str, **kwargs) -> List[WebSearchResult]:
         """
         This method performs a web search using Brave.
 
@@ -1051,7 +1051,7 @@ class WebSearchAgent(Agent):
                 )
         return results
 
-    def search_google(self, query: str, custom_search_engine_id: str = None, **kwargs: Dict) -> List[WebSearchResult]:
+    def search_google(self, query: str, custom_search_engine_id: str = None, **kwargs) -> List[WebSearchResult]:
         """
         This method performs a web search using Google.
 
