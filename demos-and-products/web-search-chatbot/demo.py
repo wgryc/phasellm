@@ -55,7 +55,7 @@ def route_send_chat():
         # Add the contents of the top result into the chatbot message queue.
         if len(results) >= 1:
             for result in results:
-                CHATBOT._append_message(
+                CHATBOT.append_message(
                     role='search result',
                     message=result.content
                 )

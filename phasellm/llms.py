@@ -1240,7 +1240,7 @@ class ChatBot:
         """
         self.llm: LanguageModelWrapper = llm
         self.messages: List[EnhancedMessage] = []
-        self._append_message('system', initial_system_prompt)
+        self.append_message('system', initial_system_prompt)
 
     def _response(self, response: str, start_time: float):
         """
@@ -1253,7 +1253,7 @@ class ChatBot:
             The response.
 
         """
-        self._append_message('assistant', response, log_time_seconds=time.time() - start_time)
+        self.append_message('assistant', response, log_time_seconds=time.time() - start_time)
         return response
 
     def _streaming_response(self, response: Generator, start_time: float) -> Generator:
@@ -1274,9 +1274,9 @@ class ChatBot:
         for chunk in response:
             full_response += chunk
             yield chunk
-        self._append_message('assistant', full_response, log_time_seconds=time.time() - start_time)
+        self.append_message('assistant', full_response, log_time_seconds=time.time() - start_time)
 
-    def _append_message(self, role: str, message: str, log_time_seconds: float = None) -> None:
+    def append_message(self, role: str, message: str, log_time_seconds: float = None) -> None:
         """
         Saves a message to the ChatBot message stack.
         Args:
@@ -1331,7 +1331,7 @@ class ChatBot:
 
         """
         # TODO consider appending user message only after a successful call to self.llm.complete_chat().
-        self._append_message('user', message)
+        self.append_message('user', message)
         start_time = time.time()
 
         clean_messages = []  # We remove fields that the ChatBot class specifically tracks.
