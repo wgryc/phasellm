@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-from phasellm.llms import ClaudeWrapper, ChatBot, Message
+from phasellm.llms import ClaudeWrapper, ChatBot
 from phasellm.agents import WebSearchAgent
 
 from flask import Flask, request, render_template, jsonify
