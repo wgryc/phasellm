@@ -62,7 +62,7 @@ def route_send_chat():
                 sources.append(result.url)
 
         # Resubmit the message with the new search result as context.
-        response = CHATBOT.chat(message)
+        response = CHATBOT.chat(message + '. Answer using the information from the search results above.')
 
         return {"status": "ok", "content": response, "sources": sources}
     except Exception as e:
