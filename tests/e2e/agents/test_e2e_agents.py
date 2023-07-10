@@ -321,6 +321,9 @@ class TestE2EWebpageAgent(TestCase):
 class TestE2EWebSearchAgent(TestCase):
 
     def test_search_google(self):
+        self.assertTrue(brave_search_api_key is not None, "Brave search API key is not set.")
+        self.assertTrue(google_search_engine_id is not None, "Google search engine ID is not set.")
+
         self.fixture = WebSearchAgent(
             api_key=google_search_api_key
         )
@@ -339,6 +342,8 @@ class TestE2EWebSearchAgent(TestCase):
         )
 
     def test_search_brave(self):
+        self.assertTrue(brave_search_api_key is not None, "Brave search API key is not set.")
+
         self.fixture = WebSearchAgent(
             api_key=brave_search_api_key
         )
