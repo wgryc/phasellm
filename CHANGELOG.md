@@ -7,8 +7,8 @@ Have any questions? Need support? Please reach out on [Twitter (@phasellm)](http
 ### New Features
 
 - New agents:
-  - WebpageAgent for scraping HTML from web pages (+ extracting text)
-  - WebSearchAgent for using Google, Brave, and other search APIs to run queries for you
+  - `WebpageAgent` for scraping HTML from web pages (+ extracting text)
+  - `WebSearchAgent` for using Google, Brave, and other search APIs to run queries for you
 - New demo project: `web-search-chatbot`! This shows how you can use the new agents above in chatbot applications
 
 ### Fixes
