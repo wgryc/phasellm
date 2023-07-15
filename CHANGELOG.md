@@ -2,6 +2,20 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.13 and 0.014 (2023-07-15)
+
+### New Features
+
+- New agents:
+  - WebpageAgent for scraping HTML from web pages (+ extracting text)
+  - WebSearchAgent for using Google, Brave, and other search APIs to run queries for you
+- New demo project: `web-search-chatbot`! This shows how you can use the new agents above in chatbot applications
+
+### Fixes
+
+- Installation for `phasellm` (i.e., default installation) includes `transformers` to avoid errors
+- Installation option for `phasellm[complete]` to enable installing packages for running LLMs locally. The default setup will only provide support for LLM APIs (e.g., OpenAI, Anthropic, Cohere, Hugging Face)
+
 # 0.0.12 (2023-06-30)
 
 ### New Features
