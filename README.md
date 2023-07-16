@@ -14,7 +14,9 @@ You can install PhaseLLM via pip:
 pip install phasellm
 ```
 
-Installing from PyPI does not download the sample demos and products in the `demos-and-products` folder. Clone this repository and follow instructions in the `README.md` file in each product folder to run those.
+Installing from PyPI does not include libraries for running LLMs locally. Please run `pip install phasellm[complete]` if you plan on using LLMs locally (e.g., our `DollyWrapper`).
+
+Sample demos and products are in the `demos-and-products` folder. Clone this repository and follow instructions in the `README.md` file in each product folder to run those.
 
 ## Introduction
 
