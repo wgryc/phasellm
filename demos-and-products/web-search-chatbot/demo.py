@@ -7,7 +7,7 @@ from phasellm.agents import WebSearchAgent
 from flask import Flask, request, render_template, jsonify
 
 load_dotenv()
-llm = ClaudeWrapper(os.getenv("ANTHROPIC_API_KEY"))
+llm = ClaudeWrapper(os.getenv("ANTHROPIC_API_KEY"), model='claude-2')
 web_search_agent = WebSearchAgent(
     api_key=os.getenv("GOOGLE_SEARCH_API_KEY")
 )

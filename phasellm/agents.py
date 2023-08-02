@@ -741,6 +741,8 @@ class WebpageAgent(Agent):
             headers['Referrer'] = 'https://www.google.com/'
         if 'Accept-Encoding' not in headers:
             headers['Accept-Encoding'] = 'gzip, deflate, br'
+        if 'Accept-Language' not in headers:
+            headers['Accept-Language'] = '*'
         if 'Connection' not in headers:
             headers['Connection'] = 'keep-alive'
         if 'Upgrade-Insecure-Requests' not in headers:
@@ -766,7 +768,7 @@ class WebpageAgent(Agent):
         self._handle_errors(res=res)
 
         try:
-            return res.content.decode('utf-8')
+            return res.content.decode(res.encoding)
         except Exception as e:
             raise Exception(f"WebpageAgent could not decode the response from the URL: {url}\n{e}")
 
