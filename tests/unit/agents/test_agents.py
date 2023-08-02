@@ -242,7 +242,7 @@ class TestWebpageAgent(TestCase):
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             # 'User-Agent': UserAgent().chrome, // This is here for reference only. It is added by _prep_headers.
             'Referrer': 'https://www.google.com/',
-            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Language': '*',
             'Accept-Encoding': 'gzip, deflate, br',
             'Connection': 'keep-alive',
             'Upgrade-Insecure-Requests': '1',
