@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.0.13"
+VERSION = "0.0.15"
 
 DESCRIPTION = "Wrappers for common large language models (LLMs) with support for evaluation."
 
