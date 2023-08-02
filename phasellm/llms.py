@@ -9,6 +9,7 @@ import requests
 # Typing imports
 from typing import Optional, List, Union, Generator, Any
 from typing_extensions import TypedDict
+from phasellm.types import CLAUDE_MODEL
 
 # Abstract class imports
 from abc import ABC, abstractmethod
@@ -763,11 +764,12 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
     def __init__(
             self,
             apikey: str,
-            model: str = "claude-v1",
+            model: CLAUDE_MODEL = "claude-2",
             format_sse: bool = False,
             append_stop_token: bool = True,
             stop_token: str = STOP_TOKEN,
             temperature: float = None,
+            anthropic_version: str = "2023-06-01",
             **kwargs: Any
     ):
         """
@@ -778,11 +780,12 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
         Yields the text as it is generated, rather than waiting for the entire completion.
         Args:
             apikey: The API key to access the Anthropic API.
-            model: The model to use. Defaults to "claude-v1".
+            model: The model to use. Defaults to "claude-2".
             format_sse: Whether to format the SSE response. Defaults to False.
             append_stop_token: Whether to append the stop token to the end of the prompt. Defaults to True.
             stop_token: The stop token to use. Defaults to <|END|>.
             temperature: The temperature to use for the language model.
+            anthropic_version: The version of the Anthropic API to use. See https://docs.anthropic.com/claude/reference/versioning
             **kwargs: Keyword arguments to pass to the Anthropic API.
         """
         super().__init__(
@@ -794,6 +797,7 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
         )
         self.apikey = apikey
         self.model = model
+        self.anthropic_version = anthropic_version
 
     def __repr__(self):
         return f"StreamingClaudeWrapper(model={self.model})"
@@ -834,9 +838,10 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
                 # Load the data as JSON
                 completion = json.loads(event.data)["completion"]
 
-                # Anthropic's API returns completions inclusive of previous chunks, so we need to strip them out.
-                completion = completion[strip_index:]
-                strip_index += len(completion)
+                # Anthropic's old API returns completions inclusive of previous chunks, so we need to strip them out.
+                if self.anthropic_version == "2023-01-01":
+                    completion = completion[strip_index:]
+                    strip_index += len(completion)
 
                 # If format_sse is True, we need to yield with SSE formatting.
                 yield _conditional_format_sse_response(content=completion, format_sse=self.format_sse)
@@ -893,20 +898,31 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
 class ClaudeWrapper(LanguageModelWrapper):
     API_URL = "https://api.anthropic.com/v1/complete"
 
-    def __init__(self, apikey: str, model: str = "claude-v1", temperature: float = None, **kwargs: Any):
+    def __init__(
+            self,
+            apikey: str,
+            model: CLAUDE_MODEL = "claude-2",
+            temperature: float = None,
+            anthropic_version: str = "2023-06-01",
+            **kwargs: Any
+    ):
         """
         Wrapper for Anthropic's Claude large language model.
 
         We've opted to call Anthropic's API directly rather than using their Python offering.
+
+        See here for model options: https://docs.anthropic.com/claude/reference/selecting-a-model
         Args:
             apikey: The API key to access the Anthropic API.
             model: The model to use. Defaults to "claude-v1".
             temperature: The temperature to use for the language model.
+            anthropic_version: The version of the Anthropic API to use. See https://docs.anthropic.com/claude/reference/versioning
             **kwargs: Keyword arguments to pass to the Anthropic API.
         """
         super().__init__(temperature=temperature, **kwargs)
         self.apikey = apikey
         self.model = model
+        self.anthropic_version = anthropic_version
 
     def __repr__(self):
         return f"ClaudeWrapper(model={self.model})"
@@ -924,7 +940,8 @@ class ClaudeWrapper(LanguageModelWrapper):
         # https://docs.anthropic.com/claude/reference/complete_post
         headers = {
             "X-API-Key": self.apikey,
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "anthropic-version": self.anthropic_version
         }
         payload = {
             "prompt": prompt,

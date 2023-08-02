@@ -507,8 +507,14 @@ class E2ETestChatBot(TestCase):
 
         test_chatbot_resend(self, fixture)
 
-    def test_claude_chat(self):
-        llm = ClaudeWrapper(anthropic_api_key, model="claude-v1")
+    def test_claude_chat_2023_01_01(self):
+        llm = ClaudeWrapper(anthropic_api_key, model="claude-v1", anthropic_version="2023-01-01")
+        fixture = ChatBot(llm)
+
+        test_chatbot_chat(self, fixture)
+
+    def test_claude_chat_2023_06_01(self):
+        llm = ClaudeWrapper(anthropic_api_key, model="claude-v1", anthropic_version="2023-06-01")
         fixture = ChatBot(llm)
 
         test_chatbot_chat(self, fixture)
@@ -643,8 +649,14 @@ class E2ETestStreamingChatBot(TestCase):
 
     # TODO Consider adding test_openai_gpt_streaming_resend_sse()
 
-    def test_claude_streaming_chat(self):
-        llm = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
+    def test_claude_streaming_chat_2023_01_01(self):
+        llm = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", anthropic_version="2023-01-01")
+        fixture = ChatBot(llm)
+
+        test_streaming_chatbot_chat(self, fixture=fixture, chunk_time_seconds_threshold=0.5, verbose=False)
+
+    def test_claude_streaming_chat_2023_06_01(self):
+        llm = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", anthropic_version="2023-06-01")
         fixture = ChatBot(llm)
 
         test_streaming_chatbot_chat(self, fixture=fixture, chunk_time_seconds_threshold=0.5, verbose=False)
