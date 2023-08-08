@@ -141,6 +141,7 @@ def main():
     rss_agent = RSSAgent(url='https://arxiv.org/rss/cs')
     with rss_agent.poll(60) as poller:
         for papers in poller():
+            print(f'Found {len(papers)} new paper(s).')
             for paper in papers:
                 analyze_and_email(
                     paper=paper,
