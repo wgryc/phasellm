@@ -32,7 +32,8 @@ setup(
         "beautifulsoup4>=4.12.2",
         "lxml>=4.9.2",
         "fake-useragent>=1.1.3",
-        "playwright>=1.35.0"
+        "playwright>=1.35.0",
+        "feedparser>=6.0.10"
     ],
     extras_require={
         "complete": [
