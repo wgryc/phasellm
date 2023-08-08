@@ -21,6 +21,17 @@ gmail_password = os.getenv("GMAIL_PASSWORD")
 llm = OpenAIGPTWrapper(openai_api_key, model="gpt-4")
 
 
+def interest_analysis(title: str, abstract: str, interests: str):
+    interest_analysis_prompt = \
+        f"""
+        You are an LLM tasked with determining whether or not an academic paper is relevant to a user's 
+        interests. The user is interested in {interests}. The paper is titled {title} and has the following
+        abstract: {abstract}. Is this paper relevant to the user's interests? If so, respond with 'yes'. If not,
+        respond with 'no'. Answer with only 'yes' or 'no', no punctuation.
+        """
+    return llm.text_completion(prompt=interest_analysis_prompt)
+
+
 def summarize(title: str, abstract: str, interests: str):
     """
     This function summarizes why the paper might be relevant to the user's interests.
@@ -77,14 +88,7 @@ def analyze_and_email(paper: FeedParserDict, interests: str, retries: int = 0) -
 
     title = paper['title']
     abstract = paper['summary']
-    interest_analysis_prompt = \
-        f"""
-        You are an LLM tasked with determining whether or not an academic paper is relevant to a user's 
-        interests. The user is interested in {interests}. The paper is titled {title} and has the following
-        abstract: {abstract}. Is this paper relevant to the user's interests? If so, respond with 'yes'. If not,
-        respond with 'no'. Answer with only 'yes' or 'no', no punctuation.
-        """
-    interested = llm.text_completion(prompt=interest_analysis_prompt)
+    interested = interest_analysis(title=title, abstract=abstract, interests=interests)
     if interested == 'yes':
         summary = summarize(title=title, abstract=abstract, interests=interests)
         send_email(title=title, summary=summary)
