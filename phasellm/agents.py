@@ -223,6 +223,9 @@ class SandboxedCodeExecutionAgent(Agent):
         self._client: DockerClient = docker.from_env()
         self._ping_client()
 
+        # Get the docker image.
+        self._client.images.pull(self.docker_image)
+
         # Placeholder for the container.
         self._container: Optional[Container] = None
 
