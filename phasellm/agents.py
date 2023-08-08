@@ -10,12 +10,19 @@ import docker
 import smtplib
 import requests
 import subprocess
+import feedparser
+
+from queue import Queue
 
 from io import StringIO
 
 from pathlib import Path
 
 from warnings import warn
+
+from threading import Thread
+
+from functools import partial
 
 from bs4 import BeautifulSoup
 
@@ -34,7 +41,7 @@ from playwright.sync_api import sync_playwright
 from docker import DockerClient
 from docker.models.containers import Container, ExecResult
 
-from typing import Generator, Union, Dict, List, Optional, NamedTuple
+from typing import Generator, Union, Dict, List, Optional, NamedTuple, Callable
 
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -1116,3 +1123,148 @@ class WebSearchAgent(Agent):
                 )
             )
         return results
+
+
+class RSSAgent(Agent):
+
+    def __init__(self, name: str = '', url: str = None, **kwargs):
+        """
+        Create a RSSAgent
+
+        This agent helps you read data from RSS feeds.
+        Args:
+            name: The name of the agent.
+            url: The URL of the RSS feed.
+            **kwargs: Any additional keyword arguments to pass to feedparser.parse(). You may need to pass a user agent
+            header or other headers for some RSS feeds. See https://feedparser.readthedocs.io/en/latest/http.html.
+
+        Example(s):
+
+            Read an RSS feed once, passing a user agent header:
+                >>> from phasellm.agents import RSSAgent
+                >>> agent = RSSAgent(url='https://arxiv.org/rss/cs', agent="it's me!")
+                >>> data = agent.read()
+
+            Poll the arXiv CS RSS feed every 60 seconds:
+                >>> from phasellm.agents import RSSAgent
+                >>> agent = RSSAgent(url='https://arxiv.org/rss/cs')
+                >>> with agent.poll(interval=60) as poller:
+                >>>     for data in poller():
+                >>>         print(data)
+
+            Poll the arXiv CS RSS feed every 60 seconds and stop after 5 minutes:
+                >>> from phasellm.agents import RSSAgent
+                >>> agent = RSSAgent(url='https://arxiv.org/rss/cs')
+                >>> def poll_helper(p: Callable[[], Generator[List[Dict], None, None]]):
+                >>>     for data in poller():
+                >>>         print(data)
+                >>> with agent.poll(interval=60) as poller:
+                >>>     t = Thread(target=poll_helper, kwargs={'p': poller})
+                >>>     t.start()
+                >>>     time.sleep(300)
+                >>> t.join()
+
+            Poll and print the data and polling time after each update is received.
+                >>> from phasellm.agents import RSSAgent
+                >>> agent = RSSAgent(url='https://arxiv.org/rss/cs')
+                >>> with agent.poll(interval=60) as poller:
+                >>>     for data in poller():
+                >>>         print(f'data: {data}')
+                >>>         print(f'polling time: {agent.poll_time}')
+        """
+        if not url:
+            raise Exception('Must provide a URL for the RSSAgent.')
+
+        super().__init__(name=name)
+
+        self.url = url
+        self.kwargs = kwargs
+
+        # Private attribute for tracking polling state of the agent.
+        self._polling = False
+        self._poll_start_time = None
+        self._poll_end_time = None
+
+    def __repr__(self):
+        return f"RSSAgent(name={self.name})"
+
+    @staticmethod
+    def _yield_data(queue: Queue) -> Generator[List[Dict], None, None]:
+        while True:
+            data = queue.get(block=True)
+            if data is None:
+                break
+            yield data
+
+    def _poll_thread(self, queue: Queue, interval: int = 60) -> None:
+        last_item = None
+        while self._polling:
+            data = self.read()
+
+            # Scrub through the data until we find the last item.
+            for i in range(len(data)):
+                if data[i] == last_item:
+                    data = data[:i]
+                    break
+
+            # Put the data in the queue
+            queue.put(data)
+
+            # Update the last item
+            if len(data) > 0:
+                last_item = data[0]
+
+            # Wait for interval seconds
+            time.sleep(interval)
+        # Signal the end of polling
+        queue.put(None)
+
+    def read(self) -> List[Dict]:
+        """
+        This method reads data from an RSS feed.
+
+        Returns: A list of dictionaries containing the data from the RSS feed.
+
+        """
+        return feedparser.parse(self.url, **self.kwargs)['entries']
+
+    @contextmanager
+    def poll(self, interval: int = 60) -> Generator[Callable[[], Generator[List[str], None, None]], None, None]:
+        """
+        This method polls an RSS feed for new data.
+        Args:
+            interval: The number of seconds to wait between polls.
+
+        Returns: A generator that yields a list of dictionaries containing the data from the RSS feed.
+
+        """
+        thread = None
+        try:
+            queue = Queue()
+            self._polling = True
+            thread = Thread(
+                target=self._poll_thread,
+                kwargs={'queue': queue, 'interval': interval}
+            )
+            thread.start()
+            self._poll_start_time = datetime.now()
+            yield partial(self._yield_data, queue=queue)
+        finally:
+            if thread:
+                self._polling = False
+                self._poll_end_time = datetime.now()
+                thread.join()
+
+    @property
+    def poll_time(self) -> timedelta:
+        """
+        This method calculates the amount of time the agent has been polling.
+
+        Returns: A timedelta object.
+        """
+
+        if self._polling and self._poll_start_time is not None:
+            return datetime.now() - self._poll_start_time
+        if not self._polling and self._poll_start_time and self._poll_end_time:
+            return self._poll_end_time - self._poll_start_time
+        return timedelta(0)

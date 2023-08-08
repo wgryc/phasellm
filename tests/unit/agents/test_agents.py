@@ -1,9 +1,13 @@
+import itertools
+
 from unittest import TestCase
+
+from tests.utils import Timeout
 
 from unittest.mock import patch
 
 from phasellm.agents import CodeExecutionAgent, SandboxedCodeExecutionAgent, EmailSenderAgent, NewsSummaryAgent, \
-    WebpageAgent
+    WebpageAgent, RSSAgent
 
 
 class TestCodeExecutionAgent(TestCase):
@@ -259,3 +263,38 @@ class TestWebpageAgent(TestCase):
 
         self.assertTrue('User-Agent' in actual)
         self.assertTrue('Chrome' in actual['User-Agent'])
+
+
+class TestRSSAgent(TestCase):
+
+    def setUp(self) -> None:
+        self.fixture = RSSAgent(url='test')
+
+    @patch('phasellm.agents.RSSAgent.read')
+    def test_poll(self, read_mock):
+        # Mock the read return values to simulate differing RSS feed responses.
+        read_mock.side_effect = itertools.chain([
+            [{'title': 'test 1'}],
+            [{'title': 'test 2'}, {'title': 'test 1'}]
+        ],
+            itertools.repeat([{'title': 'test 2'}, {'title': 'test 1'}])
+        )
+
+        results = []
+
+        # Define a timeout thread to ensure the test does not hang.
+        timeout = Timeout(seconds=5)
+        timeout.start()
+
+        # Execute the poller for 2 iterations.
+        with self.fixture.poll(interval=1) as poller:
+            for data in poller():
+                results.extend(data)
+                if len(results) >= 2:
+                    timeout.stop()
+                    break
+                timeout.check()
+
+        self.assertTrue(len(results) == 2, f'{len(results)} != 2')
+        self.assertEqual(results[0]['title'], 'test 1')
+        self.assertEqual(results[1]['title'], 'test 2')
