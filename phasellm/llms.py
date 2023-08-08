@@ -742,6 +742,8 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             The text completion.
 
         """
+        if self.model in ['gpt-3.5', 'gpt-4']:
+            raise ValueError(f"{self.model} is a chat model. Use complete_chat instead.")
         if stop_sequences is None:
             stop_sequences = []
         # https://platform.openai.com/docs/api-reference/completions/create
