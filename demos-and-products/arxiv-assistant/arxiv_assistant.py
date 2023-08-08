@@ -73,12 +73,7 @@ def send_email(title: str, abstract: str, link: str, summary: str) -> None:
     # Send email
     print('Sending email...')
 
-    content = f"""
-    Title: {title}\n\n
-    Summary:\n{summary}\n\n
-    Abstract:\n{abstract}\n\n
-    Link: {link}
-    """
+    content = f"Title: {title}\n\nSummary:\n{summary}\n\nAbstract:\n{abstract}\n\nLink: {link}"
 
     email_agent = EmailSenderAgent(
         sender_name='arXiv Assistant',
