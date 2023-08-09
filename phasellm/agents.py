@@ -55,8 +55,10 @@ class Agent(ABC):
     def __init__(self, name: str = ''):
         """
         Abstract class for an agent.
+
         Args:
             name: The name of the agent.
+
         """
         self.name = name
 
@@ -68,10 +70,9 @@ class Agent(ABC):
 def stdout_io(stdout=None):
     """
     Used to hijack printing to screen so we can save the Python code output for the LLM (or any other arbitrary code).
+
     Args:
         stdout: The stdout to use.
-
-    Returns:
 
     """
     old = sys.stdout
@@ -92,6 +93,7 @@ class CodeExecutionAgent(Agent):
 
         Args:
             name: The name of the agent.
+
         """
         super().__init__(name=name)
 
@@ -148,6 +150,7 @@ class SandboxedCodeExecutionAgent(Agent):
         Examples:
             >>> from typing import Generator
             >>> from phasellm.agents import SandboxedCodeExecutionAgent
+
             Managing the docker client yourself:
                 >>> agent = SandboxedCodeExecutionAgent()
                 >>> logs = agent.execute_code('print("Hello World!")')
@@ -155,14 +158,15 @@ class SandboxedCodeExecutionAgent(Agent):
                 ...     print(log)
                 Hello World!
                 >>> agent.close()
+
             Using the context manager:
                 >>> with SandboxedCodeExecutionAgent() as agent:
                 ...     logs: Generator = agent.execute_code('print("Hello World!")')
                 ...     for log in logs:
                 ...         print(log)
                 Hello World!
-            Code with custom packages is possible! Note that the package must exist in the module_package_mappings
-            dictionary:
+
+            Code with custom packages is possible! Note that the package must exist in the module_package_mappings dictionary:
                 >>> module_package_mappings = {
                 ...     "numpy": "numpy"
                 ...}
@@ -171,16 +175,20 @@ class SandboxedCodeExecutionAgent(Agent):
                 ...     for log in logs:
                 ...         print(log)
                 1.24.3
+
             Disable log streaming (waits for code to finish executing before returning logs):
                 >>> with SandboxedCodeExecutionAgent() as agent:
                 ...     logs = agent.execute_code('print("Hello World!")', stream=False)
                 ...     print(logs)
                 Hello World!
+
             Custom docker image:
                 >>> with SandboxedCodeExecutionAgent(docker_image='python:3.7') as agent:
                 Hello World!
+
             Custom scratch directory:
                 >>> with SandboxedCodeExecutionAgent(scratch_dir='my_dir') as agent:
+
             Stop container after each call to agent.execute_code()
                 >>> with SandboxedCodeExecutionAgent() as agent:
                 ...     logs = agent.execute_code('print("Hello 1")', auto_stop_container=True)
@@ -193,6 +201,7 @@ class SandboxedCodeExecutionAgent(Agent):
             scratch_dir: Scratch directory to use for copying files (bind mounting) to the sandboxed environment.
             module_package_mappings: Dictionary of module to package mappings. This is used to determine
             which packages are allowed to be installed in the sandboxed environment.
+
         """
         super().__init__(name=name)
 
@@ -238,20 +247,21 @@ class SandboxedCodeExecutionAgent(Agent):
     def __enter__(self):
         """
         Runs When entering the context manager.
+
         Returns:
             SandboxedCodeExecutionAgent()
+
         """
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
         Runs when exiting the context manager.
+
         Args:
             exc_type: The exception type.
             exc_val: The exception value.
             exc_tb: The exception traceback.
-
-        Returns:
 
         """
         self.close()
@@ -260,19 +270,16 @@ class SandboxedCodeExecutionAgent(Agent):
         """
         Pings the docker client to make sure it's running.
 
-        Returns:
-
         Raises:
             :py:class:`docker.errors.APIError`
                 If the server returns an error.
+
         """
         self._client.ping()
 
     def _create_scratch_dir(self) -> None:
         """
         Creates the scratch directory if it doesn't exist.
-        Returns:
-
         """
         if not os.path.exists(self.scratch_dir):
             os.makedirs(self.scratch_dir)
@@ -280,6 +287,7 @@ class SandboxedCodeExecutionAgent(Agent):
     def _write_code_file(self, code: str) -> None:
         """
         Writes the code to a file in the scratch directory.
+
         Args:
             code: The code string to write to the file.
 
@@ -292,6 +300,7 @@ class SandboxedCodeExecutionAgent(Agent):
     def _write_requirements_file(self, packages: List[str]) -> None:
         """
         Writes a requirements.txt file to the scratch directory.
+
         Args:
             packages: List of packages to write to the requirements.txt file.
 
@@ -306,11 +315,13 @@ class SandboxedCodeExecutionAgent(Agent):
         """
         Scans the code for modules and maps them to a package. If no package is specified in the mapping whitelist,
         then the package is ignored.
+
         Args:
             code: The code to scan for modules.
 
         Returns:
             A list of packages to install in the sandboxed environment.
+
         """
 
         modules = self._module_regex.findall(code)
@@ -327,6 +338,7 @@ class SandboxedCodeExecutionAgent(Agent):
     def _prep_commands(self, packages: List[str]) -> ExecCommands:
         """
         Prepares the commands to be run in the docker container.
+
         Args:
             packages: List of packages to install in the docker container.
 
@@ -347,6 +359,7 @@ class SandboxedCodeExecutionAgent(Agent):
     def _handle_exec_errors(output: str, exit_code: int, code: str) -> None:
         """
         Handles errors that occur during code execution.
+
         Args:
             output: The output of the code execution.
             exit_code: The exit code of the code execution.
@@ -362,11 +375,14 @@ class SandboxedCodeExecutionAgent(Agent):
         """
         Starts the container, installs packages defined in the code (if they are provided in the
         module_package_mappings), and executes the provided code inside the container.
+
         Args:
             code: The code string to execute.
-            auto_stop_container: Whether or not to automatically stop the container after execution.
+            auto_stop_container: Whether to automatically stop the container after execution.
+
         Returns:
             A Generator that yields the stdout and stderr of the code execution.
+
         """
 
         self._create_scratch_dir()
@@ -424,6 +440,7 @@ class SandboxedCodeExecutionAgent(Agent):
     def start_container(self) -> None:
         """
         Starts the docker container.
+
         Returns:
 
         """
@@ -442,6 +459,7 @@ class SandboxedCodeExecutionAgent(Agent):
     def stop_container(self) -> None:
         """
         Stops the docker container and removes it, if it exists.
+
         Returns:
 
         """
@@ -453,13 +471,16 @@ class SandboxedCodeExecutionAgent(Agent):
     def execute_code(self, code: str, stream: bool = True, auto_stop_container: bool = False) -> Union[str, Generator]:
         """
         Executes the provided code inside a sandboxed container.
+
         Args:
             code: The code string to execute.
-            stream: Whether or not to stream the output of the code execution.
-            auto_stop_container: Whether or not to automatically stop the container after the code execution.
+            stream: Whether to stream the output of the code execution.
+            auto_stop_container: Whether to automatically stop the container after the code execution.
+
         Returns:
             A string output of the whole code execution stdout and stderr if stream is False, otherwise a Generator
             that yields the stdout and stderr of the code execution.
+
         """
         generator = self._execute(code=code, auto_stop_container=auto_stop_container)
         if stream:
@@ -482,6 +503,7 @@ class EmailSenderAgent(Agent):
             password: The password for the email account
             port: The port used by the SMTP server
             name: The name of the agent (optional)
+
         """
 
         super().__init__(name=name)
@@ -497,12 +519,11 @@ class EmailSenderAgent(Agent):
     def sendPlainEmail(self, recipient_email: str, subject: str, content: str) -> None:
         """
         DEPRECATED: see send_plain_email
+
         Args:
             recipient_email: The person receiving the email
             subject: Email subject
             content: The plain text context for the email
-
-        Returns:
 
         """
         # TODO deprecating this to be more Pythonic with naming conventions.
@@ -512,12 +533,11 @@ class EmailSenderAgent(Agent):
     def send_plain_email(self, recipient_email: str, subject: str, content: str) -> None:
         """
         Sends an email encoded as plain text.
+
         Args:
             recipient_email: The person receiving the email
             subject: Email subject
             content: The plain text context for the email
-
-        Returns:
 
         """
         s = smtplib.SMTP(host=self.smtp, port=self.port)
@@ -541,9 +561,11 @@ class NewsSummaryAgent(Agent):
         Create a NewsSummaryAgent.
 
         Takes a query, calls the API, and gets news articles.
+
         Args:
             apikey: The API key for newsapi.org
             name: The name of the agent (optional)
+
         """
         super().__init__(name=name)
         self.apikey = apikey
@@ -560,6 +582,7 @@ class NewsSummaryAgent(Agent):
     ) -> str:
         """
         DEPRECATED: see get_query
+
         Args:
             query: What keyword to look for in news articles
             days_back: How far back we go with the query
@@ -568,6 +591,7 @@ class NewsSummaryAgent(Agent):
 
         Returns:
             A news summary string
+
         """
         # TODO deprecating this to be more Pythonic with naming conventions.
         warn('getQuery() is deprecated. Use get_query() instead.')
@@ -597,6 +621,7 @@ class NewsSummaryAgent(Agent):
 
         Returns:
             A news summary string
+
         """
 
         start_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
@@ -646,23 +671,29 @@ class WebpageAgent(Agent):
 
         Examples:
             >>> from phasellm.agents import WebpageAgent
+
             Use default parameters:
                 >>> agent = WebpageAgent()
                 >>> text = agent.scrape('https://10millionsteps.com/ai-inflection')
+
             Keep html tags:
                 >>> agent = WebpageAgent()
                 >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', text_only=False, body_only=False)
+
             Keep html tags, but only return body content:
                 >>> agent = WebpageAgent()
                 >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', text_only=False, body_only=True)
+
             Use a headless browser to enable scraping of dynamic content:
                 >>> agent = WebpageAgent()
                 >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', text_only=False, body_only=True,
                 ...                     use_browser=True)
+
             Pass custom headers:
                 >>> agent = WebpageAgent()
                 >>> headers = {'Example': 'header'}
                 >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', headers=headers)
+
             Wait for a selector to load (useful for dynamic content, only works when use_browser=True):
                 >>> agent = WebpageAgent()
                 >>> text = agent.scrape('https://10millionsteps.com/ai-inflection', use_browser=True,
@@ -670,6 +701,7 @@ class WebpageAgent(Agent):
 
         Args:
             name: The name of the agent (optional)
+
         """
         super().__init__(name=name)
 
@@ -682,8 +714,6 @@ class WebpageAgent(Agent):
     def _validate_url(url: str) -> None:
         """
         This method validates that a url can be used by the agent.
-        Returns:
-
         """
         if not url.startswith('http'):
             raise ValueError(f"Url must use HTTP(S). Invalid URL: {url}")
@@ -694,10 +724,9 @@ class WebpageAgent(Agent):
     def _handle_errors(res: requests.Response) -> None:
         """
         This method handles errors that occur during a request.
+
         Args:
             res: The response from the request.
-
-        Returns:
 
         """
         if res.status_code != 200:
@@ -708,6 +737,7 @@ class WebpageAgent(Agent):
     def _parse_html(html: str, text_only: bool = True, body_only: bool = False) -> str:
         """
         This method parses the given html string.
+
         Args:
             html: The html to parse.
             text_only: If True, only the text of the webpage is returned. If False, the entire HTML is returned.
@@ -734,6 +764,7 @@ class WebpageAgent(Agent):
         """
         This method prepares the headers for a request. It fills in missing headers with default values. It also
         adds a fake user agent to reduce the likelihood of being blocked.
+
         Args:
             headers: The headers to use for the request.
 
@@ -765,12 +796,14 @@ class WebpageAgent(Agent):
     def _scrape_html(self, url: str, headers: Dict = None) -> str:
         """
         This method scrapes a webpage and returns a string containing the html of the webpage.
+
         Args:
             url: The URL of the webpage to scrape.
             headers: A dictionary of headers to use for the request.
 
         Returns:
             A string containing the html of the webpage.
+
         """
 
         res = self.session.get(url=url, headers=headers, timeout=30)
@@ -787,11 +820,12 @@ class WebpageAgent(Agent):
         """
         This method scrapes a webpage and returns a string containing the html of the webpage. It uses a headless
         browser to render the webpage and execute javascript.
+
         Args:
             url: The URL of the webpage to scrape.
             headers: A dictionary of headers to use for the request.
             wait_for_selector: The selector to wait for before returning the HTML. Useful for when you know something
-            should be on the page but it is not there yet since it needs to be rendered by javascript.
+            should be on the page, but it is not there yet since it needs to be rendered by javascript.
 
         Returns:
             A string containing the html of the webpage.
@@ -827,19 +861,21 @@ class WebpageAgent(Agent):
     ) -> str:
         """
         This method scrapes a webpage and returns a string containing the html or text of the webpage.
+
         Args:
             url: The URL of the webpage to scrape.
             headers: A dictionary of headers to use for the request.
             use_browser: If True, the webpage is rendered using a headless browser, allowing javascript to run and
-            hydrate the page. If False, the webpage is scraped as-is.
+                hydrate the page. If False, the webpage is scraped as-is.
             wait_for_selector: The selector to wait for before returning the HTML. Useful for when you know something
-            should be on the page but it is not there yet since it needs to be rendered by javascript. Only used if
-            use_browser is True.
+                should be on the page, but it is not there yet since it needs to be rendered by javascript. Only used when
+                use_browser is True.
             text_only: If True, only the text of the webpage is returned. If False, the entire HTML is returned.
             body_only: If True, only the body of the webpage is returned. If False, the entire HTML is returned.
 
         Returns:
             A string containing the text of the webpage.
+
         """
 
         self._validate_url(url=url)
@@ -886,6 +922,7 @@ class WebSearchAgent(Agent):
 
         Examples:
             >>> from phasellm.agents import WebSearchAgent
+
             Search with Google:
                 >>> agent = WebSearchAgent(
                 ...     name='Google Search Agent',
@@ -895,12 +932,14 @@ class WebSearchAgent(Agent):
                 ...     query='test'
                 ...     custom_search_engine_id='YOUR_CUSTOM_SEARCH_ENGINE_ID'
                 ... )
+
             Search with Brave:
                 >>> agent = WebSearchAgent(
                 ...     name='Brave Search Agent',
                 ...     api_key='YOUR_API_KEY'
                 ... )
                 >>> results = agent.search_brave(query='test')
+
             Iterate over the results:
                 >>> for result in results:
                 ...     print(result.title)
@@ -915,10 +954,11 @@ class WebSearchAgent(Agent):
             text_only: If True, only the text of the webpage is returned. If False, the entire HTML is returned.
             body_only: If True, only the body of the webpage is returned. If False, the entire HTML is returned.
             use_browser: If True, the webpage is rendered using a headless browser, allowing javascript to run and
-            hydrate the page. If False, the webpage is scraped as-is.
+                hydrate the page. If False, the webpage is scraped as-is.
             wait_for_selector: The selector to wait for before returning the HTML. Useful for when you know something
-            should be on the page but it is not there yet since it needs to be rendered by javascript. Only used if
-            use_browser is True.
+                should be on the page, but it is not there yet since it needs to be rendered by javascript. Only used if
+                use_browser is True.
+
         """
         super().__init__(name=name)
 
@@ -941,12 +981,14 @@ class WebSearchAgent(Agent):
     def _prepare_url(base_url: str, params: Dict) -> str:
         """
         This method prepares a URL for a request.
+
         Args:
             base_url: The base url.
             params: A dictionary of parameters to use for the request.
 
         Returns:
             The prepared URL.
+
         """
         req = requests.PreparedRequest()
         req.prepare_url(
@@ -959,10 +1001,9 @@ class WebSearchAgent(Agent):
     def _handle_errors(res: requests.Response) -> None:
         """
         This method handles errors that occur during a request.
+
         Args:
             res: The response from the request.
-
-        Returns:
 
         """
         if res.status_code != 200:
@@ -972,6 +1013,7 @@ class WebSearchAgent(Agent):
     def _send_request(self, base_url: str, headers: Dict = None, params: Dict = None) -> Dict:
         """
         This method sends a request to a URL.
+
         Args:
             base_url: The base URL to send the request to.
             headers: A dictionary of headers to use for the request.
@@ -979,6 +1021,7 @@ class WebSearchAgent(Agent):
 
         Returns:
             The response from the request.
+
         """
         url = self._prepare_url(
             base_url=base_url,
@@ -1007,6 +1050,7 @@ class WebSearchAgent(Agent):
 
         Returns:
             A list of WebSearchResult objects.
+
         """
         if kwargs is None:
             kwargs = {}
@@ -1078,6 +1122,7 @@ class WebSearchAgent(Agent):
 
         Returns:
             A list of WebSearchResult objects.
+
         """
         if kwargs is None:
             kwargs = {}
@@ -1135,13 +1180,14 @@ class RSSAgent(Agent):
         Create a RSSAgent
 
         This agent helps you read data from RSS feeds.
+
         Args:
             name: The name of the agent.
             url: The URL of the RSS feed.
             **kwargs: Any additional keyword arguments to pass to feedparser.parse(). You may need to pass a user agent
-            header or other headers for some RSS feeds. See https://feedparser.readthedocs.io/en/latest/http.html.
+                header or other headers for some RSS feeds. See https://feedparser.readthedocs.io/en/latest/http.html.
 
-        Example(s):
+        Examples:
 
             Read an RSS feed once, passing a user agent header:
                 >>> from phasellm.agents import RSSAgent
@@ -1174,6 +1220,7 @@ class RSSAgent(Agent):
                 >>>     for data in poller():
                 >>>         print(f'data: {data}')
                 >>>         print(f'polling time: {agent.poll_time}')
+
         """
         if not url:
             raise Exception('Must provide a URL for the RSSAgent.')
@@ -1193,6 +1240,16 @@ class RSSAgent(Agent):
 
     @staticmethod
     def _yield_data(queue: Queue) -> Generator[List[Dict], None, None]:
+        """
+        This method is responsible for yielding data from the queue. It stops generating when it receives None.
+
+        Args:
+            queue: The queue to yield data from.
+
+        Returns:
+            A generator that yields data from the queue.
+
+        """
         while True:
             data = queue.get(block=True)
             if data is None:
@@ -1200,6 +1257,14 @@ class RSSAgent(Agent):
             yield data
 
     def _poll_thread(self, queue: Queue, interval: int = 60) -> None:
+        """
+        This method is responsible for polling the RSS feed and putting new data in the queue.
+
+        Args:
+            queue: The queue to put data in.
+            interval: The number of seconds to wait between polls.
+
+        """
         last_item = None
         while self._polling:
             data = self.read()
@@ -1226,7 +1291,8 @@ class RSSAgent(Agent):
         """
         This method reads data from an RSS feed.
 
-        Returns: A list of dictionaries containing the data from the RSS feed.
+        Returns:
+            A list of dictionaries containing the data from the RSS feed.
 
         """
         return feedparser.parse(self.url, **self.kwargs)['entries']
@@ -1235,10 +1301,12 @@ class RSSAgent(Agent):
     def poll(self, interval: int = 60) -> Generator[Callable[[], Generator[List[str], None, None]], None, None]:
         """
         This method polls an RSS feed for new data.
+
         Args:
             interval: The number of seconds to wait between polls.
 
-        Returns: A generator that yields a list of dictionaries containing the data from the RSS feed.
+        Returns:
+            A generator that yields a list of dictionaries containing the data from the RSS feed.
 
         """
         thread = None
@@ -1263,7 +1331,9 @@ class RSSAgent(Agent):
         """
         This method calculates the amount of time the agent has been polling.
 
-        Returns: A timedelta object.
+        Returns:
+            A timedelta object.
+
         """
 
         if self._polling and self._poll_start_time is not None:

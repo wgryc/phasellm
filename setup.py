@@ -1,19 +1,13 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.0.15"
-
-DESCRIPTION = "Wrappers for common large language models (LLMs) with support for evaluation."
-
-LONG_DESCRIPTION = "PhaseLLM provides wrappers for common large language models and use cases. This makes it easy to " \
-                   "swap models in and out as needed. We also provide support for evaluation of models so you can " \
-                   "choose which models are better to use."
+from project_metadata import NAME, VERSION, AUTHOR, DESCRIPTION, LONG_DESCRIPTION
 
 setup(
-    name="phasellm",
+    name=NAME,
     version=VERSION,
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
-    author="Wojciech Gryc",
+    author=AUTHOR,
     author_email="hello@phaseai.com",
     license="MIT",
     packages=find_packages(),
@@ -40,6 +34,13 @@ setup(
             "transformers>=4.25.0",
             "accelerate>=0.16.0",
             "torch>=1.0.0",
+        ],
+        "docs": [
+            "furo",
+            "sphinx>=7.1.2",
+            "myst_parser>=2.0.0",
+            "sphinx-autoapi>=2.1.1",
+            "sphinx-autobuild>=2021.3.14",
         ]
     },
     python_requires=">=3.8.0",
