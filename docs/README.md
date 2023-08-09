@@ -13,9 +13,10 @@
 ### Docs Helper Tools
 
 * Convert reStructuredText (.rst) to Markdown (.md)
-   ```
-   rst2myst convert docs/**/*.rst
-   ```
+    ```
+    pip install rst-to-myst[sphinx]
+    rst2myst convert docs/**/*.rst
+    ```
 
 ### Useful Resources
 

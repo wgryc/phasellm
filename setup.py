@@ -41,7 +41,6 @@ setup(
             "myst_parser>=2.0.0",
             "sphinx-autoapi>=2.1.1",
             "sphinx-autobuild>=2021.3.14",
-            "rst-to-myst[sphinx]"
         ]
     },
     python_requires=">=3.8.0",
