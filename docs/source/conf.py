@@ -1,6 +1,8 @@
 import sys
 
-from project_metadata import NAME, VERSION, AUTHOR
+sys.path.append('../../')
+
+from project_metadata import NAME, VERSION, AUTHOR  # noqa: E402
 
 # Configuration file for the Sphinx documentation builder.
 #
