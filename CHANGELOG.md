@@ -2,7 +2,21 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
-# 0.0.13 and 0.014 (2023-07-15)
+# 0.0.15 and 0.0.16 (2023-08-15)
+
+### New Features
+
+- New RSS agent
+  - Crawl and read RSS feeds with LLMs
+  - Demo project in `/demos-and-products/arxiv-assistant`
+- Support for OpenAI Azure implementations; use our new `AzureAPIConfiguration` class
+
+### Fixes
+
+- Adding support for `claude-2` due to Anthropic API changes
+- Fix for user agent when running website crawls
+
+# 0.0.13 and 0.0.14 (2023-07-15)
 
 ### New Features
 
