@@ -5,6 +5,8 @@ from unittest import TestCase
 
 from dotenv import load_dotenv
 
+from phasellm.configurations import AzureAPIConfiguration
+
 from phasellm.llms import \
     HuggingFaceInferenceWrapper, \
     BloomWrapper, \
@@ -27,6 +29,7 @@ from tests.e2e.llms.utils import test_streaming_chatbot_chat, test_streaming_cha
     test_streaming_chatbot_resend
 
 load_dotenv()
+azure_api_key = os.getenv("AZURE_API_KEY")
 openai_api_key = os.getenv("OPENAI_API_KEY")
 cohere_api_key = os.getenv("COHERE_API_KEY")
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -97,6 +100,15 @@ class E2ETestOpenAIGPTWrapper(TestCase):
 
     def test_complete_chat(self):
         fixture = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
+        test_complete_chat(self, fixture, verbose=False)
+
+    def test_complete_chat_azure(self):
+        fixture = OpenAIGPTWrapper(api_config=AzureAPIConfiguration(
+            api_key=azure_api_key,
+            api_base='https://val-gpt4.openai.azure.com/',
+            api_version='2023-05-15',
+            deployment_id='gpt-4'
+        ))
         test_complete_chat(self, fixture, verbose=False)
 
     def test_complete_chat_kwargs(self):
@@ -257,6 +269,19 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
         Tests that the StreamingOpenAIGPTWrapper can be used to perform chat completion.
         """
         fixture = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
+
+        test_streaming_complete_chat(self, fixture, verbose=False)
+
+    def test_complete_chat_azure(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper with azure configuration can be used to perform chat completion.
+        """
+        fixture = StreamingOpenAIGPTWrapper(api_config=AzureAPIConfiguration(
+            api_key=azure_api_key,
+            api_base='https://val-gpt4.openai.azure.com/',
+            api_version='2023-05-15',
+            deployment_id='gpt-4'
+        ))
 
         test_streaming_complete_chat(self, fixture, verbose=False)
 
@@ -501,6 +526,17 @@ class E2ETestChatBot(TestCase):
 
         test_chatbot_chat(self, fixture)
 
+    def test_openai_gpt_chat_azure(self):
+        llm = OpenAIGPTWrapper(api_config=AzureAPIConfiguration(
+            api_key=azure_api_key,
+            api_base='https://val-gpt4.openai.azure.com/',
+            api_version='2023-05-15',
+            deployment_id='gpt-4'
+        ))
+        fixture = ChatBot(llm)
+
+        test_chatbot_chat(self, fixture)
+
     def test_openai_gpt_resend(self):
         llm = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
         fixture = ChatBot(llm)
@@ -631,6 +667,17 @@ class E2ETestStreamingChatBot(TestCase):
 
     def test_openai_gpt_streaming_chat(self):
         llm = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
+        fixture = ChatBot(llm)
+
+        test_streaming_chatbot_chat(self, fixture=fixture, chunk_time_seconds_threshold=0.5, verbose=False)
+
+    def test_openai_gpt_streaming_chat_azure(self):
+        llm = StreamingOpenAIGPTWrapper(api_config=AzureAPIConfiguration(
+            api_key=azure_api_key,
+            api_base='https://val-gpt4.openai.azure.com/',
+            api_version='2023-05-15',
+            deployment_id='gpt-4'
+        ))
         fixture = ChatBot(llm)
 
         test_streaming_chatbot_chat(self, fixture=fixture, chunk_time_seconds_threshold=0.5, verbose=False)

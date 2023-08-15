@@ -1,17 +1,24 @@
 import os
+import time
 import shutil
 
 import docker.errors
 
 from pathlib import Path
 
+from threading import Thread
+
 from unittest import TestCase
 
 from dotenv import load_dotenv
 
+from tests.utils import Timeout
+
 from phasellm.exceptions import LLMCodeException
 
-from phasellm.agents import SandboxedCodeExecutionAgent, WebpageAgent, WebSearchResult, WebSearchAgent
+from typing import Callable, List, Dict, Generator
+
+from phasellm.agents import SandboxedCodeExecutionAgent, WebpageAgent, WebSearchResult, WebSearchAgent, RSSAgent
 
 load_dotenv()
 google_search_api_key = os.getenv("GOOGLE_SEARCH_API_KEY")
@@ -358,4 +365,98 @@ class TestE2EWebSearchAgent(TestCase):
         self.assertTrue(
             isinstance(res[0], WebSearchResult),
             f"Result is not of type WebSearchResult.\n{res}"
+        )
+
+
+class TestE2ERSSAgent(TestCase):
+
+    def setUp(self) -> None:
+        self.fixture = RSSAgent(url='https://news.ycombinator.com/rss')
+        time.sleep(3)
+
+    def test_read_success(self):
+        data = self.fixture.read()
+        self.assertTrue(
+            len(data) > 0,
+            f"Result is empty.\n{data}"
+        )
+
+    def test_read_failure(self):
+        self.fixture.url = 'https://arxiv.org/rss/doesnotexist'
+        data = self.fixture.read()
+        self.assertTrue(len(data) == 0, "Expected empty result, got something.")
+
+    def test_poll_1_second(self):
+
+        results = []
+
+        def _poll_helper(p: Callable[[], Generator[List[Dict], None, None]]):
+            for data in p():
+                results.extend(data)
+
+        # Execute the poller for 1 second.
+        # Arxiv has a 3 request/second rate limit.
+        with self.fixture.poll(interval=3) as poller:
+            thread = Thread(target=_poll_helper, kwargs=({'p': poller}))
+            thread.start()
+            time.sleep(1)
+        thread.join()
+
+        self.assertTrue(
+            len(results) > 0,
+            f"Result is empty.\n{results}"
+        )
+
+    def test_poll_10_results(self):
+
+        results = []
+
+        timeout = Timeout(seconds=5)
+        timeout.start()
+
+        # Get 10 results.
+        # Arxiv has a 3 request/second rate limit.
+        with self.fixture.poll(interval=3) as poller:
+            for data in poller():
+                results.extend(data)
+                if len(results) >= 10:
+                    timeout.stop()
+                    break
+                timeout.check()
+
+        self.assertTrue(
+            len(results) >= 10,
+            f"{len(results)} != 10"
+        )
+
+    def test_poll_time(self):
+        """
+        This method tests that the poll_time property is set correctly.
+        Returns:
+
+        """
+
+        def _poll_helper(p: Callable[[], Generator[List[Dict], None, None]]):
+            for _ in p():
+                pass
+
+        timeout = Timeout(seconds=5)
+        timeout.start()
+
+        # Poll for 1 second.
+        # Arxiv has a 3 request/second rate limit.
+        with self.fixture.poll(interval=3) as poller:
+            thread = Thread(target=_poll_helper, kwargs=({'p': poller}))
+            thread.start()
+            time.sleep(1)
+            timeout.check()
+        thread.join()
+
+        self.assertTrue(
+            self.fixture.poll_time.seconds >= 1,
+            f"{self.fixture.poll_time.seconds} is not >= 1"
+        )
+        self.assertTrue(
+            self.fixture.poll_time.seconds < 2,
+            f"{self.fixture.poll_time.seconds} is not < 2"
         )
