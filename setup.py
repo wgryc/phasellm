@@ -25,7 +25,7 @@ setup(
         "docker>=6.1.3",
         "beautifulsoup4>=4.12.2",
         "lxml>=4.9.2",
-        "fake-useragent>=1.1.3",
+        "fake-useragent>=1.2.1",
         "playwright>=1.35.0",
         "feedparser>=6.0.10",
         "azure-identity>=1.14.0"
