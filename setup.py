@@ -27,7 +27,8 @@ setup(
         "lxml>=4.9.2",
         "fake-useragent>=1.1.3",
         "playwright>=1.35.0",
-        "feedparser>=6.0.10"
+        "feedparser>=6.0.10",
+        "azure-identity>=1.14.0"
     ],
     extras_require={
         "complete": [

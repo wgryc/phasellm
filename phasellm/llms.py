@@ -7,13 +7,17 @@ import json
 import requests
 
 # Typing imports
-from typing import Optional, List, Union, Generator, Any
 from typing_extensions import TypedDict
-from phasellm.types import CLAUDE_MODEL
+from phasellm.types import CLAUDE_MODEL, OPENAI_API_CONFIG
+from typing import Optional, List, Union, Generator, Any
+
+# Configuration imports
+from phasellm.configurations import OpenAIConfiguration
 
 # Abstract class imports
 from abc import ABC, abstractmethod
 
+from warnings import warn
 from datetime import datetime
 from sseclient import SSEClient
 
@@ -280,6 +284,29 @@ class LanguageModelWrapper(ABC):
 
         # Remove whitespace from before and after prompt.
         return prompt_text.strip()
+
+    def _prep_common_kwargs(self, api_config: Optional[OPENAI_API_CONFIG] = None):
+        """
+        This method prepares the common kwargs for the OpenAI APIs.
+
+        Returns:
+            The kwargs to pass to the API.
+
+        """
+        # Get the base kwargs for the given config.
+        if api_config is not None:
+            kwargs = api_config.get_base_api_kwargs()
+        else:
+            kwargs = {}
+
+        # Add the wrapper's kwargs.
+        kwargs = {**self.kwargs, **kwargs}
+
+        # Add the temperature if it exists.
+        if self.temperature is not None:
+            kwargs["temperature"] = self.temperature
+
+        return kwargs
 
 
 class StreamingLanguageModelWrapper(LanguageModelWrapper):
@@ -589,7 +616,8 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
 
     def __init__(
             self,
-            apikey: str,
+            apikey: Optional[str] = None,
+            api_config: Optional[OPENAI_API_CONFIG] = None,
             model: str = "gpt-3.5-turbo",
             format_sse: bool = False,
             append_stop_token: bool = True,
@@ -600,8 +628,50 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
         """
         Streaming compliant wrapper for the OpenAI API. Supports all major text and chat completion models by OpenAI.
 
+        This wrapper can be configured to use OpenAI's API or Microsoft Azure's API. To use Azure, pass in the
+        appropriate api_config. To use OpenAI's API, pass in an apikey and model. If both api_config and apikey are
+        passed in, api_config takes precedence.
+
+        Examples:
+            >>> from phasellm.llms import StreamingOpenAIGPTWrapper
+
+            Use OpenAI's API:
+                >>> llm = StreamingOpenAIGPTWrapper(apikey="my-api-key", model="gpt-3.5-turbo")
+                >>> llm.text_completion(prompt="Hello, my name is")
+                "Hello, my name is ChatGPT."
+
+            Use OpenAI's API with api_config:
+                >>> from phasellm.configurations import OpenAIConfiguration
+                >>> llm = StreamingOpenAIGPTWrapper(api_config=OpenAIConfiguration(
+                ...     apikey="my-api-key",
+                ...     organization="my-org",
+                ...     model="gpt-3.5-turbo"
+                ... ))
+
+            Use Azure's API:
+                >>> from phasellm.configurations import AzureAPIConfiguration
+                >>> llm = StreamingOpenAIGPTWrapper(api_config=AzureAPIConfiguration(
+                ...     apikey="azure_api_key",
+                ...     api_base='https://{your-resource-name}.openai.azure.com/',
+                ...     api_version='2023-05-15',
+                ...     deployment_id='gpt-4'
+                ... ))
+                >>> llm.text_completion(prompt="Hello, my name is")
+                "Hello, my name is ChatGPT."
+
+            Use Azure's API with Active Directory authentication:
+                >>> from phasellm.configurations import AzureActiveDirectoryConfiguration
+                >>> llm = StreamingOpenAIGPTWrapper(api_config=AzureActiveDirectoryConfiguration(
+                ...     api_base='https://{your-resource-name}.openai.azure.com/',
+                ...     api_version='2023-05-15',
+                ...     deployment_id='gpt-4'
+                ... ))
+                >>> llm.text_completion(prompt="Hello, my name is")
+                "Hello, my name is ChatGPT."
+
         Args:
             apikey: The API key to access the OpenAI API.
+            api_config: The API configuration to use. Defaults to None. Takes precedence over apikey and model.
             model: The model to use. Defaults to "gpt-3.5-turbo".
             format_sse: Whether to format the SSE response from OpenAI. Defaults to False.
             append_stop_token: Whether to append the stop token to the end of the prompt. Defaults to True.
@@ -617,11 +687,20 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             temperature=temperature,
             **kwargs
         )
-        openai.api_key = apikey
-        self.model: str = model
+
+        if api_config and (apikey or model):
+            warn("api_config takes precedence over apikey and model arguments.")
+
+        if apikey:
+            self.api_config = OpenAIConfiguration(api_key=apikey, model=model)
+        if api_config:
+            self.api_config = api_config
+
+        # Activate the configuration
+        self.api_config()
 
     def __repr__(self):
-        return f"StreamingOpenAIGPTWrapper(model={self.model})"
+        return f"StreamingOpenAIGPTWrapper(model={self.api_config.model})"
 
     def _yield_response(self, response: dict) -> Generator:
         """
@@ -664,15 +743,11 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             The chat completion generator.
 
         """
-        # https://platform.openai.com/docs/api-reference/chat/create
-        kwargs = {
-            "model": self.model,
-            "stream": True,
-            **self.kwargs
-        }
-        if self.temperature is not None:
-            kwargs["temperature"] = self.temperature
-        if ('gpt-4' in self.model) or ('gpt-3.5' in self.model):
+
+        kwargs = self._prep_common_kwargs(self.api_config)
+        kwargs['stream'] = True
+
+        if ('gpt-4' in self.api_config.model) or ('gpt-3.5' in self.api_config.model):
             kwargs["messages"] = messages
             response = openai.ChatCompletion.create(**kwargs)
             yield from self._yield_response(response)
@@ -702,19 +777,17 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             The text completion generator.
 
         """
-        if stop_sequences is None:
-            stop_sequences = []
-        # https://platform.openai.com/docs/api-reference/completions/create
+        kwargs = self._prep_common_kwargs(self.api_config)
+
         kwargs = {
-            "model": self.model,
             "prompt": prompt,
             "stream": True,
-            **self.kwargs
+            **kwargs
         }
-        if self.temperature is not None:
-            kwargs["temperature"] = self.temperature
-        if len(stop_sequences) != 0:
+
+        if stop_sequences:
             kwargs["stop"] = stop_sequences
+
         response = openai.Completion.create(**kwargs)
 
         yield from self._yield_response(response)
@@ -725,23 +798,81 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
     Wrapper for the OpenAI API. Supports all major text and chat completion models by OpenAI.
     """
 
-    def __init__(self, apikey: str, model: str = "gpt-3.5-turbo", temperature: float = None, **kwargs: Any):
+    def __init__(
+            self,
+            apikey: Optional[str] = None,
+            api_config: Optional[OPENAI_API_CONFIG] = None,
+            model: str = "gpt-3.5-turbo",
+            temperature: float = None,
+            **kwargs: Any
+    ):
         """
         Wrapper for the OpenAI API. Supports all major text and chat completion models by OpenAI.
 
+        This wrapper can be configured to use OpenAI's API or Microsoft Azure's API. To use Azure, pass in the
+        appropriate api_config. To use OpenAI's API, pass in an apikey and model. If both api_config and apikey are
+        passed in, api_config takes precedence.
+
+        Examples:
+            >>> from phasellm.llms import OpenAIGPTWrapper
+
+            Use OpenAI's API:
+                >>> llm = OpenAIGPTWrapper(apikey="my-api-key", model="gpt-3.5-turbo")
+                >>> llm.text_completion(prompt="Hello, my name is")
+                "Hello, my name is ChatGPT."
+
+            Use OpenAI's API with api_config:
+                >>> from phasellm.configurations import OpenAIConfiguration
+                >>> llm = OpenAIGPTWrapper(api_config=OpenAIConfiguration(
+                ...     apikey="my-api-key",
+                ...     organization="my-org",
+                ...     model="gpt-3.5-turbo"
+                ... ))
+
+            Use Azure's API:
+                >>> from phasellm.configurations import AzureAPIConfiguration
+                >>> llm = OpenAIGPTWrapper(api_config=AzureAPIConfiguration(
+                ...     apikey="azure_api_key",
+                ...     api_base='https://{your-resource-name}.openai.azure.com/',
+                ...     api_version='2023-05-15',
+                ...     deployment_id='gpt-4'
+                ... ))
+                >>> llm.text_completion(prompt="Hello, my name is")
+                "Hello, my name is ChatGPT."
+
+            Use Azure's API with Active Directory authentication:
+                >>> from phasellm.configurations import AzureActiveDirectoryConfiguration
+                >>> llm = OpenAIGPTWrapper(api_config=AzureActiveDirectoryConfiguration(
+                ...     api_base='https://{your-resource-name}.openai.azure.com/',
+                ...     api_version='2023-05-15',
+                ...     deployment_id='gpt-4'
+                ... ))
+                >>> llm.text_completion(prompt="Hello, my name is")
+                "Hello, my name is ChatGPT."
+
         Args:
             apikey: The API key to access the OpenAI API.
+            api_config: The API configuration to use. Defaults to None. Takes precedence over apikey and model.
             model: The model to use. Defaults to "gpt-3.5-turbo".
             temperature: The temperature to use for the language model.
             **kwargs: Keyword arguments to pass to the OpenAI API.
 
         """
         super().__init__(temperature=temperature, **kwargs)
-        openai.api_key = apikey
-        self.model = model
+
+        if api_config and (apikey or model):
+            warn("api_config takes precedence over apikey and model arguments.")
+
+        if apikey:
+            self.api_config = OpenAIConfiguration(api_key=apikey, model=model)
+        if api_config:
+            self.api_config = api_config
+
+        # Activate the configuration
+        self.api_config()
 
     def __repr__(self):
-        return f"OpenAIGPTWrapper(model={self.model})"
+        return f"OpenAIGPTWrapper(model={self.api_config.model})"
 
     def complete_chat(self, messages: List[Message], append_role: str = None) -> str:
         """
@@ -758,14 +889,9 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             The chat completion.
 
         """
-        # https://platform.openai.com/docs/api-reference/chat/create
-        kwargs = {
-            "model": self.model,
-            **self.kwargs
-        }
-        if self.temperature is not None:
-            kwargs["temperature"] = self.temperature
-        if ('gpt-4' in self.model) or ('gpt-3.5' in self.model):
+        kwargs = self._prep_common_kwargs(self.api_config)
+
+        if ('gpt-4' in self.api_config.model) or ('gpt-3.5' in self.api_config.model):
             kwargs["messages"] = messages
             response = openai.ChatCompletion.create(**kwargs)
             return response['choices'][0]['message']['content']
@@ -792,21 +918,16 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             The text completion.
 
         """
-        if self.model in ['gpt-3.5', 'gpt-4']:
-            raise ValueError(f"{self.model} is a chat model. Use complete_chat instead.")
-        if stop_sequences is None:
-            stop_sequences = []
-        # https://platform.openai.com/docs/api-reference/completions/create
-        kwargs = {
-            "model": self.model,
-            "prompt": prompt,
-            **self.kwargs
-        }
-        if self.temperature is not None:
-            kwargs["temperature"] = self.temperature
-        if len(stop_sequences) != 0:
+
+        kwargs = self._prep_common_kwargs(self.api_config)
+
+        kwargs['prompt'] = prompt
+
+        if stop_sequences:
             kwargs["stop"] = stop_sequences
+
         response = openai.Completion.create(**kwargs)
+
         return response['choices'][0]['text']
 
 
@@ -873,18 +994,19 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
             "X-API-Key": self.apikey,
             "Accept": "text/event-stream"
         }
-        payload = {
+
+        kwargs = self._prep_common_kwargs()
+
+        kwargs = {
             "prompt": prompt,
             "model": self.model,
             "max_tokens_to_sample": 500,
             "stop_sequences": stop_sequences,
             "stream": True,
-            **self.kwargs
+            **kwargs
         }
-        if self.temperature is not None:
-            payload["temperature"] = self.temperature
 
-        resp = requests.post(self.API_URL, headers=headers, json=payload, stream=True)
+        resp = requests.post(self.API_URL, headers=headers, json=kwargs, stream=True)
         client = SSEClient(resp)
 
         strip_index = 0
@@ -1004,17 +1126,19 @@ class ClaudeWrapper(LanguageModelWrapper):
             "Accept": "application/json",
             "anthropic-version": self.anthropic_version
         }
-        payload = {
+
+        kwargs = self._prep_common_kwargs()
+
+        kwargs = {
             "prompt": prompt,
             "model": self.model,
             "max_tokens_to_sample": 500,
             "stop_sequences": _get_stop_sequences_from_messages(messages),
-            **self.kwargs
+            **kwargs
         }
-        if self.temperature is not None:
-            payload["temperature"] = self.temperature
 
-        resp = requests.post("https://api.anthropic.com/v1/complete", headers=headers, json=payload)
+        resp = requests.post("https://api.anthropic.com/v1/complete", headers=headers, json=kwargs)
+
         return json.loads(resp.text)["completion"].strip()
 
     def complete_chat(self, messages: List[Message], append_role: str = "Assistant:") -> str:
@@ -1095,16 +1219,18 @@ class GPT2Wrapper(LanguageModelWrapper):
             The completion.
 
         """
+        kwargs = self._prep_common_kwargs()
+
         # https://huggingface.co/docs/transformers/v4.30.0/en/main_classes/text_generation#transformers.GenerationConfig
         kwargs = {
             "text_inputs": prompt,
             "max_length": max_length,
             "num_return_sequences": 1,
-            **self.kwargs
+            **kwargs
         }
-        if self.temperature is not None:
-            kwargs["temperature"] = self.temperature
+
         res = self.pipeline(**kwargs)
+
         return _remove_prompt_from_completion(prompt, res[0]['generated_text'])
 
     def complete_chat(self, messages: List[Message], append_role: str = None, max_length: int = 300) -> str:
@@ -1185,14 +1311,16 @@ class DollyWrapper(LanguageModelWrapper):
             The completion.
 
         """
+        kwargs = self._prep_common_kwargs()
+
         kwargs = {
             "inputs": prompt,
             "num_return_sequences": 1,
-            **self.kwargs
+            **kwargs
         }
-        if self.temperature is not None:
-            kwargs["temperature"] = self.temperature
+
         res = self.pipeline(**kwargs)
+
         return _remove_prompt_from_completion(prompt, res[0]['generated_text'])
 
     def complete_chat(self, messages: List[Message], append_role: str = None) -> str:
@@ -1261,15 +1389,16 @@ class CohereWrapper(LanguageModelWrapper):
             The completion.
 
         """
+        kwargs = self._prep_common_kwargs()
+
         # https://docs.cohere.com/reference/generate
         kwargs = {
             "prompt": prompt,
             "max_tokens": 300,
             "stop_sequences": stop_sequences,
-            **self.kwargs
+            **kwargs
         }
-        if self.temperature is not None:
-            kwargs["temperature"] = self.temperature
+
         response = self.co.generate(**kwargs)
 
         return response.generations[0].text
