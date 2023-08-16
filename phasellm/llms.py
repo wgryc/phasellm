@@ -654,7 +654,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
                 ...     apikey="azure_api_key",
                 ...     api_base='https://{your-resource-name}.openai.azure.com/',
                 ...     api_version='2023-05-15',
-                ...     deployment_id='gpt-4'
+                ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
                 "Hello, my name is ChatGPT."
@@ -664,7 +664,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
                 >>> llm = StreamingOpenAIGPTWrapper(api_config=AzureActiveDirectoryConfiguration(
                 ...     api_base='https://{your-resource-name}.openai.azure.com/',
                 ...     api_version='2023-05-15',
-                ...     deployment_id='gpt-4'
+                ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
                 "Hello, my name is ChatGPT."
@@ -835,7 +835,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
                 ...     apikey="azure_api_key",
                 ...     api_base='https://{your-resource-name}.openai.azure.com/',
                 ...     api_version='2023-05-15',
-                ...     deployment_id='gpt-4'
+                ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
                 "Hello, my name is ChatGPT."
@@ -845,7 +845,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
                 >>> llm = OpenAIGPTWrapper(api_config=AzureActiveDirectoryConfiguration(
                 ...     api_base='https://{your-resource-name}.openai.azure.com/',
                 ...     api_version='2023-05-15',
-                ...     deployment_id='gpt-4'
+                ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
                 "Hello, my name is ChatGPT."
