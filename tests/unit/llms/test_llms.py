@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from phasellm.llms import Prompt
+from phasellm.llms import Prompt, OpenAIGPTWrapper, StreamingOpenAIGPTWrapper
 
 
 class TestPrompt(TestCase):
@@ -14,3 +14,25 @@ class TestPrompt(TestCase):
         expected = "1: one, 2: two, 3: three"
 
         self.assertEqual(actual, expected, f"{actual} != {expected}")
+
+
+class TestOpenAIGPTWrapper(TestCase):
+    CONFIG_ERROR = 'Must pass apikey or api_config. If using kwargs, check capitalization.'
+
+    def test_config_error_incorrect_kwarg(self):
+        error = False
+        try:
+            self.fixture = OpenAIGPTWrapper(apiKey='test')
+        except Exception as e:
+            self.assertEqual(e.__str__(), self.CONFIG_ERROR)
+            error = True
+        self.assertTrue(error, 'Expected error to occur.')
+
+    def test_config_error_missing_config(self):
+        error = False
+        try:
+            self.fixture = OpenAIGPTWrapper()
+        except Exception as e:
+            self.assertEqual(e.__str__(), self.CONFIG_ERROR)
+            error = True
+        self.assertTrue(error, 'Expected error to occur.')

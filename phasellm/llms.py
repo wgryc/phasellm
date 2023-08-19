@@ -617,12 +617,12 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
     def __init__(
             self,
             apikey: Optional[str] = None,
-            api_config: Optional[OPENAI_API_CONFIG] = None,
             model: str = "gpt-3.5-turbo",
             format_sse: bool = False,
             append_stop_token: bool = True,
             stop_token: str = STOP_TOKEN,
             temperature: float = None,
+            api_config: Optional[OPENAI_API_CONFIG] = None,
             **kwargs: Any
     ):
         """
@@ -654,7 +654,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
                 ...     apikey="azure_api_key",
                 ...     api_base='https://{your-resource-name}.openai.azure.com/',
                 ...     api_version='2023-05-15',
-                ...     deployment_id='gpt-4'
+                ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
                 "Hello, my name is ChatGPT."
@@ -664,19 +664,19 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
                 >>> llm = StreamingOpenAIGPTWrapper(api_config=AzureActiveDirectoryConfiguration(
                 ...     api_base='https://{your-resource-name}.openai.azure.com/',
                 ...     api_version='2023-05-15',
-                ...     deployment_id='gpt-4'
+                ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
                 "Hello, my name is ChatGPT."
 
         Args:
             apikey: The API key to access the OpenAI API.
-            api_config: The API configuration to use. Defaults to None. Takes precedence over apikey and model.
             model: The model to use. Defaults to "gpt-3.5-turbo".
             format_sse: Whether to format the SSE response from OpenAI. Defaults to False.
             append_stop_token: Whether to append the stop token to the end of the prompt. Defaults to True.
             stop_token: The stop token to use. Defaults to <|END|>.
             temperature: The temperature to use for the language model.
+            api_config: The API configuration to use. Defaults to None. Takes precedence over apikey and model.
             **kwargs: Keyword arguments to pass to the OpenAI API.
 
         """
@@ -695,6 +695,9 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             self.api_config = OpenAIConfiguration(api_key=apikey, model=model)
         if api_config:
             self.api_config = api_config
+
+        if not hasattr(self, 'api_config'):
+            raise Exception('Must pass apikey or api_config. If using kwargs, check capitalization.')
 
         # Activate the configuration
         self.api_config()
@@ -801,9 +804,9 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
     def __init__(
             self,
             apikey: Optional[str] = None,
-            api_config: Optional[OPENAI_API_CONFIG] = None,
             model: str = "gpt-3.5-turbo",
             temperature: float = None,
+            api_config: Optional[OPENAI_API_CONFIG] = None,
             **kwargs: Any
     ):
         """
@@ -835,7 +838,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
                 ...     apikey="azure_api_key",
                 ...     api_base='https://{your-resource-name}.openai.azure.com/',
                 ...     api_version='2023-05-15',
-                ...     deployment_id='gpt-4'
+                ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
                 "Hello, my name is ChatGPT."
@@ -845,16 +848,16 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
                 >>> llm = OpenAIGPTWrapper(api_config=AzureActiveDirectoryConfiguration(
                 ...     api_base='https://{your-resource-name}.openai.azure.com/',
                 ...     api_version='2023-05-15',
-                ...     deployment_id='gpt-4'
+                ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
                 "Hello, my name is ChatGPT."
 
         Args:
             apikey: The API key to access the OpenAI API.
-            api_config: The API configuration to use. Defaults to None. Takes precedence over apikey and model.
             model: The model to use. Defaults to "gpt-3.5-turbo".
             temperature: The temperature to use for the language model.
+            api_config: The API configuration to use. Defaults to None. Takes precedence over apikey and model.
             **kwargs: Keyword arguments to pass to the OpenAI API.
 
         """
@@ -867,6 +870,9 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             self.api_config = OpenAIConfiguration(api_key=apikey, model=model)
         if api_config:
             self.api_config = api_config
+
+        if not hasattr(self, 'api_config'):
+            raise Exception('Must pass apikey or api_config. If using kwargs, check capitalization.')
 
         # Activate the configuration
         self.api_config()
