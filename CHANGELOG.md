@@ -2,6 +2,16 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.17 (2023-08-19)
+
+### New Features
+
+_None._
+
+### Fixes
+
+- Fixing backwards compatibility issue with new API configuration options.
+
 # 0.0.15 and 0.0.16 (2023-08-15)
 
 ### New Features
