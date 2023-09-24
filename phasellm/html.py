@@ -89,7 +89,7 @@ def _formatContentToHtml(string) -> str:
     """
     new_string = re.sub("<", "&lt;", string)
     new_string = re.sub(">", "&gt;", new_string)
-    new_string = re.sub('[\r\n]+', '<br>', new_string)
+    new_string = re.sub("[\r\n]+", "<br>", new_string)
     return new_string
 
 
@@ -116,8 +116,34 @@ def toHtmlFile(html, filepath) -> None:
 </body>
 </html>
     """
-    with open(filepath, 'w') as w:
+    with open(filepath, "w") as w:
         w.write(html_content)
+
+
+def chatbotToJson(chatbot, order_field=None) -> str:
+    """
+    Converts a chatbot's message stack to a JSON array. Optionally, add an order_field key to save the order of the array itself.
+
+    Args:
+        chatbot: The ChatBot object whose message stack we want.
+        order_field: Optional key to include the array order value into the dictionary.
+
+    Returns:
+        The JSON dictionary representing the mesages from the chatbot object.
+    """
+
+    messages = chatbot.messages
+    json_to_return = []
+    ctr = 0
+
+    for m in messages:
+        new_m = m.copy()
+        if order_field is not None:
+            new_m[order_field] = ctr
+            ctr += 1
+        json_to_return.append(new_m)
+
+    return json_to_return
 
 
 def chatbotToHtml(chatbot) -> str:
@@ -139,10 +165,9 @@ def chatbotToHtml(chatbot) -> str:
 
     messages = chatbot.messages
     for m in messages:
-
         m_timestamp = ""
         if "timestamp_utc" in m:
-            m_timestamp = m['timestamp_utc'].strftime("%d %B %Y at %H:%M:%S")
+            m_timestamp = m["timestamp_utc"].strftime("%d %B %Y at %H:%M:%S")
 
         m_log_time_seconds_string = ""
         if "log_time_seconds" in m:

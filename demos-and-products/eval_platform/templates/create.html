@@ -1,0 +1,41 @@
+<html>
+
+<head>
+    <title>LLM Evaluator</title>
+</head>
+
+<body>
+
+    <p><textarea id="messages" style="width:100%;height:200px">Put your messages here</textarea></p>
+    <p><span style="margin-top:10px;border:1px solid black;padding:5px;border-radius:7px;cursor:pointer;"
+            onclick="javascript:savemessages()">Save</span></p>
+
+    <script>
+        function savemessages() {
+            var content = document.getElementById("messages").value;
+            var data = { csrfmiddlewaretoken: '{{ csrf_token }}', messages: content };
+            const response = fetch(`create_save_ma`, {
+                method: 'POST',
+                cache: 'no-cache',
+                mode: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data['status'] === "ok") {
+                        alert("Saved!");
+                    } else {
+                        alert("Error! " + data['message']);
+                    }
+                })
+        }
+
+    </script>
+</body>
+
+</html>

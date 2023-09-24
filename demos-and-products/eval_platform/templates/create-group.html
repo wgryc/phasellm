@@ -1,0 +1,41 @@
+<html>
+
+<head>
+    <title>LLM Evaluator</title>
+</head>
+
+<body>
+
+    <p><textarea id="messagelist" style="width:100%;height:200px">Comma-separate IDs here</textarea></p>
+    <p><span style="margin-top:10px;border:1px solid black;padding:5px;border-radius:7px;cursor:pointer;"
+            onclick="javascript:savegroup()">Save</span></p>
+
+    <script>
+        function savegroup() {
+            var content = document.getElementById("messagelist").value;
+            var data = { csrfmiddlewaretoken: '{{ csrf_token }}', messagelist: content };
+            const response = fetch(`create_group_csv`, {
+                method: 'POST',
+                cache: 'no-cache',
+                mode: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data['status'] === "ok") {
+                        alert("Saved!");
+                    } else {
+                        alert("Error! " + data['message']);
+                    }
+                })
+        }
+
+    </script>
+</body>
+
+</html>
