@@ -27,4 +27,6 @@ urlpatterns = [
     path("create_save_ma", lv.createMessageArray),
     path("create_group", TemplateView.as_view(template_name="create-group.html")),
     path("create_group_csv", lv.createGroupFromCSV),
+    path("batch", TemplateView.as_view(template_name="batch.html")),
+    path("create_job", lv.createJob),
 ]

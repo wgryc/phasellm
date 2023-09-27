@@ -16,3 +16,14 @@ class MessageCollection(models.Model):
     # Note: we should use an ArrayField or JSONField or a ManyToManyField if we scale this up.
     # However, to keep things very simple and supportable in SQLite, we'll assume the chat_ids are in a comma-separated string for now. We'll do some basic validation when saving via the front-end.
     chat_ids = models.TextField(default="", null=True, blank=True)
+
+
+class BatchLLMJob(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    title = models.TextField(default="", null=True, blank=True)
+    message_collection_id = models.IntegerField()
+    user_message = models.TextField(default="", null=True, blank=True)
+    status = models.TextField(
+        default="scheduled", null=True, blank=True
+    )  # scheduled, complete

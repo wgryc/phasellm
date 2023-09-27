@@ -19,6 +19,30 @@ def createMessageArray(request):
 
 
 @require_http_methods(["POST"])
+def createJob(request):
+    data = json.loads(request.body)
+
+    title = ""
+    if "title" in data:
+        title = data["title"]
+
+    message_collection_id = int(data["message_collection_id"])
+
+    user_message = None
+    if "user_message" in data:
+        user_message = data["user_message"]
+
+    b = BatchLLMJob(
+        title=title,
+        message_collection_id=message_collection_id,
+        user_message=user_message,
+    )
+    b.save()
+
+    return JsonResponse({"status": "ok"})
+
+
+@require_http_methods(["POST"])
 def createGroupFromCSV(request):
     data = json.loads(request.body)
     if "messagelist" in data:

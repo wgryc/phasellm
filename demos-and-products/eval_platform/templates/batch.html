@@ -1,0 +1,48 @@
+<html>
+
+<head>
+    <title>LLM Evaluator</title>
+</head>
+
+<body>
+
+    <p><input type="text" id="form_title" name="form_title" placeholder="Title"></p>
+
+    <p><input type="text" id="form_groupid" name="form_groupid" placeholder="Group ID"></p>
+
+    <p><textarea id="form_usermsg" style="width:100%;height:200px" placeholder="Additional user message"></textarea></p>
+
+    <p><span style="margin-top:10px;border:1px solid black;padding:5px;border-radius:7px;cursor:pointer;"
+            onclick="javascript:savejob()">Save Job</span></p>
+
+    <script>
+        function savejob() {
+            var user_message = document.getElementById("form_usermsg").value;
+            var group_id = document.getElementById("form_groupid").value;
+            var title = document.getElementById("form_title").value;
+            var data = { csrfmiddlewaretoken: '{{ csrf_token }}', user_message: user_message, message_collection_id: group_id, title: title };
+            const response = fetch(`create_job`, {
+                method: 'POST',
+                cache: 'no-cache',
+                mode: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data['status'] === "ok") {
+                        alert("Saved!");
+                    } else {
+                        alert("Error! " + data['message']);
+                    }
+                })
+        }
+
+    </script>
+</body>
+
+</html>
