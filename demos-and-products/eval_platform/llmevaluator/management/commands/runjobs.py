@@ -27,9 +27,6 @@ def run_job(job):
 
     print("Done!")
 
-    # response = cb.chat("How are you today?")
-    # print(response)
-
 
 class Command(BaseCommand):
     help = "Runs all scheduled batch jobs."

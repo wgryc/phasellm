@@ -6,6 +6,7 @@ class ChatBotMessageArray(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     message_array = models.JSONField(default=dict)
     comments = models.TextField(default="", null=True, blank=True)
+    source_batch_job_id = models.IntegerField(null=True)
 
 
 class MessageCollection(models.Model):
@@ -16,6 +17,10 @@ class MessageCollection(models.Model):
     # Note: we should use an ArrayField or JSONField or a ManyToManyField if we scale this up.
     # However, to keep things very simple and supportable in SQLite, we'll assume the chat_ids are in a comma-separated string for now. We'll do some basic validation when saving via the front-end.
     chat_ids = models.TextField(default="", null=True, blank=True)
+
+    # We can save source collections in cases where we have batch jobs run.
+    source_collection_id = models.IntegerField(null=True)
+    source_batch_job_id = models.IntegerField(null=True)
 
 
 class BatchLLMJob(models.Model):
