@@ -2,12 +2,24 @@ from django.db import models
 from django.core.serializers.json import DjangoJSONEncoder
 
 
+def object_has_tag(model_object, tag_string):
+    tags = model_object.tags.split(",")
+    for tag in tags:
+        if tag.strip() == tag_string:
+            return True
+    return False
+
+
 class ChatBotMessageArray(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     message_array = models.JSONField(default=dict, encoder=DjangoJSONEncoder)
     comments = models.TextField(default="", null=True, blank=True)
-    source_batch_job_id = models.IntegerField(null=True)
+    source_batch_job_id = models.IntegerField(null=True, blank=True)
+    tags = models.TextField(default="", null=True, blank=True)
+
+    def __str__(self):
+        return f"ChatBotMessage (ID {self.id})"
 
 
 class MessageCollection(models.Model):
@@ -20,8 +32,12 @@ class MessageCollection(models.Model):
     chat_ids = models.TextField(default="", null=True, blank=True)
 
     # We can save source collections in cases where we have batch jobs run.
-    source_collection_id = models.IntegerField(null=True)
-    source_batch_job_id = models.IntegerField(null=True)
+    source_collection_id = models.IntegerField(null=True, blank=True)
+    source_batch_job_id = models.IntegerField(null=True, blank=True)
+    tags = models.TextField(default="", null=True, blank=True)
+
+    def __str__(self):
+        return f"MessageCollection (ID {self.id}), {self.title}"
 
 
 class BatchLLMJob(models.Model):
@@ -33,3 +49,7 @@ class BatchLLMJob(models.Model):
 
     # scheduled, complete
     status = models.TextField(default="scheduled", null=True, blank=True)
+    tags = models.TextField(default="", null=True, blank=True)
+
+    def __str__(self):
+        return f"Batch LLM Job (ID {self.id}), {self.title}"

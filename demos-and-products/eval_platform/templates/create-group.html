@@ -6,6 +6,7 @@
 
 <body>
 
+    <p><input type="text" id="form_title" name="form_title" placeholder="Title"></p>
     <p><textarea id="messagelist" style="width:100%;height:200px">Comma-separate IDs here</textarea></p>
     <p><span style="margin-top:10px;border:1px solid black;padding:5px;border-radius:7px;cursor:pointer;"
             onclick="javascript:savegroup()">Save</span></p>
@@ -13,7 +14,8 @@
     <script>
         function savegroup() {
             var content = document.getElementById("messagelist").value;
-            var data = { csrfmiddlewaretoken: '{{ csrf_token }}', messagelist: content };
+            var title = document.getElementById("form_title").value;
+            var data = { csrfmiddlewaretoken: '{{ csrf_token }}', messagelist: content, title: title };
             const response = fetch(`create_group_csv`, {
                 method: 'POST',
                 cache: 'no-cache',

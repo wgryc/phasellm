@@ -54,10 +54,12 @@ def createGroupFromCSV(request):
             if len(o) != 1:
                 all_present = False
 
+        title = "New Collection"
+        if "title" in data:
+            title = data["title"]
+
         if all_present:
-            mc = MessageCollection(
-                title="New Collection", chat_ids=messages_csv.strip()
-            )
+            mc = MessageCollection(title=title, chat_ids=messages_csv.strip())
             mc.save()
             return JsonResponse({"status": "ok"})
         else:
