@@ -1,10 +1,11 @@
 from django.db import models
+from django.core.serializers.json import DjangoJSONEncoder
 
 
 class ChatBotMessageArray(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    message_array = models.JSONField(default=dict)
+    message_array = models.JSONField(default=dict, encoder=DjangoJSONEncoder)
     comments = models.TextField(default="", null=True, blank=True)
     source_batch_job_id = models.IntegerField(null=True)
 
@@ -29,6 +30,6 @@ class BatchLLMJob(models.Model):
     title = models.TextField(default="", null=True, blank=True)
     message_collection_id = models.IntegerField()
     user_message = models.TextField(default="", null=True, blank=True)
-    status = models.TextField(
-        default="scheduled", null=True, blank=True
-    )  # scheduled, complete
+
+    # scheduled, complete
+    status = models.TextField(default="scheduled", null=True, blank=True)

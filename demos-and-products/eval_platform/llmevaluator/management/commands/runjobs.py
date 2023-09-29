@@ -13,6 +13,8 @@ def run_job(job):
     chat_ids_string = mc.chat_ids
     chat_ids = chat_ids_string.strip().split(",")
 
+    results_ids = []
+
     for _cid in chat_ids:
         print(f"Analyzing chat ID: {_cid}")
 
@@ -23,7 +25,24 @@ def run_job(job):
         cb = ChatBot(o, "")
         cb.messages = cbma.message_array
         response = cb.chat(job.user_message)
+
+        new_cbma = ChatBotMessageArray(
+            message_array=cb.messages, source_batch_job_id=job.id
+        )
+
+        new_cbma.save()
+        results_ids.append(str(new_cbma.id))
+
         print(response)
+
+    new_chats_str = ",".join(results_ids)
+    results_mc = MessageCollection(
+        title=f"Results from '{job.title}' job",
+        chat_ids=new_chats_str,
+        source_collection_id=mc.id,
+        source_batch_job_id=job.id,
+    )
+    results_mc.save()
 
     print("Done!")
 
