@@ -17,9 +17,10 @@ class ChatBotMessageArray(models.Model):
     comments = models.TextField(default="", null=True, blank=True)
     source_batch_job_id = models.IntegerField(null=True, blank=True)
     tags = models.TextField(default="", null=True, blank=True)
+    title = models.TextField(default="Untitled", blank=True)
 
     def __str__(self):
-        return f"ChatBotMessage (ID {self.id})"
+        return f"ChatBotMessage (ID {self.id}), {self.title}"
 
 
 class MessageCollection(models.Model):

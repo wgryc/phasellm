@@ -22,11 +22,38 @@ import llmevaluator.views as lv
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", TemplateView.as_view(template_name="base.html")),
-    path("create", TemplateView.as_view(template_name="create.html")),
+    path("", TemplateView.as_view(template_name="base-navigation.html")),
+    path(
+        "import",
+        TemplateView.as_view(
+            template_name="create.html",
+            extra_context={"contenttitle": "Import Chat via JSON"},
+        ),
+    ),
     path("create_save_ma", lv.createMessageArray),
-    path("create_group", TemplateView.as_view(template_name="create-group.html")),
+    path("create_save_ma_json", lv.createMessageArrayJson),
+    path(
+        "groups",
+        TemplateView.as_view(
+            template_name="create-group.html",
+            extra_context={"contenttitle": "Create Group"},
+        ),
+    ),
     path("create_group_csv", lv.createGroupFromCSV),
-    path("batch", TemplateView.as_view(template_name="batch.html")),
+    path(
+        "jobs",
+        TemplateView.as_view(
+            template_name="batch.html",
+            extra_context={"contenttitle": "Run Batch Job"},
+        ),
+    ),
     path("create_job", lv.createJob),
+    path(
+        "chats",
+        TemplateView.as_view(
+            template_name="chats.html",
+            extra_context={"contenttitle": "Review Chats"},
+        ),
+    ),
+    path("view_chat/<int:chat_id>", lv.view_chat),
 ]
