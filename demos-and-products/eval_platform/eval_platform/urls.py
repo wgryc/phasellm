@@ -32,28 +32,10 @@ urlpatterns = [
     ),
     path("create_save_ma", lv.createMessageArray),
     path("create_save_ma_json", lv.createMessageArrayJson),
-    path(
-        "groups",
-        TemplateView.as_view(
-            template_name="create-group.html",
-            extra_context={"contenttitle": "Create Group"},
-        ),
-    ),
+    path("groups", lv.list_groups),
     path("create_group_csv", lv.createGroupFromCSV),
-    path(
-        "jobs",
-        TemplateView.as_view(
-            template_name="batch.html",
-            extra_context={"contenttitle": "Run Batch Job"},
-        ),
-    ),
+    path("jobs", lv.list_jobs),
     path("create_job", lv.createJob),
-    path(
-        "chats",
-        TemplateView.as_view(
-            template_name="chats.html",
-            extra_context={"contenttitle": "Review Chats"},
-        ),
-    ),
+    path("chats", lv.get_chats),
     path("view_chat/<int:chat_id>", lv.view_chat),
 ]

@@ -1,4 +1,4 @@
-{% extends 'base-navigation.html' %}
+{% extends 'base-navigation-two-rows.html' %}
 
 {% block bodycontent %}
 
@@ -35,4 +35,16 @@
 </script>
 </body>
 
+{% endblock %}
+
+{% block bodycontent2 %}
+{% if all_groups %}
+<ul>
+    {% for g in all_groups %}
+    <li>ID: {{g.id}}, TITLE: {{ g.title }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p><i>No groups created yet.</i></p>
+{% endif %}
 {% endblock %}

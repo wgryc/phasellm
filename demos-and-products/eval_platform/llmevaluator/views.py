@@ -112,3 +112,36 @@ def createGroupFromCSV(request):
             )
 
     return JsonResponse({"status": "error", "message": "Unknown error."}, status=500)
+
+
+def get_chats(request):
+    all_chats = ChatBotMessageArray.objects.all().order_by("-created_at")
+    return render(
+        request, "chats.html", {"contenttitle": "Review Chats", "all_chats": all_chats}
+    )
+
+
+def list_groups(request):
+    all_groups = MessageCollection.objects.all().order_by("-created_at")
+    return render(
+        request,
+        "create-group.html",
+        {
+            "contenttitle": "Create Group",
+            "contenttitle2": "Existing Groups",
+            "all_groups": all_groups,
+        },
+    )
+
+
+def list_jobs(request):
+    all_jobs = BatchLLMJob.objects.all().order_by("-created_at")
+    return render(
+        request,
+        "batch.html",
+        {
+            "contenttitle": "Create Job",
+            "contenttitle2": "Job History",
+            "all_jobs": all_jobs,
+        },
+    )

@@ -15,10 +15,32 @@
     --standard-margin-spacing-text: 20px;
     --internal-standard-padding: 5px;
     --standard-border-radius: 5px;
+    --lightgray-borders-backgrounds: rgb(235, 235, 235);
 }
 
 b {
     font-weight: 900;
+}
+
+/**
+ * TWO ROW CONTAINER TEST
+ */
+
+.two-row-container {
+    display: grid;
+    grid-template-rows: auto auto;
+    row-gap: var(--internal-standard-padding);
+    height: 100%;
+}
+
+.two-row-top-row {
+    background-color: white;
+    padding-bottom: calc(3*var(--internal-standard-padding));
+    border-bottom: 1px solid var(--lightgray-borders-backgrounds);
+}
+
+.two-row-bottom-row {
+    background-color: white;
 }
 
 /**
@@ -90,7 +112,7 @@ textarea,
 }
 
 .formfield-hover:hover {
-    background-color: rgb(235, 235, 235);
+    background-color: var(--lightgray-borders-backgrounds);
 }
 
 .error_message {
