@@ -44,6 +44,9 @@ def run_job(job):
     )
     results_mc.save()
 
+    job.status = "complete"
+    job.save()
+
     print("Done!")
 
 

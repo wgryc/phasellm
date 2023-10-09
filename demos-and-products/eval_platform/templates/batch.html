@@ -45,7 +45,7 @@
 {% if all_jobs %}
 <ul>
     {% for j in all_jobs %}
-    <li>ID: {{j.id}}, TITLE: {{ j.title }}</li>
+    <li>ID: {{j.id}}, TITLE: {{ j.title }}, STATUS: {{ j.status }}</li>
     {% endfor %}
 </ul>
 {% else %}

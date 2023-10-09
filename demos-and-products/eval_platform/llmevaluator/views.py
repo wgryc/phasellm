@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import redirect
 
 from .models import *
 
@@ -26,8 +27,16 @@ def view_chat(request, chat_id):
         {
             "contenttitle": f"Viewing Chat ID {chat_id}",
             "json_message_array": json.dumps(chats[0].message_array),
+            "chat_title": chats[0].title,
+            "chat_id": chat_id,
         },
     )
+
+
+def view_chat_new(request):
+    new_chat = ChatBotMessageArray()
+    new_chat.save()
+    return redirect("view_chat", chat_id=new_chat.id)
 
 
 # Same as createMessageArray() but we don't loads() from messages.
@@ -144,4 +153,24 @@ def list_jobs(request):
             "contenttitle2": "Job History",
             "all_jobs": all_jobs,
         },
+    )
+
+
+@require_http_methods(["POST"])
+def update_title_via_post(request):
+    data = json.loads(request.body)
+    if "new_title" in data and "chat_id" in data:
+        cid = int(data["chat_id"])
+        chats = ChatBotMessageArray.objects.filter(id=cid)
+        if len(chats) != 1:
+            return JsonResponse(
+                {"status": "error", "message": "Chat ID not found."}, status=500
+            )
+        else:
+            chats[0].title = data["new_title"]
+            chats[0].save()
+            return JsonResponse({"status": "ok"})
+
+    return JsonResponse(
+        {"status": "error", "message": "Missing fields in request."}, status=500
     )

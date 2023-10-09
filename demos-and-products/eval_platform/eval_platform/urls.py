@@ -37,5 +37,7 @@ urlpatterns = [
     path("jobs", lv.list_jobs),
     path("create_job", lv.createJob),
     path("chats", lv.get_chats),
-    path("view_chat/<int:chat_id>", lv.view_chat),
+    path("view_chat/<int:chat_id>", lv.view_chat, name="view_chat"),
+    path("view_chat", lv.view_chat_new),
+    path("update_title_via_post", lv.update_title_via_post),
 ]
