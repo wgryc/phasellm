@@ -86,6 +86,19 @@ def createJob(request):
         message_collection_id=message_collection_id,
         user_message=user_message,
     )
+
+    if "opt_gpt_4" in data:
+        b.include_gpt_4 = data["opt_gpt_4"]
+
+    if "opt_gpt_35" in data:
+        b.include_gpt_35 = data["opt_gpt_35"]
+
+    if "opt_temperature_scan" in data:
+        b.temperature_range = data["opt_temperature_scan"]
+
+    if "opt_num_runs" in data:
+        b.run_n_times = data["opt_num_runs"]
+
     b.save()
 
     return JsonResponse({"status": "ok"})
