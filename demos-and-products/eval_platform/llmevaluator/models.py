@@ -52,5 +52,19 @@ class BatchLLMJob(models.Model):
     status = models.TextField(default="scheduled", null=True, blank=True)
     tags = models.TextField(default="", null=True, blank=True)
 
+    # settings
+    # By default we only run the LLM on GPT-4 with a user message. The
+    # settings below let you do other things.
+
+    # Repeat the run 'n' times
+    run_n_times = models.IntegerField(default=1)
+
+    # Which LLM models to run
+    include_gpt_4 = models.BooleanField(default=True)
+    include_gpt_35 = models.BooleanField(default=False)
+
+    # Run temperature tests; True = run across 0.25 to 1.75 with 0.5 increments
+    temperature_range = models.BooleanField(default=False)
+
     def __str__(self):
         return f"Batch LLM Job (ID {self.id}), {self.title}"

@@ -6,6 +6,35 @@ from django.conf import settings
 from phasellm.llms import OpenAIGPTWrapper, ChatBot
 
 
+# Returns the new ChatBotMessageArray ID
+def run_llm_task_and_save(
+    message_array,
+    user_message,
+    job_id,
+    original_title="Untitled",
+    model="gpt-4",
+    temperature=0.7,
+    print_response=True,
+):
+    o = OpenAIGPTWrapper(settings.OPENAI_API_KEY, model=model, temperature=temperature)
+    cb = ChatBot(o, "")
+    cb.messages = message_array
+    response = cb.chat(user_message)
+
+    new_cbma = ChatBotMessageArray(
+        message_array=cb.messages,
+        source_batch_job_id=job_id,
+        title=f"{original_title} w/ T={temperature}, model={model}",
+    )
+
+    new_cbma.save()
+
+    if print_response:
+        print(response)
+
+    return new_cbma.id
+
+
 def run_job(job):
     print(f"Starting job: {job.title}")
 
@@ -21,19 +50,50 @@ def run_job(job):
         cid = int(_cid)
         cbma = ChatBotMessageArray.objects.get(id=cid)
 
-        o = OpenAIGPTWrapper(settings.OPENAI_API_KEY, model="gpt-4")
-        cb = ChatBot(o, "")
-        cb.messages = cbma.message_array
-        response = cb.chat(job.user_message)
+        # SETTING: run_n_times
+        run_n_times = job.run_n_times
+        for i in range(0, run_n_times):
+            # SETTING: include_gpt_4
+            if job.include_gpt_4:
+                if job.temperature_range:
+                    for t in [0.25, 0.75, 1.25]:
+                        run_llm_task_and_save(
+                            cbma.message_array.copy(),
+                            job.user_message,
+                            job.id,
+                            cbma.title,
+                            model="gpt-4",
+                            temperature=t,
+                        )
+                else:
+                    run_llm_task_and_save(
+                        cbma.message_array.copy(),
+                        job.user_message,
+                        job.id,
+                        cbma.title,
+                        "gpt-4",
+                    )
 
-        new_cbma = ChatBotMessageArray(
-            message_array=cb.messages, source_batch_job_id=job.id
-        )
-
-        new_cbma.save()
-        results_ids.append(str(new_cbma.id))
-
-        print(response)
+            # SETTING: include_gpt_35
+            if job.include_gpt_35:
+                if job.temperature_range:
+                    for t in [0.25, 0.75, 1.25]:
+                        run_llm_task_and_save(
+                            cbma.message_array.copy(),
+                            job.user_message,
+                            job.id,
+                            cbma.title,
+                            model="gpt-3.5-turbo",
+                            temperature=t,
+                        )
+                else:
+                    run_llm_task_and_save(
+                        cbma.message_array.copy(),
+                        job.user_message,
+                        job.id,
+                        cbma.title,
+                        "gpt-3.5-turbo",
+                    )
 
     new_chats_str = ",".join(results_ids)
     results_mc = MessageCollection(
