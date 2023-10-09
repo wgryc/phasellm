@@ -34,7 +34,7 @@ def view_chat(request, chat_id):
 
 
 def view_chat_new(request):
-    new_chat = ChatBotMessageArray()
+    new_chat = ChatBotMessageArray(message_array=[])
     new_chat.save()
     return redirect("view_chat", chat_id=new_chat.id)
 
@@ -168,6 +168,27 @@ def update_title_via_post(request):
             )
         else:
             chats[0].title = data["new_title"]
+            chats[0].save()
+            return JsonResponse({"status": "ok"})
+
+    return JsonResponse(
+        {"status": "error", "message": "Missing fields in request."}, status=500
+    )
+
+
+@require_http_methods(["POST"])
+def overwrite_chat(request):
+    data = json.loads(request.body)
+    if "title" in data and "messages" in data and "chat_id" in data:
+        cid = int(data["chat_id"])
+        chats = ChatBotMessageArray.objects.filter(id=cid)
+        if len(chats) != 1:
+            return JsonResponse(
+                {"status": "error", "message": "Chat ID not found."}, status=500
+            )
+        else:
+            chats[0].title = data["title"]
+            chats[0].message_array = data["messages"]
             chats[0].save()
             return JsonResponse({"status": "ok"})
 

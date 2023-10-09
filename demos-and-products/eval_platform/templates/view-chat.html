@@ -9,6 +9,7 @@
 <p>
     <span class="formfield formfield-hover" onclick="javascript:savemessagesfromarray()">Save to New Chat Object</span>
     <span class="formfield formfield-hover" onclick="javascript:updatetitle()">Update Title</span>
+    <span class="formfield formfield-hover" onclick="javascript:overwrite()">Overwrite</span>
 </p>
 
 <p class='content-title' id="input_chat_title" contenteditable=True>{{ chat_title }}</p>
@@ -116,6 +117,35 @@
         rebuild_message_array();
         message_array.push({ role: role, content: "" });
         display_message_array(message_array);
+    }
+
+    function overwrite() {
+        var new_title = document.getElementById("input_chat_title").innerText;
+        rebuild_message_array();
+        var content = message_array;
+
+        var data = { csrfmiddlewaretoken: '{{ csrf_token }}', chat_id: chat_id, messages: content, title: new_title };
+
+
+        const response = fetch(`/overwrite_chat`, {
+            method: 'POST',
+            cache: 'no-cache',
+            mode: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data['status'] === "ok") {
+                    alert("Chat Data Updated!");
+                } else {
+                    alert("Error! " + data['message']);
+                }
+            });
     }
 
 </script>
