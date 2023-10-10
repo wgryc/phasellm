@@ -1,0 +1,50 @@
+{% extends 'base-navigation-two-rows.html' %}
+
+{% block bodycontent %}
+
+<p><input type="text" id="form_title" name="form_title" placeholder="Title" , style="width:100%;"></p>
+<p><textarea id="messagelist" style="width:100%;height:200px" placeholder="Comma-separate IDs here"></textarea></p>
+<p><span class="formfield formfield-hover" onclick="javascript:savegroup()">Save</span></p>
+
+<script>
+    function savegroup() {
+        var content = document.getElementById("messagelist").value;
+        var title = document.getElementById("form_title").value;
+        var data = { csrfmiddlewaretoken: '{{ csrf_token }}', messagelist: content, title: title };
+        const response = fetch(`create_group_csv`, {
+            method: 'POST',
+            cache: 'no-cache',
+            mode: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data['status'] === "ok") {
+                    alert("Saved!");
+                } else {
+                    alert("Error! " + data['message']);
+                }
+            })
+    }
+
+</script>
+</body>
+
+{% endblock %}
+
+{% block bodycontent2 %}
+{% if all_groups %}
+<ul>
+    {% for g in all_groups %}
+    <li>ID: {{g.id}}, TITLE: {{ g.title }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p><i>No groups created yet.</i></p>
+{% endif %}
+{% endblock %}

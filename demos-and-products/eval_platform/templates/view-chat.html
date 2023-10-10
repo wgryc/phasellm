@@ -1,0 +1,156 @@
+{% extends 'base-navigation.html' %}
+
+{% block bodycontent %}
+
+{% if error_msg %}
+<p class="error_message"><b>Error!</b> {{ error_msg | safe}}</p>
+{% else %}
+
+<p>
+    <span class="formfield formfield-hover" onclick="javascript:savemessagesfromarray()">Save to New Chat Object</span>
+    <span class="formfield formfield-hover" onclick="javascript:updatetitle()">Update Title</span>
+    <span class="formfield formfield-hover" onclick="javascript:overwrite()">Overwrite</span>
+</p>
+
+<p class='content-title' id="input_chat_title" contenteditable=True>{{ chat_title }}</p>
+
+<div id="full_messages"></div>
+
+<p>&nbsp;</p>
+
+<p>
+    <span class="formfield formfield-hover" onclick="javascript:appendmessage('system')">+ System</span>
+    <span class="formfield formfield-hover" onclick="javascript:appendmessage('assistant')">+ Assistant</span>
+    <span class="formfield formfield-hover" onclick="javascript:appendmessage('user')">+ User</span>
+</p>
+
+<script>
+    var message_array = {{ json_message_array | safe }};
+    var chat_id = {{ chat_id }};
+
+    function convert_newlines(str_to_conv) {
+        return str_to_conv.replaceAll("\n", "<br attr='phasellm-br'/>")
+    }
+
+    function convert_newlines_back(str_to_conv) {
+        var s = str_to_conv.replaceAll(`<br attr="phasellm-br">`, "\n");
+        s = s.replaceAll("<br>", "\n");
+        s = s.replaceAll("</div>", "\n");
+        s = s.replaceAll("<div>", "");
+        return s;
+    }
+
+    function display_message_array(message_array) {
+        var new_html = "";
+        for (var i = 0; i < message_array.length; i++) {
+            var new_content = convert_newlines(message_array[i]['content']);
+            new_html += `<div><b>${message_array[i]['role']}</b><br/><div id="phasellm-ma-content-${i}" contenteditable=True>${new_content}</div></div>`;
+        }
+        var d = document.getElementById('full_messages');
+        d.innerHTML = new_html;
+    }
+
+    function rebuild_message_array() {
+        for (var i = 0; i < message_array.length; i++) {
+
+            var content_div = document.getElementById(`phasellm-ma-content-${i}`);
+            var content = convert_newlines_back(content_div.innerHTML)
+            message_array[i]['content'] = content;
+        }
+    }
+
+    function updatetitle() {
+        var new_title = document.getElementById("input_chat_title").innerText;
+        const response = fetch(`/update_title_via_post`, {
+            method: 'POST',
+            cache: 'no-cache',
+            mode: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ "chat_id": chat_id, "new_title": new_title })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data['status'] === "ok") {
+                    alert("Title Updated!");
+                } else {
+                    alert("Error! " + data['message']);
+                }
+            });
+    }
+
+    function savemessages(content) {
+        var new_title = document.getElementById("input_chat_title").innerText;
+        var data = { csrfmiddlewaretoken: '{{ csrf_token }}', messages: content, title: new_title };
+        const response = fetch(`/create_save_ma_json`, {
+            method: 'POST',
+            cache: 'no-cache',
+            mode: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data['status'] === "ok") {
+                    alert("Saved!");
+                } else {
+                    alert("Error! " + data['message']);
+                }
+            })
+    }
+
+    function savemessagesfromarray() {
+        rebuild_message_array();
+        savemessages(message_array);
+    }
+
+    display_message_array(message_array);
+
+    function appendmessage(role) {
+        rebuild_message_array();
+        message_array.push({ role: role, content: "" });
+        display_message_array(message_array);
+    }
+
+    function overwrite() {
+        var new_title = document.getElementById("input_chat_title").innerText;
+        rebuild_message_array();
+        var content = message_array;
+
+        var data = { csrfmiddlewaretoken: '{{ csrf_token }}', chat_id: chat_id, messages: content, title: new_title };
+
+
+        const response = fetch(`/overwrite_chat`, {
+            method: 'POST',
+            cache: 'no-cache',
+            mode: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data['status'] === "ok") {
+                    alert("Chat Data Updated!");
+                } else {
+                    alert("Error! " + data['message']);
+                }
+            });
+    }
+
+</script>
+
+
+{% endif %}
+
+{% endblock %}

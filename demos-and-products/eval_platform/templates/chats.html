@@ -1,0 +1,15 @@
+{% extends 'base-navigation.html' %}
+
+{% block bodycontent %}
+
+<p>Please visit /view_chat/chat_id where chat_id is the ID of the chat you want to view.</p>
+
+{% if all_chats %}
+<ul>
+    {% for chat in all_chats %}
+    <li><a href='/view_chat/{{ chat.id }}'>ID: {{chat.id}}, TITLE: {{ chat.title }}</a></li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{% endblock %}

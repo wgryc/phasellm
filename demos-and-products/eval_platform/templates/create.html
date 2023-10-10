@@ -1,0 +1,37 @@
+{% extends 'base-navigation.html' %}
+
+{% block bodycontent %}
+
+<p><input type="text" id="form_title" name="form_title" placeholder="Title" style="width:100%;"></p>
+<p><textarea id="messages" style="width:100%;height:200px" placeholder="Put your messages here"></textarea></p>
+<p><span class="formfield formfield-hover" onclick="javascript:savemessages()">Import</span></p>
+
+<script>
+    function savemessages() {
+        var content = document.getElementById("messages").value;
+        var title = document.getElementById("form_title").value;
+        var data = { csrfmiddlewaretoken: '{{ csrf_token }}', messages: content, title: title };
+        const response = fetch(`create_save_ma`, {
+            method: 'POST',
+            cache: 'no-cache',
+            mode: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data['status'] === "ok") {
+                    alert("Saved!");
+                } else {
+                    alert("Error! " + data['message']);
+                }
+            })
+    }
+
+</script>
+
+{% endblock %}
