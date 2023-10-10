@@ -15,10 +15,18 @@ def run_llm_task_and_save(
     model="gpt-4",
     temperature=0.7,
     print_response=True,
+    new_system_prompt=None,
 ):
     o = OpenAIGPTWrapper(settings.OPENAI_API_KEY, model=model, temperature=temperature)
     cb = ChatBot(o, "")
-    cb.messages = message_array
+
+    ma_copy = message_array.copy()
+    if new_system_prompt is not None:
+        # If the first message is not a system prompt, then error out.
+        assert ma_copy[0]["role"] == "system"
+        ma_copy[0]["content"] = new_system_prompt
+
+    cb.messages = ma_copy
     response = cb.chat(user_message)
 
     new_cbma = ChatBotMessageArray(
@@ -26,6 +34,9 @@ def run_llm_task_and_save(
         source_batch_job_id=job_id,
         title=f"{original_title} w/ T={temperature}, model={model}",
     )
+
+    new_cbma.llm_temperature = temperature
+    new_cbma.llm_model = model
 
     new_cbma.save()
 
@@ -64,6 +75,7 @@ def run_job(job):
                             cbma.title,
                             model="gpt-4",
                             temperature=t,
+                            new_system_prompt=job.new_system_prompt,
                         )
                 else:
                     run_llm_task_and_save(
@@ -72,6 +84,7 @@ def run_job(job):
                         job.id,
                         cbma.title,
                         "gpt-4",
+                        new_system_prompt=job.new_system_prompt,
                     )
 
             # SETTING: include_gpt_35
@@ -85,6 +98,7 @@ def run_job(job):
                             cbma.title,
                             model="gpt-3.5-turbo",
                             temperature=t,
+                            new_system_prompt=job.new_system_prompt,
                         )
                 else:
                     run_llm_task_and_save(
@@ -93,6 +107,7 @@ def run_job(job):
                         job.id,
                         cbma.title,
                         "gpt-3.5-turbo",
+                        new_system_prompt=job.new_system_prompt,
                     )
 
     new_chats_str = ",".join(results_ids)

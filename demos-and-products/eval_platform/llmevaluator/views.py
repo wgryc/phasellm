@@ -99,6 +99,10 @@ def createJob(request):
     if "opt_num_runs" in data:
         b.run_n_times = data["opt_num_runs"]
 
+    if "new_system_prompt" in data:
+        if len(data["new_system_prompt"]) > 0:
+            b.new_system_prompt = data["new_system_prompt"]
+
     b.save()
 
     return JsonResponse({"status": "ok"})

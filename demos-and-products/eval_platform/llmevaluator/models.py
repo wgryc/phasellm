@@ -19,6 +19,10 @@ class ChatBotMessageArray(models.Model):
     tags = models.TextField(default="", null=True, blank=True)
     title = models.TextField(default="Untitled", blank=True)
 
+    # LLM settings for review, later
+    llm_model = models.TextField(default="None", blank=True, null=True)
+    llm_temperature = models.FloatField(null=True, blank=True)
+
     def __str__(self):
         return f"ChatBotMessage (ID {self.id}), {self.title}"
 
@@ -47,6 +51,7 @@ class BatchLLMJob(models.Model):
     title = models.TextField(default="", null=True, blank=True)
     message_collection_id = models.IntegerField()
     user_message = models.TextField(default="", null=True, blank=True)
+    new_system_prompt = models.TextField(default="", null=True, blank=True)
 
     # scheduled, complete
     status = models.TextField(default="scheduled", null=True, blank=True)

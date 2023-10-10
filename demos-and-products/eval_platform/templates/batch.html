@@ -15,11 +15,16 @@
     Number of times to run: <input type="number" id="num_runs" min="1" max="5" value="1" />
 </p>
 
+<p><textarea id="form_sytem_prompt" style="width:100%;height:200px"
+        placeholder="(Optional) New System Prompt"></textarea></p>
+
+
 <p><span class="formfield formfield-hover" onclick="javascript:savejob()">Queue Job</span></p>
 
 <script>
     function savejob() {
         var user_message = document.getElementById("form_usermsg").value;
+        var new_system_prompt = document.getElementById("form_sytem_prompt").value;
         var group_id = document.getElementById("form_groupid").value;
         var title = document.getElementById("form_title").value;
 
@@ -36,7 +41,8 @@
             opt_gpt_4: opt_gpt_4,
             opt_gpt_35: opt_gpt_35,
             opt_temperature_scan: opt_temperature_scan,
-            opt_num_runs: opt_num_runs
+            opt_num_runs: opt_num_runs,
+            new_system_prompt: new_system_prompt,
         };
         const response = fetch(`create_job`, {
             method: 'POST',
