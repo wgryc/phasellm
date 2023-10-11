@@ -16,18 +16,27 @@ def run_llm_task_and_save(
     temperature=0.7,
     print_response=True,
     new_system_prompt=None,
+    resend_last_user_message=False,
 ):
     o = OpenAIGPTWrapper(settings.OPENAI_API_KEY, model=model, temperature=temperature)
     cb = ChatBot(o, "")
 
+    # If we want to resend the last user message *and* provide a new user message, then we'll have to ignore one of those options
+    assert not (resend_last_user_message == True and len(user_message) > 0)
+
     ma_copy = message_array.copy()
     if new_system_prompt is not None:
-        # If the first message is not a system prompt, then error out.
-        assert ma_copy[0]["role"] == "system"
-        ma_copy[0]["content"] = new_system_prompt
+        if len(new_system_prompt.strip()) > 0:
+            # If the first message is not a system prompt, then error out.
+            assert ma_copy[0]["role"] == "system"
+            ma_copy[0]["content"] = new_system_prompt
 
     cb.messages = ma_copy
-    response = cb.chat(user_message)
+
+    if resend_last_user_message:
+        response = cb.resend()
+    else:
+        response = cb.chat(user_message)
 
     new_cbma = ChatBotMessageArray(
         message_array=cb.messages,
@@ -76,6 +85,7 @@ def run_job(job):
                             model="gpt-4",
                             temperature=t,
                             new_system_prompt=job.new_system_prompt,
+                            resend_last_user_message=job.resend_last_user_message,
                         )
                 else:
                     run_llm_task_and_save(
@@ -85,6 +95,7 @@ def run_job(job):
                         cbma.title,
                         "gpt-4",
                         new_system_prompt=job.new_system_prompt,
+                        resend_last_user_message=job.resend_last_user_message,
                     )
 
             # SETTING: include_gpt_35
@@ -99,6 +110,7 @@ def run_job(job):
                             model="gpt-3.5-turbo",
                             temperature=t,
                             new_system_prompt=job.new_system_prompt,
+                            resend_last_user_message=job.resend_last_user_message,
                         )
                 else:
                     run_llm_task_and_save(
@@ -108,6 +120,7 @@ def run_job(job):
                         cbma.title,
                         "gpt-3.5-turbo",
                         new_system_prompt=job.new_system_prompt,
+                        resend_last_user_message=job.resend_last_user_message,
                     )
 
     new_chats_str = ",".join(results_ids)

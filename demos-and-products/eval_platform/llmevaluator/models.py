@@ -50,8 +50,6 @@ class BatchLLMJob(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     title = models.TextField(default="", null=True, blank=True)
     message_collection_id = models.IntegerField()
-    user_message = models.TextField(default="", null=True, blank=True)
-    new_system_prompt = models.TextField(default="", null=True, blank=True)
 
     # scheduled, complete
     status = models.TextField(default="scheduled", null=True, blank=True)
@@ -60,6 +58,11 @@ class BatchLLMJob(models.Model):
     # settings
     # By default we only run the LLM on GPT-4 with a user message. The
     # settings below let you do other things.
+
+    # Messages
+    user_message = models.TextField(default="", null=True, blank=True)
+    new_system_prompt = models.TextField(default="", null=True, blank=True)
+    resend_last_user_message = models.BooleanField(default=False)
 
     # Repeat the run 'n' times
     run_n_times = models.IntegerField(default=1)

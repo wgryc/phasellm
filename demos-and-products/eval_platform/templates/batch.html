@@ -9,6 +9,7 @@
 <p><textarea id="form_usermsg" style="width:100%;height:200px" placeholder="Additional user message"></textarea></p>
 
 <p><b>Advanced Options</b><br />
+    <input type="checkbox" id="check_resend_user_msg" /> Resend Last User Message<br />
     <input type="checkbox" id="check_gpt_4" checked /> Run GPT-4<br />
     <input type="checkbox" id="check_gpt_35" /> Run GPT-3.5<br />
     <input type="checkbox" id="check_temperature_scan" /> Run across temperature = 0.25, 0.75, and 1.25<br />
@@ -32,6 +33,7 @@
         var opt_gpt_35 = document.getElementById("check_gpt_35").checked;
         var opt_temperature_scan = document.getElementById("check_temperature_scan").checked;
         var opt_num_runs = document.getElementById("num_runs").value;
+        var opt_resend_user_msg = document.getElementById("check_resend_user_msg").checked;
 
         var data = {
             csrfmiddlewaretoken: '{{ csrf_token }}',
@@ -43,6 +45,7 @@
             opt_temperature_scan: opt_temperature_scan,
             opt_num_runs: opt_num_runs,
             new_system_prompt: new_system_prompt,
+            opt_resend_user_msg: opt_resend_user_msg,
         };
         const response = fetch(`create_job`, {
             method: 'POST',

@@ -103,6 +103,9 @@ def createJob(request):
         if len(data["new_system_prompt"]) > 0:
             b.new_system_prompt = data["new_system_prompt"]
 
+    if "opt_resend_user_msg" in data:
+        b.resend_last_user_message = data["opt_resend_user_msg"]
+
     b.save()
 
     return JsonResponse({"status": "ok"})
