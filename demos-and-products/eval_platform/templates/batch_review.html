@@ -1,0 +1,32 @@
+{% extends 'base-navigation.html' %}
+
+{% block bodycontent %}
+
+{% if jobs %}
+
+{% for job in jobs %}
+
+<div class="job_info_container">
+    <div>
+        <p class="jobtitle">{{ job.title }}</p>
+        {% if job.description %}
+        <p class="jobdescription">{{ job.description }}</p>
+        {% else %}
+        <p class="jobdescription"><i>No Description Provided</i></p>
+        {% endif %}
+    </div>
+    <div>
+        Source Chats
+    </div>
+    <div>
+        Generated Chats
+    </div>
+</div>
+
+{% endfor %}
+
+{% else %}
+<p><i>No jobs created yet.</i></p>
+{% endif %}
+
+{% endblock %}

@@ -118,3 +118,20 @@ textarea,
 .error_message {
     color: crimson;
 }
+
+.job_info_container {
+    padding: calc(2*var(--internal-standard-padding));
+    border-radius: var(--standard-border-radius);
+    background-color: var(--lightgray-borders-backgrounds);
+    margin: var(--internal-standard-padding) 0 var(--internal-standard-padding) 0;
+    display: grid;
+    grid-template-columns: 33% 33% 1fr;
+}
+
+.job_info_container div {
+    margin-right: var(--internal-standard-padding);
+}
+
+.jobtitle {
+    font-weight: 900;
+}

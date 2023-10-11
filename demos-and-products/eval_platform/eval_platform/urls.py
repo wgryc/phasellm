@@ -41,4 +41,5 @@ urlpatterns = [
     path("view_chat", lv.view_chat_new),
     path("update_title_via_post", lv.update_title_via_post),
     path("overwrite_chat", lv.overwrite_chat),
+    path("review_jobs", lv.review_jobs),
 ]

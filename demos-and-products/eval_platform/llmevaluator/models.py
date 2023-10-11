@@ -49,7 +49,20 @@ class BatchLLMJob(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     title = models.TextField(default="", null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
     message_collection_id = models.IntegerField()
+    message_collection_ref = models.ForeignKey(
+        MessageCollection,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="source_messages_collection",
+    )
+    results_array = models.ForeignKey(
+        MessageCollection,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="results_collection",
+    )
 
     # scheduled, complete
     status = models.TextField(default="scheduled", null=True, blank=True)

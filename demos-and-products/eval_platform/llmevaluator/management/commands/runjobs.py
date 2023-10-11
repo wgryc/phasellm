@@ -133,6 +133,7 @@ def run_job(job):
     results_mc.save()
 
     job.status = "complete"
+    job.results_array = results_mc
     job.save()
 
     print("Done!")

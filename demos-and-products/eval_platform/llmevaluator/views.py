@@ -81,9 +81,12 @@ def createJob(request):
     if "user_message" in data:
         user_message = data["user_message"]
 
+    mc_from_id = MessageCollection.objects.get(id=message_collection_id)
+
     b = BatchLLMJob(
         title=title,
         message_collection_id=message_collection_id,
+        message_collection_ref=mc_from_id,
         user_message=user_message,
     )
 
@@ -214,4 +217,14 @@ def overwrite_chat(request):
 
     return JsonResponse(
         {"status": "error", "message": "Missing fields in request."}, status=500
+    )
+
+
+def review_jobs(request):
+    jobs = BatchLLMJob.objects.all().order_by("-created_at")
+
+    return render(
+        request,
+        "batch_review.html",
+        {"contenttitle": "Review Batch Jobs", "jobs": jobs},
     )
