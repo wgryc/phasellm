@@ -52,7 +52,7 @@ def run_llm_task_and_save(
     if print_response:
         print(response)
 
-    return new_cbma.id
+    return new_cbma
 
 
 def run_job(job):
@@ -63,6 +63,7 @@ def run_job(job):
     chat_ids = chat_ids_string.strip().split(",")
 
     results_ids = []
+    results_to_append = []
 
     for _cid in chat_ids:
         print(f"Analyzing chat ID: {_cid}")
@@ -73,11 +74,13 @@ def run_job(job):
         # SETTING: run_n_times
         run_n_times = job.run_n_times
         for i in range(0, run_n_times):
+            nc = None
+
             # SETTING: include_gpt_4
             if job.include_gpt_4:
                 if job.temperature_range:
                     for t in [0.25, 0.75, 1.25]:
-                        run_llm_task_and_save(
+                        nc = run_llm_task_and_save(
                             cbma.message_array.copy(),
                             job.user_message,
                             job.id,
@@ -88,7 +91,7 @@ def run_job(job):
                             resend_last_user_message=job.resend_last_user_message,
                         )
                 else:
-                    run_llm_task_and_save(
+                    nc = run_llm_task_and_save(
                         cbma.message_array.copy(),
                         job.user_message,
                         job.id,
@@ -102,7 +105,7 @@ def run_job(job):
             if job.include_gpt_35:
                 if job.temperature_range:
                     for t in [0.25, 0.75, 1.25]:
-                        run_llm_task_and_save(
+                        nc = run_llm_task_and_save(
                             cbma.message_array.copy(),
                             job.user_message,
                             job.id,
@@ -113,7 +116,7 @@ def run_job(job):
                             resend_last_user_message=job.resend_last_user_message,
                         )
                 else:
-                    run_llm_task_and_save(
+                    nc = run_llm_task_and_save(
                         cbma.message_array.copy(),
                         job.user_message,
                         job.id,
@@ -123,6 +126,9 @@ def run_job(job):
                         resend_last_user_message=job.resend_last_user_message,
                     )
 
+            results_ids.append(str(nc.id))
+            results_to_append.append(nc)
+
     new_chats_str = ",".join(results_ids)
     results_mc = MessageCollection(
         title=f"Results from '{job.title}' job",
@@ -130,6 +136,10 @@ def run_job(job):
         source_collection_id=mc.id,
         source_batch_job_id=job.id,
     )
+    results_mc.save()
+
+    for r in results_to_append:
+        results_mc.chats.add(r)
     results_mc.save()
 
     job.status = "complete"

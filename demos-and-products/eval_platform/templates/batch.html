@@ -6,6 +6,8 @@
 
 <p><input type="text" id="form_groupid" name="form_groupid" placeholder="Group ID" style="width:100%;"></p>
 
+<p><textarea id="form_description" style="width:100%;height:200px" placeholder="Batch Job Description"></textarea></p>
+
 <p><textarea id="form_usermsg" style="width:100%;height:200px" placeholder="Additional user message"></textarea></p>
 
 <p><b>Advanced Options</b><br />
@@ -25,6 +27,7 @@
 <script>
     function savejob() {
         var user_message = document.getElementById("form_usermsg").value;
+        var desc = document.getElementById("form_description").value;
         var new_system_prompt = document.getElementById("form_sytem_prompt").value;
         var group_id = document.getElementById("form_groupid").value;
         var title = document.getElementById("form_title").value;
@@ -38,6 +41,7 @@
         var data = {
             csrfmiddlewaretoken: '{{ csrf_token }}',
             user_message: user_message,
+            description: desc,
             message_collection_id: group_id,
             title: title,
             opt_gpt_4: opt_gpt_4,

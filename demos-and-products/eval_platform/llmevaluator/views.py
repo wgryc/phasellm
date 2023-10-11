@@ -109,6 +109,10 @@ def createJob(request):
     if "opt_resend_user_msg" in data:
         b.resend_last_user_message = data["opt_resend_user_msg"]
 
+    if "description" in data:
+        if len(data["description"].strip()) > 0:
+            b.description = data["description"].strip()
+
     b.save()
 
     return JsonResponse({"status": "ok"})
@@ -119,20 +123,27 @@ def createGroupFromCSV(request):
     data = json.loads(request.body)
     if "messagelist" in data:
         messages_csv = data["messagelist"]
+
+        title = "New Collection"
+        if "title" in data:
+            title = data["title"]
+
+        mc = MessageCollection(title=title, chat_ids=messages_csv.strip())
+
+        chats_to_add = []
+
         ids = messages_csv.strip().split(",")
         all_present = True
         for chat_id in ids:
             o = ChatBotMessageArray.objects.filter(id=chat_id)
             if len(o) != 1:
                 all_present = False
-
-        title = "New Collection"
-        if "title" in data:
-            title = data["title"]
+            chats_to_add.append(o[0])
 
         if all_present:
-            mc = MessageCollection(title=title, chat_ids=messages_csv.strip())
             mc.save()
+            for c in chats_to_add:
+                mc.chats.add(c)
             return JsonResponse({"status": "ok"})
         else:
             return JsonResponse(

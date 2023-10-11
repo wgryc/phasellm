@@ -16,10 +16,28 @@
         {% endif %}
     </div>
     <div>
-        Source Chats
+        <p class="jobtitle">Input Chats</p>
+        {% if job.message_collection_ref %}
+        <ul>
+            {% for chat in job.message_collection_ref.chats.all %}
+            <li><a href='/view_chat/{{ chat.id }}'>{{ chat.title }}</a></li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p><i>No input chats.</i></p>
+        {% endif %}
     </div>
     <div>
-        Generated Chats
+        <p class="jobtitle">Generated Chats</p>
+        {% if job.results_array %}
+        <ul>
+            {% for chat in job.results_array.chats.all %}
+            <li><a href='/view_chat/{{ chat.id }}'>{{ chat.title }}</a></li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p><i>No output chats (yet).</i></p>
+        {% endif %}
     </div>
 </div>
 
