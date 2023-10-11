@@ -184,8 +184,6 @@ def list_jobs(request):
         "batch.html",
         {
             "contenttitle": "Create Job",
-            "contenttitle2": "Job History",
-            "all_jobs": all_jobs,
         },
     )
 

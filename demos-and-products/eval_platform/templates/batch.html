@@ -1,4 +1,4 @@
-{% extends 'base-navigation-two-rows.html' %}
+{% extends 'base-navigation.html' %}
 
 {% block bodycontent %}
 
@@ -74,16 +74,4 @@
 
 </script>
 
-{% endblock %}
-
-{% block bodycontent2 %}
-{% if all_jobs %}
-<ul>
-    {% for j in all_jobs %}
-    <li>ID: {{j.id}}, TITLE: {{ j.title }}, STATUS: {{ j.status }}</li>
-    {% endfor %}
-</ul>
-{% else %}
-<p><i>No jobs created yet.</i></p>
-{% endif %}
 {% endblock %}
