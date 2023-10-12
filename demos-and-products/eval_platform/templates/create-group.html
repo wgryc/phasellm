@@ -1,6 +1,6 @@
-{% extends 'base-navigation-two-rows.html' %}
+{% extends 'base-navigation-two-cols.html' %}
 
-{% block bodycontent %}
+{% block bodycontent2 %}
 
 <p><input type="text" id="form_title" name="form_title" placeholder="Title" , style="width:100%;"></p>
 <p><textarea id="messagelist" style="width:100%;height:200px" placeholder="Comma-separate IDs here"></textarea></p>
@@ -37,13 +37,13 @@
 
 {% endblock %}
 
-{% block bodycontent2 %}
+{% block bodycontent %}
 {% if all_groups %}
-<ul>
-    {% for g in all_groups %}
-    <li>ID: {{g.id}}, TITLE: {{ g.title }}</li>
-    {% endfor %}
-</ul>
+{% for g in all_groups %}
+<div class="general-list-container">
+    <span style="width:50px;display:inline-block;">ID: {{g.id}}</span> <b>{{ g.title }}</b>
+</div>
+{% endfor %}
 {% else %}
 <p><i>No groups created yet.</i></p>
 {% endif %}

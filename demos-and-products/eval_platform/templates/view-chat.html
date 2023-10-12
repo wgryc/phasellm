@@ -1,18 +1,41 @@
-{% extends 'base-navigation.html' %}
+{% extends 'base-navigation-two-cols.html' %}
 
 {% block bodycontent %}
+{% if all_chats %}
+{% for chat in all_chats %}
+<div class="general-list-container">
+    <span style="width:50px;display:inline-block;">ID: {{chat.id}}</span> <b><a href='/view_chat/{{ chat.id }}'>
+            {{chat.title }}
+        </a></b>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}
+
+
+{% block bodycontent2 %}
+
+{% if chat_id == -1 %}
+<p class='content-title'>{{ chat_title }}</p>
+<p><i>Select a chat to review and edit it.</i></p>
+{% else %}
 
 {% if error_msg %}
 <p class="error_message"><b>Error!</b> {{ error_msg | safe}}</p>
 {% else %}
 
-<p>
-    <span class="formfield formfield-hover" onclick="javascript:savemessagesfromarray()">Save to New Chat Object</span>
-    <span class="formfield formfield-hover" onclick="javascript:updatetitle()">Update Title</span>
+<p style="margin-bottom:25px;">
+    <span class="formfield formfield-hover" onclick="javascript:savemessagesfromarray()">Save to New Chat</span>
+    <!-- <span class="formfield formfield-hover" onclick="javascript:updatetitle()">Update Title</span> -->
     <span class="formfield formfield-hover" onclick="javascript:overwrite()">Overwrite</span>
+    <span class="formfield formfield-hover" onclick="javascript:deletechat()">Delete</span>
 </p>
 
-<p class='content-title' id="input_chat_title" contenteditable=True>{{ chat_title }}</p>
+<div><b>Chat Title:</b><br />
+    <span id="input_chat_title" style="width:100%;display:inline-block;" contenteditable=True>{{ chat_title }}
+</div>
+
+<p>&nbsp;</p>
 
 <div id="full_messages"></div>
 
@@ -44,7 +67,7 @@
         var new_html = "";
         for (var i = 0; i < message_array.length; i++) {
             var new_content = convert_newlines(message_array[i]['content']);
-            new_html += `<div><b>${message_array[i]['role']}</b><br/><div id="phasellm-ma-content-${i}" contenteditable=True>${new_content}</div></div>`;
+            new_html += `<div style='margin-top:20px;margin-bottom:10px;'><b>${message_array[i]['role']}</b></div><div id="phasellm-ma-content-${i}" contenteditable=True>${new_content}</div>`;
         }
         var d = document.getElementById('full_messages');
         d.innerHTML = new_html;
@@ -119,6 +142,10 @@
         display_message_array(message_array);
     }
 
+    function deletechat() {
+        window.location.href = `/delete_chat/${chat_id}`;
+    }
+
     function overwrite() {
         var new_title = document.getElementById("input_chat_title").innerText;
         rebuild_message_array();
@@ -149,7 +176,7 @@
     }
 
 </script>
-
+{% endif %}
 
 {% endif %}
 

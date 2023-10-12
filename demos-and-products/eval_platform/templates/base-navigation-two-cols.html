@@ -16,9 +16,18 @@
         <a class="navlink" href="/about"><span class="navicon">👋</span>About Us</a>
     </div>
     <div id="main-content">
-        <p class='content-title'>{{ contenttitle|default:"LLM Evaluator" }}</p>
-        {% block bodycontent %}
-        {% endblock %}
+        <div class="two-col-content-container">
+            <div class="two-col-content-left">
+                <p class='content-title'>{{ contenttitle|default:"LLM Evaluator" }}</p>
+                {% block bodycontent %}
+                {% endblock %}
+            </div>
+            <div class="two-col-content-right">
+                <p class='content-title'>{{ contenttitle2 }}</p>
+                {% block bodycontent2 %}
+                {% endblock %}
+            </div>
+        </div>
     </div>
 
 </div>

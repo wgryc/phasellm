@@ -33,6 +33,30 @@ a {
 }
 
 /**
+ * TWO COLUMN CONTAINER TEST
+ */
+
+.two-col-content-container {
+    display: grid;
+    grid-template-columns: 50% 1fr;
+    column-gap: calc(3*var(--internal-standard-padding));
+    height: 100%;
+    overflow: hidden;
+}
+
+.two-col-content-left {
+    background-color: white;
+    overflow: auto;
+    padding: calc(2*var(--internal-standard-padding));
+}
+
+.two-col-content-right {
+    background-color: white;
+    overflow: auto;
+    padding: calc(2*var(--internal-standard-padding));
+}
+
+/**
  * TWO ROW CONTAINER TEST
  */
 
@@ -153,4 +177,11 @@ textarea,
 
 .jobtitle {
     font-weight: 900;
+}
+
+.general-list-container {
+    padding: calc(2*var(--internal-standard-padding));
+    border-radius: var(--standard-border-radius);
+    background-color: var(--lightgray-borders-backgrounds);
+    margin: var(--internal-standard-padding) 0 var(--internal-standard-padding) 0;
 }

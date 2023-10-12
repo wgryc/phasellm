@@ -9,15 +9,33 @@ import json
 
 
 def view_chat(request, chat_id):
+    all_chats = ChatBotMessageArray.objects.all().order_by("-created_at")
+
     chats = ChatBotMessageArray.objects.filter(id=chat_id)
+
+    if chat_id == -1:
+        return render(
+            request,
+            "view-chat.html",
+            {
+                # "contenttitle2": f"Chat ID {chat_id}",
+                # "error_msg": "Chat not found. Are you sure it exists?",
+                "contenttitle": "Review Chats",
+                "all_chats": all_chats,
+                "chat_title": "Select a Chat",
+                "chat_id": -1,
+            },
+        )
 
     if len(chats) != 1:
         return render(
             request,
             "view-chat.html",
             {
-                "contenttitle": f"Viewing Chat ID {chat_id}",
+                "contenttitle2": f"Chat ID {chat_id}",
                 "error_msg": "Chat not found. Are you sure it exists?",
+                "contenttitle": "Review Chats",
+                "all_chats": all_chats,
             },
         )
 
@@ -25,10 +43,12 @@ def view_chat(request, chat_id):
         request,
         "view-chat.html",
         {
-            "contenttitle": f"Viewing Chat ID {chat_id}",
+            "contenttitle2": f"Viewing Chat ID {chat_id}",
             "json_message_array": json.dumps(chats[0].message_array),
             "chat_title": chats[0].title,
             "chat_id": chat_id,
+            "contenttitle": "Review Chats",
+            "all_chats": all_chats,
         },
     )
 
@@ -37,6 +57,12 @@ def view_chat_new(request):
     new_chat = ChatBotMessageArray(message_array=[])
     new_chat.save()
     return redirect("view_chat", chat_id=new_chat.id)
+
+
+def delete_chat(request, chat_id):
+    chat = ChatBotMessageArray.objects.get(id=chat_id)
+    chat.delete()
+    return redirect("list_chats")
 
 
 # Same as createMessageArray() but we don't loads() from messages.
@@ -158,10 +184,11 @@ def createGroupFromCSV(request):
 
 
 def get_chats(request):
-    all_chats = ChatBotMessageArray.objects.all().order_by("-created_at")
-    return render(
-        request, "chats.html", {"contenttitle": "Review Chats", "all_chats": all_chats}
-    )
+    return view_chat(request, -1)
+    # all_chats = ChatBotMessageArray.objects.all().order_by("-created_at")
+    # return render(
+    #    request, "chats.html", {"contenttitle": "Review Chats", "all_chats": all_chats}
+    # )
 
 
 def list_groups(request):
@@ -170,8 +197,8 @@ def list_groups(request):
         request,
         "create-group.html",
         {
-            "contenttitle": "Create Group",
-            "contenttitle2": "Existing Groups",
+            "contenttitle2": "Create New Group",
+            "contenttitle": "Existing Groups",
             "all_groups": all_groups,
         },
     )
