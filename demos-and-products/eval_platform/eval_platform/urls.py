@@ -30,6 +30,13 @@ urlpatterns = [
             extra_context={"contenttitle": "Import Chat via JSON"},
         ),
     ),
+    path(
+        "about",
+        TemplateView.as_view(
+            template_name="aboutus.html",
+            extra_context={"contenttitle": "About Us"},
+        ),
+    ),
     path("create_save_ma", lv.createMessageArray),
     path("create_save_ma_json", lv.createMessageArrayJson),
     path("groups", lv.list_groups),
