@@ -74,8 +74,6 @@ def run_job(job):
         # SETTING: run_n_times
         run_n_times = job.run_n_times
         for i in range(0, run_n_times):
-            nc = None
-
             # SETTING: include_gpt_4
             if job.include_gpt_4:
                 if job.temperature_range:
@@ -90,6 +88,8 @@ def run_job(job):
                             new_system_prompt=job.new_system_prompt,
                             resend_last_user_message=job.resend_last_user_message,
                         )
+                        results_ids.append(str(nc.id))
+                        results_to_append.append(nc)
                 else:
                     nc = run_llm_task_and_save(
                         cbma.message_array.copy(),
@@ -100,6 +100,8 @@ def run_job(job):
                         new_system_prompt=job.new_system_prompt,
                         resend_last_user_message=job.resend_last_user_message,
                     )
+                    results_ids.append(str(nc.id))
+                    results_to_append.append(nc)
 
             # SETTING: include_gpt_35
             if job.include_gpt_35:
@@ -115,6 +117,8 @@ def run_job(job):
                             new_system_prompt=job.new_system_prompt,
                             resend_last_user_message=job.resend_last_user_message,
                         )
+                        results_ids.append(str(nc.id))
+                        results_to_append.append(nc)
                 else:
                     nc = run_llm_task_and_save(
                         cbma.message_array.copy(),
@@ -125,9 +129,8 @@ def run_job(job):
                         new_system_prompt=job.new_system_prompt,
                         resend_last_user_message=job.resend_last_user_message,
                     )
-
-            results_ids.append(str(nc.id))
-            results_to_append.append(nc)
+                    results_ids.append(str(nc.id))
+                    results_to_append.append(nc)
 
     new_chats_str = ",".join(results_ids)
     results_mc = MessageCollection(

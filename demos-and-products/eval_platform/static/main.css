@@ -177,6 +177,7 @@ textarea,
 
 .jobtitle {
     font-weight: 900;
+    margin: calc(2*var(--internal-standard-padding)) 0 calc(2*var(--internal-standard-padding)) 0;
 }
 
 .general-list-container {
@@ -184,4 +185,29 @@ textarea,
     border-radius: var(--standard-border-radius);
     background-color: var(--lightgray-borders-backgrounds);
     margin: var(--internal-standard-padding) 0 var(--internal-standard-padding) 0;
+}
+
+.tag-label-green {
+    display: inline-block;
+    padding: var(--internal-standard-padding);
+    border-radius: var(--standard-border-radius);
+    background-color: #2E8B57;
+    color: white;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.tag-label-blue {
+    display: inline-block;
+    padding: var(--internal-standard-padding);
+    border-radius: var(--standard-border-radius);
+    background-color: #4682B4;
+    color: white;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.delete-icon {
+    margin: 0 var(--internal-standard-padding) 0 var(--internal-standard-padding);
+    cursor: pointer;
 }

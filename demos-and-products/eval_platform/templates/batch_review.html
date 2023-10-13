@@ -8,7 +8,13 @@
 
 <div class="job_info_container">
     <div>
-        <p class="jobtitle">{{ job.title }}</p>
+        <p class="jobtitle">{{ job.title }}
+            {% if job.status == "complete" %}
+            <span class="tag-label-green">complete</span>
+            {% elif job.status == "scheduled" %}
+            <span class="tag-label-blue">scheduled</span>
+            {% endif %}
+        </p>
         {% if job.description %}
         <p class="jobdescription">{{ job.description }}</p>
         {% else %}

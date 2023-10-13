@@ -8,6 +8,32 @@ from .models import *
 import json
 
 
+# Converts things like 37,40-44 to an array of #s
+def convertCSVCommand(csv_string):
+    out_array = []
+    tokens = csv_string.split(",")
+    for token in tokens:
+        if token.find("-") > 0:
+            tokens2 = token.split("-")
+            if len(tokens2) == 2:
+                try:
+                    start_val = int(tokens2[0])
+                    end_val = int(tokens2[1])
+                    for i in range(start_val, end_val + 1):
+                        out_array.append(i)
+                except:
+                    return None
+            else:
+                return None
+        else:
+            try:
+                val = int(token.strip())
+                out_array.append(val)
+            except:
+                return None
+    return out_array
+
+
 def view_chat(request, chat_id):
     all_chats = ChatBotMessageArray.objects.all().order_by("-created_at")
 
@@ -150,15 +176,24 @@ def createGroupFromCSV(request):
     if "messagelist" in data:
         messages_csv = data["messagelist"]
 
+        ids = convertCSVCommand(messages_csv)
+        if ids == None:
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": "Not all IDs are present in the data; please review and try again.",
+                },
+                status=500,
+            )
+
         title = "New Collection"
         if "title" in data:
             title = data["title"]
 
-        mc = MessageCollection(title=title, chat_ids=messages_csv.strip())
+        mc = MessageCollection(title=title, chat_ids=",".join(list(map(str, ids))))
 
         chats_to_add = []
 
-        ids = messages_csv.strip().split(",")
         all_present = True
         for chat_id in ids:
             o = ChatBotMessageArray.objects.filter(id=chat_id)

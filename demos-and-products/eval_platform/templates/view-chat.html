@@ -60,6 +60,7 @@
         s = s.replaceAll("<br>", "\n");
         s = s.replaceAll("</div>", "\n");
         s = s.replaceAll("<div>", "");
+        s = s.trim();
         return s;
     }
 
@@ -67,7 +68,7 @@
         var new_html = "";
         for (var i = 0; i < message_array.length; i++) {
             var new_content = convert_newlines(message_array[i]['content']);
-            new_html += `<div style='margin-top:20px;margin-bottom:10px;'><b>${message_array[i]['role']}</b></div><div id="phasellm-ma-content-${i}" contenteditable=True>${new_content}</div>`;
+            new_html += `<div id="message-container-${i}"><div style='margin-top:20px;margin-bottom:10px;'><b>${message_array[i]['role']}</b><span class='delete-icon' onclick="javascript:delete_div(${i});">🗑️</span></div><div id="phasellm-ma-content-${i}" contenteditable=True>${new_content}</div></div>`;
         }
         var d = document.getElementById('full_messages');
         d.innerHTML = new_html;
@@ -75,11 +76,16 @@
 
     function rebuild_message_array() {
         for (var i = 0; i < message_array.length; i++) {
-
             var content_div = document.getElementById(`phasellm-ma-content-${i}`);
             var content = convert_newlines_back(content_div.innerHTML)
             message_array[i]['content'] = content;
         }
+    }
+
+    function delete_div(div_number) {
+        //document.getElementById(`message-container-${div_number}`).outerHTML = "";
+        message_array.splice(div_number, 1);
+        display_message_array(message_array);
     }
 
     function updatetitle() {
