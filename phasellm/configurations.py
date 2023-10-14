@@ -95,7 +95,7 @@ class AzureAPIConfiguration(APIConfiguration):
             self,
             api_key: str,
             base_url: str = None,
-            api_version: str = '2023-08-01-preview',
+            api_version: str = '2023-05-15',
             deployment_id: str = 'gpt-3.5-turbo',
             response_callback: callable = lambda response: None,
             api_base: str = None
@@ -189,13 +189,12 @@ class AzureActiveDirectoryConfiguration:
 
         if api_base:
             warn('The api_base argument is deprecated. Use base_url instead.', DeprecationWarning)
-        if api_version:
-            warn('The api_version argument is deprecated and has no effect.', DeprecationWarning)
 
         self.base_url = base_url
         if api_base:
             self.base_url = api_base
 
+        self.api_version = api_version
         self.deployment_id = deployment_id
 
         self._response_callback = response_callback
@@ -217,6 +216,9 @@ class AzureActiveDirectoryConfiguration:
             api_key=token.token,
             base_url=self.base_url,
             http_client=httpx.Client(event_hooks={'response': [self._response_callback]}),
+            default_query={
+                'api-version': self.api_version
+            }
         )
 
     def get_base_api_kwargs(self):

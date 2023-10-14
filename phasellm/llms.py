@@ -725,7 +725,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
                 >>> llm = StreamingOpenAIGPTWrapper(api_config=AzureAPIConfiguration(
                 ...     api_key="azure_api_key",
                 ...     api_base='https://{your-resource-name}.openai.azure.com/openai/deployments/{your-deployment-id}',
-                ...     api_version='2023-08-01-preview',
+                ...     api_version='2023-05-15',
                 ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
@@ -735,7 +735,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
                 >>> from phasellm.configurations import AzureActiveDirectoryConfiguration
                 >>> llm = StreamingOpenAIGPTWrapper(api_config=AzureActiveDirectoryConfiguration(
                 ...     api_base='https://{your-resource-name}.openai.azure.com/openai/deployments/{your-deployment-id}',
-                ...     api_version='2023-08-01-preview',
+                ...     api_version='2023-05-15',
                 ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
