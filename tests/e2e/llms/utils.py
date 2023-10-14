@@ -7,11 +7,28 @@ from dataclasses import dataclass
 
 from phasellm.llms import Message
 
-from typing import Generator, List
-
 from phasellm.llms import STOP_TOKEN
 
+from typing import Generator, List, Tuple
+
 from phasellm.llms import LanguageModelWrapper, StreamingLanguageModelWrapper, ChatBot
+
+
+def wrap_human_assistant(text: str) -> str:
+    return f'\n\nHuman: {text}\n\nAssistant:'
+
+
+def create_test_message_stack() -> List[dict]:
+    m = [{'role': 'system', 'content': "You are a robot that adds 'YO!' to the end of every sentence."},
+         {'role': 'user', 'content': 'Tell me about Poland.'}]
+    return m
+
+
+def create_test_chat_prompts() -> Tuple[str, str]:
+    p1 = 'Who are you?'
+    p2 = 'Where do you come from?'
+
+    return p1, p2
 
 
 def common_chat_assertions(tester: TestCase, response: str, verbose: bool = False) -> None:
@@ -320,7 +337,7 @@ def test_complete_chat(
         verbose: bool = False
 ) -> None:
     messages = [{"role": "user", "content": "What should I eat for lunch today?"}]
-    response = fixture.complete_chat(messages, append_role='assistant')
+    response = fixture.complete_chat(messages)
 
     common_chat_assertions(tester=tester, response=response, verbose=verbose)
 
@@ -449,7 +466,9 @@ def test_chatbot_chat(
     """
     Test the chat() method of the ChatBot for non-streaming wrappers.
     """
-    response = fixture.chat('Who are you?')
+    p1, p2 = create_test_chat_prompts()
+
+    response = fixture.chat(p1)
 
     tester.assertTrue(isinstance(response, str), f"Expecting a string, got {type(response)}.")
 
@@ -459,7 +478,7 @@ def test_chatbot_chat(
     # Check that the ChatBot is in the correct state.
     common_primary_chatbot_assertions(tester, fixture, response)
 
-    response = fixture.chat('What is your name?')
+    response = fixture.chat(p2)
 
     tester.assertTrue(isinstance(response, str), f"Expecting a string, got {type(response)}.")
 
@@ -475,8 +494,8 @@ def test_chatbot_resend(
     """
     Test the resend() method of the ChatBot for non-streaming wrappers.
     """
-    m = [{'role': 'system', 'content': "You are a robot that adds 'YO!' to the end of every sentence."},
-         {'role': 'user', 'content': 'Tell me about Poland.'}]
+    m = create_test_message_stack()
+
     fixture.messages = copy.deepcopy(m)
 
     response = fixture.resend()
@@ -502,7 +521,9 @@ def test_streaming_chatbot_chat(
     """
     Test the chat() method of the ChatBot for streaming wrappers.
     """
-    generator = fixture.chat('Who are you')
+    p1, p2 = create_test_chat_prompts()
+
+    generator = fixture.chat(p1)
 
     tester.assertTrue(isinstance(generator, Generator), "Expecting a generator.")
 
@@ -518,7 +539,7 @@ def test_streaming_chatbot_chat(
     common_primary_chatbot_assertions(tester, fixture=fixture, response=results.res)
 
     # Make another call to ChatBot.chat() to ensure it is capable of receiving a new message.
-    generator = fixture.chat('Where do you come from?')
+    generator = fixture.chat(p2)
 
     # Check the results of the generator.
     results: StreamingChatCompletionProbe = probe_streaming_chat_completion(generator)
@@ -541,7 +562,9 @@ def test_streaming_chatbot_chat_sse(
     """
     Test the chat() method of the ChatBot for streaming wrappers with sse.
     """
-    generator = fixture.chat('Who are you')
+    p1, p2 = create_test_chat_prompts()
+
+    generator = fixture.chat(p1)
 
     tester.assertTrue(isinstance(generator, Generator), "Expecting a generator.")
 
@@ -552,7 +575,7 @@ def test_streaming_chatbot_chat_sse(
     common_primary_chatbot_assertions(tester, fixture=fixture, response=results.res)
 
     # Make another call to ChatBot.chat() to ensure it is capable of receiving a new message.
-    generator = fixture.chat('Where do you come from?')
+    generator = fixture.chat(p2)
 
     # Check the results of the generator.
     results: StreamingSSECompletionProbe = probe_streaming_sse_completions(generator)
@@ -569,8 +592,8 @@ def test_streaming_chatbot_resend(
     """
     Test the resend() method of the ChatBot for streaming wrappers.
     """
-    m = [{'role': 'system', 'content': "You are a robot that adds 'YO!' to the end of every sentence."},
-         {'role': 'user', 'content': 'Tell me about Poland.'}]
+    m = create_test_message_stack()
+
     fixture.messages = copy.deepcopy(m)
 
     generator = fixture.resend()

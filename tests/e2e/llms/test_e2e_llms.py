@@ -105,8 +105,8 @@ class E2ETestOpenAIGPTWrapper(TestCase):
     def test_complete_chat_azure(self):
         fixture = OpenAIGPTWrapper(api_config=AzureAPIConfiguration(
             api_key=azure_api_key,
-            api_base='https://val-gpt4.openai.azure.com/',
-            api_version='2023-05-15',
+            base_url=f'https://val-gpt4.openai.azure.com/openai/deployments/gpt-4',
+            api_version='2023-08-01-preview',
             deployment_id='gpt-4'
         ))
         test_complete_chat(self, fixture, verbose=False)
@@ -278,8 +278,8 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
         """
         fixture = StreamingOpenAIGPTWrapper(api_config=AzureAPIConfiguration(
             api_key=azure_api_key,
-            api_base='https://val-gpt4.openai.azure.com/',
-            api_version='2023-05-15',
+            base_url=f'https://val-gpt4.openai.azure.com/openai/deployments/gpt-4',
+            api_version='2023-08-01-preview',
             deployment_id='gpt-4'
         ))
 
@@ -529,8 +529,8 @@ class E2ETestChatBot(TestCase):
     def test_openai_gpt_chat_azure(self):
         llm = OpenAIGPTWrapper(api_config=AzureAPIConfiguration(
             api_key=azure_api_key,
-            api_base='https://val-gpt4.openai.azure.com/',
-            api_version='2023-05-15',
+            base_url=f'https://val-gpt4.openai.azure.com/openai/deployments/gpt-4',
+            api_version='2023-08-01-preview',
             deployment_id='gpt-4'
         ))
         fixture = ChatBot(llm)
@@ -674,8 +674,8 @@ class E2ETestStreamingChatBot(TestCase):
     def test_openai_gpt_streaming_chat_azure(self):
         llm = StreamingOpenAIGPTWrapper(api_config=AzureAPIConfiguration(
             api_key=azure_api_key,
-            api_base='https://val-gpt4.openai.azure.com/',
-            api_version='2023-05-15',
+            base_url=f'https://val-gpt4.openai.azure.com/openai/deployments/gpt-4',
+            api_version='2023-08-01-preview',
             deployment_id='gpt-4'
         ))
         fixture = ChatBot(llm)

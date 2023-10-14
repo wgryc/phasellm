@@ -14,7 +14,8 @@ setup(
     install_requires=[
         "Flask>=2.0.0",
         "requests>=2.24.0",
-        "openai>=0.26.0",
+        "httpx>=0.25.0",
+        "openai==1.0.0b2",
         "cohere>=4.0.0",
         "python-dotenv",
         "pandas>=2.0.0",

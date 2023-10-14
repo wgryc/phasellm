@@ -202,7 +202,7 @@ class TestE2EWebpageAgent(TestCase):
             use_browser=False
         )
         self.assertTrue(
-            'Canadian journalism.Government says' in
+            "Government says law will apply to companies with 'significant bargaining power imbalance'" in
             text, f"Text does not contain expected string.\n{text}"
         )
 
