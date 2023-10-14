@@ -766,14 +766,15 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
         if apikey:
             self.api_config = OpenAIConfiguration(
                 api_key=apikey,
-                model=model,
-                response_callback=self._set_last_response_header
+                model=model
             )
         if api_config:
             self.api_config = api_config
 
         if not hasattr(self, 'api_config'):
             raise Exception('Must pass apikey or api_config. If using kwargs, check capitalization.')
+
+        self.api_config.response_callback = self._set_last_response_header
 
         # Activate the configuration
         self.api_config()
@@ -962,14 +963,15 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
         if apikey:
             self.api_config = OpenAIConfiguration(
                 api_key=apikey,
-                model=model,
-                response_callback=self._set_last_response_header
+                model=model
             )
         if api_config:
             self.api_config = api_config
 
         if not hasattr(self, 'api_config'):
             raise Exception('Must pass apikey or api_config. If using kwargs, check capitalization.')
+
+        self.api_config.response_callback = self._set_last_response_header
 
         # Activate the configuration
         self.api_config()

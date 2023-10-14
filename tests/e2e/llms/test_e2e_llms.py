@@ -50,7 +50,7 @@ class E2ETestHuggingFaceInferenceWrapper(TestCase):
             hugging_face_api_key,
             model_url="https://api-inference.huggingface.co/models/bigscience/bloom"
         )
-        test_complete_chat(self, fixture, verbose=False)
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_complete_chat_kwargs(self):
         fixture = HuggingFaceInferenceWrapper(
@@ -59,14 +59,14 @@ class E2ETestHuggingFaceInferenceWrapper(TestCase):
             temperature=0.9,
             top_k=2
         )
-        test_complete_chat(self, fixture, verbose=False)
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_text_completion_success(self):
         fixture = HuggingFaceInferenceWrapper(
             hugging_face_api_key,
             model_url="https://api-inference.huggingface.co/models/bigscience/bloom"
         )
-        test_text_completion_success(self, fixture, verbose=False)
+        test_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_text_completion_success_kwargs(self):
         fixture = HuggingFaceInferenceWrapper(
@@ -75,7 +75,7 @@ class E2ETestHuggingFaceInferenceWrapper(TestCase):
             top_k=0.9,
             model_url="https://api-inference.huggingface.co/models/bigscience/bloom"
         )
-        test_text_completion_success(self, fixture, verbose=False)
+        test_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
 
 
 class E2ETestBloomWrapper(TestCase):
@@ -86,11 +86,11 @@ class E2ETestBloomWrapper(TestCase):
 
     def test_complete_chat(self):
         fixture = BloomWrapper(hugging_face_api_key)
-        test_complete_chat(self, fixture, verbose=False)
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_text_completion_success(self):
         fixture = BloomWrapper(hugging_face_api_key)
-        test_text_completion_success(self, fixture, verbose=False)
+        test_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
 
 
 class E2ETestOpenAIGPTWrapper(TestCase):
@@ -100,7 +100,7 @@ class E2ETestOpenAIGPTWrapper(TestCase):
 
     def test_complete_chat(self):
         fixture = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
-        test_complete_chat(self, fixture, verbose=False)
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_complete_chat_azure(self):
         fixture = OpenAIGPTWrapper(api_config=AzureAPIConfiguration(
@@ -109,7 +109,7 @@ class E2ETestOpenAIGPTWrapper(TestCase):
             api_version='2023-05-15',
             deployment_id='gpt-4'
         ))
-        test_complete_chat(self, fixture, verbose=False)
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_complete_chat_azure_pre_openai_v1(self):
         fixture = OpenAIGPTWrapper(api_config=AzureAPIConfiguration(
@@ -118,19 +118,19 @@ class E2ETestOpenAIGPTWrapper(TestCase):
             api_version='2023-05-15',
             deployment_id='gpt-4'
         ))
-        test_complete_chat(self, fixture, verbose=False)
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_complete_chat_kwargs(self):
         fixture = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo", temperature=0.9, frequency_penalty=2)
-        test_complete_chat(self, fixture, verbose=False)
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_text_completion_success(self):
         fixture = OpenAIGPTWrapper(openai_api_key, model="text-davinci-003")
-        test_text_completion_success(self, fixture, verbose=False)
+        test_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_text_completion_success_kwargs(self):
         fixture = OpenAIGPTWrapper(openai_api_key, model="text-davinci-003", temperature=0.9, presence_penalty=2)
-        test_text_completion_success(self, fixture, verbose=False)
+        test_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_text_completion_failure(self):
         """
@@ -147,19 +147,19 @@ class E2ETestClaudeWrapper(TestCase):
 
     def test_complete_chat(self):
         fixture = ClaudeWrapper(anthropic_api_key, model="claude-v1")
-        test_complete_chat(self, fixture, verbose=False)
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_complete_chat_kwargs(self):
         fixture = ClaudeWrapper(anthropic_api_key, model="claude-v1", temperature=0.9, top_k=2)
-        test_complete_chat(self, fixture, verbose=False)
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_text_completion_success(self):
         fixture = ClaudeWrapper(anthropic_api_key, model="claude-v1")
-        test_text_completion_success(self, fixture, verbose=False)
+        test_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_text_completion_success_kwargs(self):
         fixture = ClaudeWrapper(anthropic_api_key, model="claude-v1", temperature=0.9, top_k=2)
-        test_text_completion_success(self, fixture, verbose=False)
+        test_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
 
 
 class E2ETestGPT2Wrapper(TestCase):
@@ -279,7 +279,7 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
         """
         fixture = StreamingOpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
 
-        test_streaming_complete_chat(self, fixture, verbose=False)
+        test_streaming_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_complete_chat_azure(self):
         """
@@ -292,7 +292,20 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
             deployment_id='gpt-4'
         ))
 
-        test_streaming_complete_chat(self, fixture, verbose=False)
+        test_streaming_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
+
+    def test_complete_chat_azure_pre_openai_v1(self):
+        """
+        Tests that the StreamingOpenAIGPTWrapper with azure configuration can be used to perform chat completion.
+        """
+        fixture = StreamingOpenAIGPTWrapper(api_config=AzureAPIConfiguration(
+            api_key=azure_api_key,
+            base_url=f'https://val-gpt4.openai.azure.com/gpt-4',
+            api_version='2023-05-15',
+            deployment_id='gpt-4'
+        ))
+
+        test_streaming_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_complete_chat_kwargs(self):
         """
@@ -302,7 +315,7 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
             openai_api_key, model="gpt-3.5-turbo", temperature=0.9, presence_penalty=0.9, frequency_penalty=0.9
         )
 
-        test_streaming_complete_chat(self, fixture, verbose=False)
+        test_streaming_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_complete_chat_sse(self):
         """
@@ -353,7 +366,7 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
         """
         fixture = StreamingOpenAIGPTWrapper(openai_api_key, model="text-davinci-003")
 
-        test_streaming_text_completion_success(self, fixture, verbose=False)
+        test_streaming_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_text_completion_success_kwargs(self):
         """
@@ -362,7 +375,7 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
         fixture = StreamingOpenAIGPTWrapper(openai_api_key, model="text-davinci-003", temperature=0.9,
                                             presence_penalty=2)
 
-        test_streaming_text_completion_success(self, fixture, verbose=False)
+        test_streaming_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_text_completion_failure(self):
         """
@@ -427,7 +440,7 @@ class E2ETestStreamingClaudeWrapper(TestCase):
         """
         fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
 
-        test_streaming_complete_chat(self, fixture, verbose=False)
+        test_streaming_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_complete_chat_kwargs(self):
         """
@@ -435,7 +448,7 @@ class E2ETestStreamingClaudeWrapper(TestCase):
         """
         fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", temperature=0.9, top_k=2)
 
-        test_streaming_complete_chat(self, fixture, verbose=False)
+        test_streaming_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_complete_chat_sse(self):
         """
@@ -478,7 +491,7 @@ class E2ETestStreamingClaudeWrapper(TestCase):
         """
         fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1")
 
-        test_streaming_text_completion_success(self, fixture, verbose=False)
+        test_streaming_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_text_completion_kwargs(self):
         """
@@ -486,7 +499,7 @@ class E2ETestStreamingClaudeWrapper(TestCase):
         """
         fixture = StreamingClaudeWrapper(anthropic_api_key, model="claude-v1", temperature=0.9, top_k=2)
 
-        test_streaming_text_completion_success(self, fixture, verbose=False)
+        test_streaming_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
 
     def test_text_completion_sse(self):
         """
@@ -539,6 +552,17 @@ class E2ETestChatBot(TestCase):
         llm = OpenAIGPTWrapper(api_config=AzureAPIConfiguration(
             api_key=azure_api_key,
             base_url=f'https://val-gpt4.openai.azure.com/openai/deployments/gpt-4',
+            api_version='2023-05-15',
+            deployment_id='gpt-4'
+        ))
+        fixture = ChatBot(llm)
+
+        test_chatbot_chat(self, fixture)
+
+    def test_openai_gpt_chat_azure_pre_openai_v1(self):
+        llm = OpenAIGPTWrapper(api_config=AzureAPIConfiguration(
+            api_key=azure_api_key,
+            base_url=f'https://val-gpt4.openai.azure.com/gpt-4',
             api_version='2023-05-15',
             deployment_id='gpt-4'
         ))
@@ -684,6 +708,17 @@ class E2ETestStreamingChatBot(TestCase):
         llm = StreamingOpenAIGPTWrapper(api_config=AzureAPIConfiguration(
             api_key=azure_api_key,
             base_url=f'https://val-gpt4.openai.azure.com/openai/deployments/gpt-4',
+            api_version='2023-05-15',
+            deployment_id='gpt-4'
+        ))
+        fixture = ChatBot(llm)
+
+        test_streaming_chatbot_chat(self, fixture=fixture, chunk_time_seconds_threshold=0.5, verbose=False)
+
+    def test_openai_gpt_streaming_chat_azure_pre_openai_v1(self):
+        llm = StreamingOpenAIGPTWrapper(api_config=AzureAPIConfiguration(
+            api_key=azure_api_key,
+            base_url=f'https://val-gpt4.openai.azure.com/gpt-4',
             api_version='2023-05-15',
             deployment_id='gpt-4'
         ))

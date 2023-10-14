@@ -44,8 +44,7 @@ class OpenAIConfiguration(APIConfiguration):
             self,
             api_key: str,
             organization: str = None,
-            model: str = 'gpt-3.5-turbo',
-            response_callback: callable = lambda response: None
+            model: str = 'gpt-3.5-turbo'
     ):
         """
         Initializes the OpenAI API configuration.
@@ -54,7 +53,6 @@ class OpenAIConfiguration(APIConfiguration):
             api_key: The OpenAI API key.
             organization: The OpenAI organization.
             model: The model to use.
-            response_callback: A callback which is called when a response is received from the OpenAI API.
 
         """
         super().__init__(model=model)
@@ -62,7 +60,7 @@ class OpenAIConfiguration(APIConfiguration):
         self.api_key = api_key
         self.organization = organization
 
-        self._response_callback = response_callback
+        self.response_callback = lambda response: None
 
     def __call__(self):
         """
@@ -72,7 +70,7 @@ class OpenAIConfiguration(APIConfiguration):
 
         """
         self.client = OpenAI(
-            http_client=httpx.Client(event_hooks={'response': [self._response_callback]}),
+            http_client=httpx.Client(event_hooks={'response': [self.response_callback]}),
             api_key=self.api_key,
             organization=self.organization
         )
@@ -99,7 +97,6 @@ class AzureAPIConfiguration(APIConfiguration):
             base_url: str = None,
             api_version: str = '2023-05-15',
             deployment_id: str = 'gpt-3.5-turbo',
-            response_callback: callable = lambda response: None,
             api_base: str = None
     ):
         """
@@ -110,7 +107,6 @@ class AzureAPIConfiguration(APIConfiguration):
             base_url: The Azure API base URL.
             api_version: The Azure API version.
             deployment_id: The model deployment ID.
-            response_callback: A callback which is called when a response is received from the Azure API.
             api_base: (DEPRECATED) The Azure API base.
 
         """
@@ -129,7 +125,7 @@ class AzureAPIConfiguration(APIConfiguration):
 
         self.deployment_id = deployment_id
 
-        self._response_callback = response_callback
+        self.response_callback = lambda response: None
 
     def __call__(self):
         """
@@ -148,7 +144,7 @@ class AzureAPIConfiguration(APIConfiguration):
             default_headers={
                 'api-key': self.api_key
             },
-            http_client=httpx.Client(event_hooks={'response': [self._response_callback]}),
+            http_client=httpx.Client(event_hooks={'response': [self.response_callback]}),
         )
 
     def get_base_api_kwargs(self):
@@ -172,7 +168,6 @@ class AzureActiveDirectoryConfiguration:
             base_url: str,
             api_version: str = '2023-05-15',
             deployment_id: str = 'gpt-3.5-turbo',
-            response_callback: callable = lambda response: None,
             api_base: str = None
     ):
         """
@@ -185,7 +180,6 @@ class AzureActiveDirectoryConfiguration:
             base_url: The Azure Active Directory API base.
             api_version: The API version. https://learn.microsoft.com/en-us/azure/ai-services/openai/reference
             deployment_id: The model deployment ID
-            response_callback: A callback which is called when a response is received from the Azure Active Directory API.
             api_base: (DEPRECATED) The Azure Active Directory API base.
 
         """
@@ -202,7 +196,7 @@ class AzureActiveDirectoryConfiguration:
         self.api_version = api_version
         self.deployment_id = deployment_id
 
-        self._response_callback = response_callback
+        self.response_callback = lambda response: None
 
     def __call__(self):
         """
@@ -220,7 +214,7 @@ class AzureActiveDirectoryConfiguration:
         self.client = OpenAI(
             api_key=token.token,
             base_url=self.base_url,
-            http_client=httpx.Client(event_hooks={'response': [self._response_callback]}),
+            http_client=httpx.Client(event_hooks={'response': [self.response_callback]}),
             default_query={
                 'api-version': self.api_version
             }
