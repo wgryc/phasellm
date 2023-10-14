@@ -715,7 +715,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             Use OpenAI's API with api_config:
                 >>> from phasellm.configurations import OpenAIConfiguration
                 >>> llm = StreamingOpenAIGPTWrapper(api_config=OpenAIConfiguration(
-                ...     apikey="my-api-key",
+                ...     api_key="my-api-key",
                 ...     organization="my-org",
                 ...     model="gpt-3.5-turbo"
                 ... ))
@@ -723,9 +723,9 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             Use Azure's API:
                 >>> from phasellm.configurations import AzureAPIConfiguration
                 >>> llm = StreamingOpenAIGPTWrapper(api_config=AzureAPIConfiguration(
-                ...     apikey="azure_api_key",
-                ...     api_base='https://{your-resource-name}.openai.azure.com/',
-                ...     api_version='2023-05-15',
+                ...     api_key="azure_api_key",
+                ...     api_base='https://{your-resource-name}.openai.azure.com/openai/deployments/{your-deployment-id}',
+                ...     api_version='2023-08-01-preview',
                 ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
@@ -734,8 +734,8 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             Use Azure's API with Active Directory authentication:
                 >>> from phasellm.configurations import AzureActiveDirectoryConfiguration
                 >>> llm = StreamingOpenAIGPTWrapper(api_config=AzureActiveDirectoryConfiguration(
-                ...     api_base='https://{your-resource-name}.openai.azure.com/',
-                ...     api_version='2023-05-15',
+                ...     api_base='https://{your-resource-name}.openai.azure.com/openai/deployments/{your-deployment-id}',
+                ...     api_version='2023-08-01-preview',
                 ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
@@ -920,7 +920,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             Use OpenAI's API with api_config:
                 >>> from phasellm.configurations import OpenAIConfiguration
                 >>> llm = OpenAIGPTWrapper(api_config=OpenAIConfiguration(
-                ...     apikey="my-api-key",
+                ...     api_key="my-api-key",
                 ...     organization="my-org",
                 ...     model="gpt-3.5-turbo"
                 ... ))
@@ -928,9 +928,9 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             Use Azure's API:
                 >>> from phasellm.configurations import AzureAPIConfiguration
                 >>> llm = OpenAIGPTWrapper(api_config=AzureAPIConfiguration(
-                ...     apikey="azure_api_key",
-                ...     api_base='https://{your-resource-name}.openai.azure.com/',
-                ...     api_version='2023-05-15',
+                ...     api_key="azure_api_key",
+                ...     api_base='https://{your-resource-name}.openai.azure.com/openai/deployments/{your-deployment-id}',
+                ...     api_version='2023-08-01-preview',
                 ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
@@ -939,8 +939,8 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             Use Azure's API with Active Directory authentication:
                 >>> from phasellm.configurations import AzureActiveDirectoryConfiguration
                 >>> llm = OpenAIGPTWrapper(api_config=AzureActiveDirectoryConfiguration(
-                ...     api_base='https://{your-resource-name}.openai.azure.com/',
-                ...     api_version='2023-05-15',
+                ...     api_base='https://{your-resource-name}.openai.azure.com/openai/deployments/{your-deployment-id}',
+                ...     api_version='2023-08-01-preview',
                 ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
