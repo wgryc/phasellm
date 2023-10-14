@@ -760,7 +760,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             **kwargs
         )
 
-        if api_config and (apikey or model):
+        if api_config and apikey:
             warn("api_config takes precedence over apikey and model arguments.")
 
         if apikey:
@@ -956,7 +956,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
         """
         super().__init__(temperature=temperature, **kwargs)
 
-        if api_config and (apikey or model):
+        if api_config and apikey:
             warn("api_config takes precedence over apikey and model arguments.")
 
         if apikey:

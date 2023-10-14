@@ -111,6 +111,15 @@ class E2ETestOpenAIGPTWrapper(TestCase):
         ))
         test_complete_chat(self, fixture, verbose=False)
 
+    def test_complete_chat_azure_pre_openai_v1(self):
+        fixture = OpenAIGPTWrapper(api_config=AzureAPIConfiguration(
+            api_key=azure_api_key,
+            base_url=f'https://val-gpt4.openai.azure.com/gpt-4',
+            api_version='2023-05-15',
+            deployment_id='gpt-4'
+        ))
+        test_complete_chat(self, fixture, verbose=False)
+
     def test_complete_chat_kwargs(self):
         fixture = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo", temperature=0.9, frequency_penalty=2)
         test_complete_chat(self, fixture, verbose=False)

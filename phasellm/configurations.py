@@ -6,6 +6,8 @@ from openai import OpenAI
 
 from abc import ABC, abstractmethod
 
+from phasellm.utils import coerce_azure_base_url
+
 from azure.identity import DefaultAzureCredential
 
 
@@ -118,10 +120,12 @@ class AzureAPIConfiguration(APIConfiguration):
             warn('The api_base argument is deprecated. Use base_url instead.', DeprecationWarning)
 
         self.api_key = api_key
-        self.base_url = base_url
         self.api_version = api_version
+
+        self.base_url = base_url
         if api_base:
             self.base_url = api_base
+        self.base_url = coerce_azure_base_url(self.base_url)
 
         self.deployment_id = deployment_id
 
@@ -193,6 +197,7 @@ class AzureActiveDirectoryConfiguration:
         self.base_url = base_url
         if api_base:
             self.base_url = api_base
+        self.base_url = coerce_azure_base_url(self.base_url)
 
         self.api_version = api_version
         self.deployment_id = deployment_id
