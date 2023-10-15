@@ -1,0 +1,68 @@
+{% extends 'base-navigation.html' %}
+
+{% block bodycontent %}
+
+{% if jobs %}
+
+{% for job in jobs %}
+
+<div class="job_info_container">
+    <div>
+        <p class="jobtitle">{{ job.title }}
+            {% if job.status == "complete" %}
+            <span class="tag-label-green">complete</span>
+            {% elif job.status == "scheduled" %}
+            <span class="tag-label-blue">scheduled</span>
+            {% endif %}
+        </p>
+        {% if job.description %}
+        <p class="jobdescription">{{ job.description }}</p>
+        {% else %}
+        <p class="jobdescription"><i>No Description Provided</i></p>
+        {% endif %}
+    </div>
+    <div>
+        <p class="jobtitle">Input Chats</p>
+        {% if job.message_collection_ref %}
+        <ul>
+            {% for chat in job.message_collection_ref.chats.all %}
+            <li><a href='/view_chat/{{ chat.id }}'>{{ chat.title }}</a></li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p><i>No input chats.</i></p>
+        {% endif %}
+    </div>
+    <div>
+        <p class="jobtitle">Generated Chats</p>
+        {% if job.results_array %}
+        <ul>
+            {% for chat in job.results_array.chats.all %}
+            <li><a href='/view_chat/{{ chat.id }}'>{{ chat.title }}</a></li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p><i>No output chats (yet).</i></p>
+        {% endif %}
+    </div>
+</div>
+
+{% endfor %}
+
+{% else %}
+<p><i>No jobs created yet.</i></p>
+
+<p>&nbsp;</p>
+
+<p>If this is your first time using the <i>Evaluation</i> platform, try doing the following!<br />&nbsp;
+<ul>
+    <li>Create a New Chat &mdash; <a href="/view_chat">click here</a> to launch the editor.</li>
+    <li>Create a <i>group</i> of chats &mdash; this will be used for batch jobs. <a href="/groups">Click here</a> to
+        give it a shot.</li>
+    <li>Finally, create a batch job &mdash; <a href="/jobs">click here</a> to do so.</li>
+    <li>Once you've done the above, make sure to run the Django command 'runjobs' and you're good to go!</li>
+</ul>
+</p>
+{% endif %}
+
+{% endblock %}

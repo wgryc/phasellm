@@ -35,6 +35,7 @@ class MessageCollection(models.Model):
     # Note: we should use an ArrayField or JSONField or a ManyToManyField if we scale this up.
     # However, to keep things very simple and supportable in SQLite, we'll assume the chat_ids are in a comma-separated string for now. We'll do some basic validation when saving via the front-end.
     chat_ids = models.TextField(default="", null=True, blank=True)
+    chats = models.ManyToManyField(ChatBotMessageArray, blank=True)
 
     # We can save source collections in cases where we have batch jobs run.
     source_collection_id = models.IntegerField(null=True, blank=True)
@@ -49,9 +50,20 @@ class BatchLLMJob(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     title = models.TextField(default="", null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
     message_collection_id = models.IntegerField()
-    user_message = models.TextField(default="", null=True, blank=True)
-    new_system_prompt = models.TextField(default="", null=True, blank=True)
+    message_collection_ref = models.ForeignKey(
+        MessageCollection,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="source_messages_collection",
+    )
+    results_array = models.ForeignKey(
+        MessageCollection,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="results_collection",
+    )
 
     # scheduled, complete
     status = models.TextField(default="scheduled", null=True, blank=True)
@@ -60,6 +72,11 @@ class BatchLLMJob(models.Model):
     # settings
     # By default we only run the LLM on GPT-4 with a user message. The
     # settings below let you do other things.
+
+    # Messages
+    user_message = models.TextField(default="", null=True, blank=True)
+    new_system_prompt = models.TextField(default="", null=True, blank=True)
+    resend_last_user_message = models.BooleanField(default=False)
 
     # Repeat the run 'n' times
     run_n_times = models.IntegerField(default=1)

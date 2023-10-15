@@ -22,6 +22,40 @@ b {
     font-weight: 900;
 }
 
+ul {
+    margin-left: var(--standard-margin-spacing-text);
+}
+
+a {
+    text-decoration: none;
+    color: #4682B4;
+    font-weight: 500;
+}
+
+/**
+ * TWO COLUMN CONTAINER TEST
+ */
+
+.two-col-content-container {
+    display: grid;
+    grid-template-columns: 50% 1fr;
+    column-gap: calc(3*var(--internal-standard-padding));
+    height: 100%;
+    overflow: hidden;
+}
+
+.two-col-content-left {
+    background-color: white;
+    overflow: auto;
+    padding: calc(2*var(--internal-standard-padding));
+}
+
+.two-col-content-right {
+    background-color: white;
+    overflow: auto;
+    padding: calc(2*var(--internal-standard-padding));
+}
+
 /**
  * TWO ROW CONTAINER TEST
  */
@@ -66,6 +100,15 @@ b {
     font-weight: 300;
     letter-spacing: 1px;
     display: block;
+}
+
+#navlogo_sub {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    display: block;
+    color: gray;
 }
 
 .navlink {
@@ -117,4 +160,54 @@ textarea,
 
 .error_message {
     color: crimson;
+}
+
+.job_info_container {
+    padding: calc(2*var(--internal-standard-padding));
+    border-radius: var(--standard-border-radius);
+    background-color: var(--lightgray-borders-backgrounds);
+    margin: var(--internal-standard-padding) 0 var(--internal-standard-padding) 0;
+    display: grid;
+    grid-template-columns: 33% 33% 1fr;
+}
+
+.job_info_container div {
+    margin-right: var(--internal-standard-padding);
+}
+
+.jobtitle {
+    font-weight: 900;
+    margin: calc(2*var(--internal-standard-padding)) 0 calc(2*var(--internal-standard-padding)) 0;
+}
+
+.general-list-container {
+    padding: calc(2*var(--internal-standard-padding));
+    border-radius: var(--standard-border-radius);
+    background-color: var(--lightgray-borders-backgrounds);
+    margin: var(--internal-standard-padding) 0 var(--internal-standard-padding) 0;
+}
+
+.tag-label-green {
+    display: inline-block;
+    padding: var(--internal-standard-padding);
+    border-radius: var(--standard-border-radius);
+    background-color: #2E8B57;
+    color: white;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.tag-label-blue {
+    display: inline-block;
+    padding: var(--internal-standard-padding);
+    border-radius: var(--standard-border-radius);
+    background-color: #4682B4;
+    color: white;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.delete-icon {
+    margin: 0 var(--internal-standard-padding) 0 var(--internal-standard-padding);
+    cursor: pointer;
 }
