@@ -7,6 +7,9 @@ Example use cases:
 - Run messages across different models (e.g., GPT-4 and GPT-3.5) to see performance differences.
 - Replace or update system prompts across multiple chats to see if they have an impact on responses.
 
+[5-minute demo below:](https://www.youtube.com/watch?v=Ycu2eKkCO7Y)
+[![PhaseLLM Evaluation screenshot](screenshot.png)](https://www.youtube.com/watch?v=Ycu2eKkCO7Y)
+
 ## Installation and Running
 
 Please follow the step below to run *PhaseLLM Evaluation*.
