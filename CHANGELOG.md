@@ -2,6 +2,17 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.18 (2023-10-16)
+
+### New Features
+
+- `PhaseLLM Evaluations` project, a Django-powered front-end for evaluating LLMs and running batch jobs
+- Added phasellm.html.chatbotToJson() function to enable easy exporting of chatbot messages to JSON
+
+### Fixes
+
+_None._
+
 # 0.0.17 (2023-08-19)
 
 ### New Features
