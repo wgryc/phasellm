@@ -1,6 +1,6 @@
 from phasellm.configurations import OpenAIConfiguration, AzureAPIConfiguration, AzureActiveDirectoryConfiguration
 
-from typing import Union, Literal, Optional
+from typing import Union, Literal
 
 CLAUDE_MODEL = Union[
     str,
