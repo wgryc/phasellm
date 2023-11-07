@@ -15,7 +15,7 @@ setup(
         "Flask>=2.0.0",
         "requests>=2.24.0",
         "httpx>=0.25.0",
-        "openai==1.0.0rc3",
+        "openai>=1.1.0",
         "cohere>=4.0.0",
         "python-dotenv",
         "pandas>=2.0.0",
