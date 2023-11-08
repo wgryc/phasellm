@@ -4,6 +4,8 @@ Abstract classes and wrappers for LLMs, chatbots, and prompts.
 import re
 import time
 import json
+
+import httpx
 import requests
 
 # Typing imports
@@ -22,7 +24,6 @@ from datetime import datetime
 from sseclient import SSEClient
 
 # Imports for external APIs
-import openai
 import cohere
 
 # Precompiled regex for variables.
@@ -205,6 +206,8 @@ class LanguageModelWrapper(ABC):
         "You are speaking to the 'user' below and will respond at the end, where it says 'assistant'.\n"
     )
 
+    _last_response_header: Optional[dict] = None
+
     def __init__(self, temperature: Optional[float] = None, **kwargs: Any):
         """
         Abstract Class for interacting with large language models.
@@ -220,8 +223,33 @@ class LanguageModelWrapper(ABC):
     def __repr__(self):
         pass
 
+    @property
+    def last_response_header(self) -> Optional[dict]:
+        """
+        Returns the last response header from the LLM API.
+
+        Returns:
+            A dictionary containing the last response header.
+        """
+        return self._last_response_header
+
+    @last_response_header.setter
+    def last_response_header(self, header: dict) -> None:
+        """
+        Sets the last_response_header property.
+
+        Returns:
+
+        """
+        self._last_response_header = header
+
     @abstractmethod
-    def complete_chat(self, messages: List[Message], append_role: Optional[str] = None) -> Union[str, Generator]:
+    def complete_chat(
+            self,
+            messages: List[Message],
+            append_role: Optional[str] = None,
+            prepend_role: Optional[str] = None
+    ) -> Union[str, Generator]:
         """
         Takes an array of messages in the form {"role": <str>, "content":<str>} and generate a response.
 
@@ -230,6 +258,7 @@ class LanguageModelWrapper(ABC):
         Args:
             messages: The messages to generate a response from.
             append_role: The role to append to the end of the prompt.
+            prepend_role: The role to prepend to the beginning of the prompt.
 
         Returns:
             The chat completion string or generator, depending on if the class is implemented as a streaming language
@@ -256,6 +285,7 @@ class LanguageModelWrapper(ABC):
     def prep_prompt_from_messages(
             self,
             messages: List[Message] = None,
+            prepend_role: Optional[str] = None,
             append_role: Optional[str] = None,
             include_preamble: Optional[bool] = False
     ) -> str:
@@ -264,6 +294,7 @@ class LanguageModelWrapper(ABC):
 
         Args:
             messages: The messages to prepare the prompt from.
+            prepend_role: The role to prepend to the beginning of the prompt.
             append_role: The role to append to the end of the prompt.
             include_preamble: Whether to include the chat completion preamble.
 
@@ -274,16 +305,45 @@ class LanguageModelWrapper(ABC):
         # Convert the messages to a prompt.
         prompt_text = _clean_messages_to_prompt(messages)
 
+        # Prepend the role, if provided.
+        if prepend_role:
+            prompt_text = f"\n\n{prepend_role}: {prompt_text}"
+
         # Add the preamble, if requested.
         if include_preamble:
             prompt_text = self.chat_completion_preamble + prompt_text
 
         # Append the role, if provided.
-        if append_role is not None and len(append_role) > 0:
-            prompt_text += f"\n{append_role}:"
+        if append_role:
+            prompt_text = f"{prompt_text}\n\n{append_role}:"
 
         # Remove whitespace from before and after prompt.
         return prompt_text.strip()
+
+    @staticmethod
+    def prep_prompt(prompt: str, prepend_role: Optional[str] = None, append_role: Optional[str] = None) -> str:
+        """
+        Prepares the prompt for an LLM API call.
+
+        Args:
+            prompt: The prompt to prepare.
+            prepend_role: The role to prepend to the beginning of the prompt.
+            append_role: The role to append to the end of the prompt.
+
+        Returns:
+            The prepared prompt.
+
+        """
+        # Prepend the role, if provided.
+        if prepend_role:
+            prompt = f"{prepend_role}: {prompt}"
+
+        # Append the role, if provided.
+        if append_role:
+            prompt = f"{prompt}\n\n{append_role}:"
+
+        # Remove whitespace from before and after prompt.
+        return prompt.strip()
 
     def _prep_common_kwargs(self, api_config: Optional[OPENAI_API_CONFIG] = None):
         """
@@ -481,19 +541,24 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
         if self.temperature is not None:
             payload["temperature"] = self.temperature
 
-        response = requests.post(self.model_url, headers=headers, json=payload).json()
+        response = requests.post(self.model_url, headers=headers, json=payload)
+
+        self.last_response_header = response.headers
+
+        response_json = response.json()
         return _remove_prompt_from_completion(
             prompt=prompt,
-            completion=response[0]['generated_text']
+            completion=response_json[0]['generated_text']
         )
 
-    def complete_chat(self, messages: List[Message], append_role: str = None) -> str:
+    def complete_chat(self, messages: List[Message], append_role: str = None, prepend_role: str = None) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
 
         Args:
             messages: The messages to generate a chat completion from.
             append_role: The role to append to the end of the prompt.
+            prepend_role: The role to prepend to the beginning of the prompt.
 
         Returns:
             The chat completion.
@@ -502,6 +567,7 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
 
         prompt = self.prep_prompt_from_messages(
             messages=messages,
+            prepend_role=prepend_role,
             append_role=append_role,
             include_preamble=True
         )
@@ -567,19 +633,24 @@ class BloomWrapper(LanguageModelWrapper):
         if self.temperature is not None:
             payload["temperature"] = self.temperature
 
-        response = requests.post(self.API_URL, headers=headers, json=payload).json()
+        response = requests.post(self.API_URL, headers=headers, json=payload)
+
+        self.last_response_header = response.headers
+
+        response_json = response.json()
         return _remove_prompt_from_completion(
             prompt=prompt,
-            completion=response[0]['generated_text']
+            completion=response_json[0]['generated_text']
         )
 
-    def complete_chat(self, messages: List[Message], append_role: str = None) -> str:
+    def complete_chat(self, messages: List[Message], append_role: str = None, prepend_role: str = None) -> str:
         """
         Mimics a chat scenario with BLOOM, via a list of {"role": <str>, "content":<str>} objects.
 
         Args:
             messages: The messages to generate a chat completion from.
             append_role: The role to append to the end of the prompt.
+            prepend_role: The role to prepend to the beginning of the prompt.
 
         Returns:
             The chat completion.
@@ -588,6 +659,7 @@ class BloomWrapper(LanguageModelWrapper):
 
         prompt = self.prep_prompt_from_messages(
             messages=messages,
+            prepend_role=prepend_role,
             append_role=append_role,
             include_preamble=True
         )
@@ -643,7 +715,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             Use OpenAI's API with api_config:
                 >>> from phasellm.configurations import OpenAIConfiguration
                 >>> llm = StreamingOpenAIGPTWrapper(api_config=OpenAIConfiguration(
-                ...     apikey="my-api-key",
+                ...     api_key="my-api-key",
                 ...     organization="my-org",
                 ...     model="gpt-3.5-turbo"
                 ... ))
@@ -651,8 +723,8 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             Use Azure's API:
                 >>> from phasellm.configurations import AzureAPIConfiguration
                 >>> llm = StreamingOpenAIGPTWrapper(api_config=AzureAPIConfiguration(
-                ...     apikey="azure_api_key",
-                ...     api_base='https://{your-resource-name}.openai.azure.com/',
+                ...     api_key="azure_api_key",
+                ...     api_base='https://{your-resource-name}.openai.azure.com/openai/deployments/{your-deployment-id}',
                 ...     api_version='2023-05-15',
                 ...     deployment_id='your-deployment-id'
                 ... ))
@@ -662,7 +734,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             Use Azure's API with Active Directory authentication:
                 >>> from phasellm.configurations import AzureActiveDirectoryConfiguration
                 >>> llm = StreamingOpenAIGPTWrapper(api_config=AzureActiveDirectoryConfiguration(
-                ...     api_base='https://{your-resource-name}.openai.azure.com/',
+                ...     api_base='https://{your-resource-name}.openai.azure.com/openai/deployments/{your-deployment-id}',
                 ...     api_version='2023-05-15',
                 ...     deployment_id='your-deployment-id'
                 ... ))
@@ -688,16 +760,21 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             **kwargs
         )
 
-        if api_config and (apikey or model):
+        if api_config and apikey:
             warn("api_config takes precedence over apikey and model arguments.")
 
         if apikey:
-            self.api_config = OpenAIConfiguration(api_key=apikey, model=model)
+            self.api_config = OpenAIConfiguration(
+                api_key=apikey,
+                model=model
+            )
         if api_config:
             self.api_config = api_config
 
         if not hasattr(self, 'api_config'):
             raise Exception('Must pass apikey or api_config. If using kwargs, check capitalization.')
+
+        self.api_config.response_callback = self._set_last_response_header
 
         # Activate the configuration
         self.api_config()
@@ -705,7 +782,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
     def __repr__(self):
         return f"StreamingOpenAIGPTWrapper(model={self.api_config.model})"
 
-    def _yield_response(self, response: dict) -> Generator:
+    def _yield_response(self, response) -> Generator:
         """
         Yields the response content. Can handle multiple API versions.
 
@@ -718,18 +795,20 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
         """
         for chunk in response:
             text = None
-            if "text" in chunk["choices"][0]:
-                text = chunk["choices"][0]["text"]
-            elif "delta" in chunk["choices"][0] and "text" in chunk["choices"][0]["delta"]:
-                text = chunk["choices"][0]["delta"]["text"]
-            elif "delta" in chunk["choices"][0] and "content" in chunk["choices"][0]["delta"]:
-                text = chunk["choices"][0]["delta"]["content"]
+            if not chunk.choices:
+                text = ''
+            elif hasattr(chunk.choices[0], 'text'):
+                text = chunk.choices[0].text
+            elif hasattr(chunk.choices[0], 'delta') and hasattr(chunk.choices[0].delta, 'text'):
+                text = chunk.choices[0].delta.text
+            elif hasattr(chunk.choices[0], 'delta') and hasattr(chunk.choices[0].delta, 'content'):
+                text = chunk.choices[0].delta.content
             if text:
                 yield _conditional_format_sse_response(content=text, format_sse=self.format_sse)
         if self.format_sse and self.append_stop_token:
             yield _format_sse(content=self.stop_token)
 
-    def complete_chat(self, messages: List[Message], append_role: str = None) -> Generator:
+    def complete_chat(self, messages: List[Message], append_role: str = None, prepend_role: str = None) -> Generator:
         """
         Completes chat with OpenAI. If using GPT 3.5 or 4, will simply send the list of {"role": <str>, "content":<str>}
         objects to the API.
@@ -741,6 +820,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
         Args:
             messages: The messages to generate a chat completion from.
             append_role: The role to append to the end of the prompt.
+            prepend_role: The role to prepend to the beginning of the prompt.
 
         Returns:
             The chat completion generator.
@@ -752,17 +832,18 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
 
         if ('gpt-4' in self.api_config.model) or ('gpt-3.5' in self.api_config.model):
             kwargs["messages"] = messages
-            response = openai.ChatCompletion.create(**kwargs)
+            response = self.api_config.client.chat.completions.create(**kwargs)
             yield from self._yield_response(response)
         else:
             prompt_text = self.prep_prompt_from_messages(
                 messages=messages,
+                prepend_role=prepend_role,
                 append_role=append_role,
                 include_preamble=False
             )
             kwargs["prompt"] = prompt_text
             kwargs["stop"] = _get_stop_sequences_from_messages(messages)
-            response = openai.Completion.create(**kwargs)
+            response = self.api_config.client.completions.create(**kwargs)
             yield from self._yield_response(response)
 
     # TODO Consider error handling for chat models.
@@ -791,9 +872,22 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
         if stop_sequences:
             kwargs["stop"] = stop_sequences
 
-        response = openai.Completion.create(**kwargs)
+        response = self.api_config.client.completions.create(**kwargs)
 
         yield from self._yield_response(response)
+
+    def _set_last_response_header(self, response: httpx.Response) -> None:
+        """
+        Sets the last response header.
+
+        Args:
+            response: The response to set the last response header from.
+
+        Returns:
+            None
+
+        """
+        self.last_response_header = response.headers
 
 
 class OpenAIGPTWrapper(LanguageModelWrapper):
@@ -827,7 +921,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             Use OpenAI's API with api_config:
                 >>> from phasellm.configurations import OpenAIConfiguration
                 >>> llm = OpenAIGPTWrapper(api_config=OpenAIConfiguration(
-                ...     apikey="my-api-key",
+                ...     api_key="my-api-key",
                 ...     organization="my-org",
                 ...     model="gpt-3.5-turbo"
                 ... ))
@@ -835,9 +929,9 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             Use Azure's API:
                 >>> from phasellm.configurations import AzureAPIConfiguration
                 >>> llm = OpenAIGPTWrapper(api_config=AzureAPIConfiguration(
-                ...     apikey="azure_api_key",
-                ...     api_base='https://{your-resource-name}.openai.azure.com/',
-                ...     api_version='2023-05-15',
+                ...     api_key="azure_api_key",
+                ...     api_base='https://{your-resource-name}.openai.azure.com/openai/deployments/{your-deployment-id}',
+                ...     api_version='2023-08-01-preview',
                 ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
@@ -846,8 +940,8 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             Use Azure's API with Active Directory authentication:
                 >>> from phasellm.configurations import AzureActiveDirectoryConfiguration
                 >>> llm = OpenAIGPTWrapper(api_config=AzureActiveDirectoryConfiguration(
-                ...     api_base='https://{your-resource-name}.openai.azure.com/',
-                ...     api_version='2023-05-15',
+                ...     api_base='https://{your-resource-name}.openai.azure.com/openai/deployments/{your-deployment-id}',
+                ...     api_version='2023-08-01-preview',
                 ...     deployment_id='your-deployment-id'
                 ... ))
                 >>> llm.text_completion(prompt="Hello, my name is")
@@ -863,16 +957,21 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
         """
         super().__init__(temperature=temperature, **kwargs)
 
-        if api_config and (apikey or model):
+        if api_config and apikey:
             warn("api_config takes precedence over apikey and model arguments.")
 
         if apikey:
-            self.api_config = OpenAIConfiguration(api_key=apikey, model=model)
+            self.api_config = OpenAIConfiguration(
+                api_key=apikey,
+                model=model
+            )
         if api_config:
             self.api_config = api_config
 
         if not hasattr(self, 'api_config'):
             raise Exception('Must pass apikey or api_config. If using kwargs, check capitalization.')
+
+        self.api_config.response_callback = self._set_last_response_header
 
         # Activate the configuration
         self.api_config()
@@ -880,7 +979,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
     def __repr__(self):
         return f"OpenAIGPTWrapper(model={self.api_config.model})"
 
-    def complete_chat(self, messages: List[Message], append_role: str = None) -> str:
+    def complete_chat(self, messages: List[Message], append_role: str = None, prepend_role: str = None) -> str:
         """
         Completes chat with OpenAI. If using GPT 3.5 or 4, will simply send the list of {"role": <str>, "content":<str>}
         objects to the API.
@@ -890,6 +989,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
         Args:
             messages: The messages to generate a chat completion from.
             append_role: The role to append to the end of the prompt.
+            prepend_role: The role to prepend to the beginning of the prompt.
 
         Returns:
             The chat completion.
@@ -899,17 +999,18 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
 
         if ('gpt-4' in self.api_config.model) or ('gpt-3.5' in self.api_config.model):
             kwargs["messages"] = messages
-            response = openai.ChatCompletion.create(**kwargs)
-            return response['choices'][0]['message']['content']
+            response = self.api_config.client.chat.completions.create(**kwargs)
+            return response.choices[0].message.content
         else:
             prompt_text = self.prep_prompt_from_messages(
                 messages=messages,
+                prepend_role=prepend_role,
                 append_role=append_role,
                 include_preamble=False
             )
             kwargs["prompt"] = prompt_text
-            response = openai.Completion.create(**kwargs)
-            return response['choices'][0]['text']
+            response = self.api_config.client.completions.create(**kwargs)
+            return response.choices[0].text
 
     # TODO Consider error handling for chat models.
     def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> str:
@@ -927,14 +1028,27 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
 
         kwargs = self._prep_common_kwargs(self.api_config)
 
-        kwargs['prompt'] = prompt
+        kwargs['prompt'] = self.prep_prompt(prompt=prompt)
 
         if stop_sequences:
             kwargs["stop"] = stop_sequences
 
-        response = openai.Completion.create(**kwargs)
+        response = self.api_config.client.completions.create(**kwargs)
 
-        return response['choices'][0]['text']
+        return response.choices[0].text
+
+    def _set_last_response_header(self, response: httpx.Response) -> None:
+        """
+        Sets the last response header.
+
+        Args:
+            response: The response to set the last response header from.
+
+        Returns:
+            None
+
+        """
+        self.last_response_header = response.headers
 
 
 class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
@@ -998,7 +1112,8 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
         # https://docs.anthropic.com/claude/reference/complete_post
         headers = {
             "X-API-Key": self.apikey,
-            "Accept": "text/event-stream"
+            "Accept": "text/event-stream",
+            "anthropic-version": self.anthropic_version
         }
 
         kwargs = self._prep_common_kwargs()
@@ -1013,13 +1128,21 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
         }
 
         resp = requests.post(self.API_URL, headers=headers, json=kwargs, stream=True)
+
+        self.last_response_header = resp.headers
+
         client = SSEClient(resp)
 
         strip_index = 0
         for event in client.events():
-            if event.data != "[DONE]":
+            if event.data and event.data != "[DONE]":
                 # Load the data as JSON
-                completion = json.loads(event.data)["completion"]
+                data = json.loads(event.data)
+
+                # Extract the completion if it is present.
+                completion = ''
+                if "completion" in data:
+                    completion = data["completion"]
 
                 # Anthropic's old API returns completions inclusive of previous chunks, so we need to strip them out.
                 if self.anthropic_version == "2023-01-01":
@@ -1031,22 +1154,35 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
         if self.format_sse and self.append_stop_token:
             yield _format_sse(content=self.stop_token)
 
-    def complete_chat(self, messages: List[Message], append_role: str = "Assistant:") -> Generator:
+    def complete_chat(
+            self,
+            messages: List[Message],
+            append_role: str = "Assistant",
+            prepend_role: str = "Human"
+    ) -> Generator:
         """
-        Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via the a
+        Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via a
         prompt.
 
         Args:
             messages: The messages to generate a chat completion from.
             append_role: The role to append to the end of the prompt. Defaults to "Assistant:".
+            prepend_role: The role to prepend to the beginning of the prompt. Defaults to "Human:".
 
         Returns:
             The chat completion generator.
 
         """
+        if prepend_role != "Human":
+            warn("ClaudeWrapper only supports Human as the prepend_role. Ignoring.")
+            prepend_role = "Human"
+        if append_role != "Assistant":
+            warn("ClaudeWrapper only supports Assistant as the append_role. Ignoring.")
+            append_role = "Assistant"
 
         prompt_text = self.prep_prompt_from_messages(
             messages=messages,
+            prepend_role=prepend_role,
             append_role=append_role,
             include_preamble=False
         )
@@ -1073,6 +1209,8 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
 
         if stop_sequences is None:
             stop_sequences = []
+
+        prompt = self.prep_prompt(prompt=prompt, prepend_role="Human", append_role="Assistant")
 
         return self._call_model(
             prompt=prompt,
@@ -1145,24 +1283,39 @@ class ClaudeWrapper(LanguageModelWrapper):
 
         resp = requests.post("https://api.anthropic.com/v1/complete", headers=headers, json=kwargs)
 
+        self.last_response_header = resp.headers
+
         return json.loads(resp.text)["completion"].strip()
 
-    def complete_chat(self, messages: List[Message], append_role: str = "Assistant:") -> str:
+    def complete_chat(
+            self,
+            messages: List[Message],
+            append_role: str = "Assistant",
+            prepend_role: str = "Human"
+    ) -> str:
         """
-        Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via the a
+        Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via a
         prompt.
 
         Args:
             messages: The messages to generate a chat completion from.
             append_role: The role to append to the end of the prompt. Defaults to "Assistant:".
+            prepend_role: The role to prepend to the beginning of the prompt. Defaults to "Human:".
 
         Returns:
             The chat completion.
 
         """
+        if prepend_role != "Human":
+            warn("ClaudeWrapper only supports Human as the prepend_role. Ignoring.")
+            prepend_role = "Human"
+        if append_role != "Assistant":
+            warn("ClaudeWrapper only supports Assistant as the append_role. Ignoring.")
+            append_role = "Assistant"
 
         prompt_text = self.prep_prompt_from_messages(
             messages=messages,
+            prepend_role=prepend_role,
             append_role=append_role,
             include_preamble=False
         )
@@ -1184,6 +1337,8 @@ class ClaudeWrapper(LanguageModelWrapper):
 
         if stop_sequences is None:
             stop_sequences = []
+
+        prompt = self.prep_prompt(prompt=prompt, prepend_role="Human", append_role="Assistant")
 
         return self._call_model(prompt, stop_sequences)
 
@@ -1239,7 +1394,13 @@ class GPT2Wrapper(LanguageModelWrapper):
 
         return _remove_prompt_from_completion(prompt, res[0]['generated_text'])
 
-    def complete_chat(self, messages: List[Message], append_role: str = None, max_length: int = 300) -> str:
+    def complete_chat(
+            self,
+            messages: List[Message],
+            append_role: str = None,
+            max_length: int = 300,
+            prepend_role: str = None
+    ) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
 
@@ -1247,6 +1408,7 @@ class GPT2Wrapper(LanguageModelWrapper):
             messages: The messages to generate a chat completion from.
             append_role: The role to append to the end of the prompt. Defaults to None.
             max_length: The maximum length of the completion. Defaults to 300.
+            prepend_role: The role to prepend to the beginning of the prompt. Defaults to None.
 
         Returns:
             The chat completion.
@@ -1255,6 +1417,7 @@ class GPT2Wrapper(LanguageModelWrapper):
 
         prompt = self.prep_prompt_from_messages(
             messages=messages,
+            prepend_role=prepend_role,
             append_role=append_role,
             include_preamble=True
         )
@@ -1272,6 +1435,8 @@ class GPT2Wrapper(LanguageModelWrapper):
             The text completion.
 
         """
+        prompt = self.prep_prompt(prompt=prompt)
+
         return self._call_model(prompt=prompt, max_length=max_length)
 
 
@@ -1329,13 +1494,14 @@ class DollyWrapper(LanguageModelWrapper):
 
         return _remove_prompt_from_completion(prompt, res[0]['generated_text'])
 
-    def complete_chat(self, messages: List[Message], append_role: str = None) -> str:
+    def complete_chat(self, messages: List[Message], append_role: str = None, prepend_role: str = None) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
 
         Args:
             messages: The messages to generate a chat completion from.
             append_role: The role to append to the end of the prompt. Defaults to None.
+            prepend_role: The role to prepend to the beginning of the prompt. Defaults to None.
 
         Returns:
             The chat completion.
@@ -1344,6 +1510,7 @@ class DollyWrapper(LanguageModelWrapper):
 
         prompt = self.prep_prompt_from_messages(
             messages=messages,
+            prepend_role=prepend_role,
             append_role=append_role,
             include_preamble=True
         )
@@ -1360,6 +1527,8 @@ class DollyWrapper(LanguageModelWrapper):
             The text completion.
 
         """
+        prompt = self.prep_prompt(prompt=prompt)
+
         return self._call_model(prompt=prompt)
 
 
@@ -1409,13 +1578,14 @@ class CohereWrapper(LanguageModelWrapper):
 
         return response.generations[0].text
 
-    def complete_chat(self, messages: List[Message], append_role: str = None) -> str:
+    def complete_chat(self, messages: List[Message], append_role: str = None, prepend_role: str = None) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
 
         Args:
             messages: The messages to generate a chat completion from.
             append_role: The role to append to the end of the prompt. Defaults to None.
+            prepend_role: The role to prepend to the beginning of the prompt. Defaults to None.
 
         Returns:
             The chat completion.
@@ -1424,6 +1594,7 @@ class CohereWrapper(LanguageModelWrapper):
 
         prompt_text = self.prep_prompt_from_messages(
             messages=messages,
+            prepend_role=prepend_role,
             append_role=append_role,
             include_preamble=False
         )
@@ -1451,6 +1622,8 @@ class CohereWrapper(LanguageModelWrapper):
 
         if stop_sequences is None:
             stop_sequences = []
+
+        prompt = self.prep_prompt(prompt=prompt)
 
         return self._call_model(prompt=prompt, stop_sequences=stop_sequences)
 
@@ -1576,7 +1749,7 @@ class ChatBot:
             m_copy = {"role": m["role"], "content": m["content"]}
             clean_messages.append(m_copy)
 
-        response = self.llm.complete_chat(clean_messages, append_role='assistant')
+        response = self.llm.complete_chat(clean_messages, append_role='Assistant')
 
         if isinstance(response, Generator):
             return self._streaming_response(response=response, start_time=start_time)

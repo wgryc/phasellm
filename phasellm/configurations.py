@@ -1,8 +1,12 @@
-import openai
+import httpx
 
-from importlib import reload
+from warnings import warn
+
+from openai import OpenAI
 
 from abc import ABC, abstractmethod
+
+from phasellm.utils import coerce_azure_base_url
 
 from azure.identity import DefaultAzureCredential
 
@@ -56,6 +60,8 @@ class OpenAIConfiguration(APIConfiguration):
         self.api_key = api_key
         self.organization = organization
 
+        self.response_callback = lambda response: None
+
     def __call__(self):
         """
         Calls the OpenAI API configuration to initialize the OpenAI API.
@@ -63,12 +69,11 @@ class OpenAIConfiguration(APIConfiguration):
         Returns:
 
         """
-        # Reset the OpenAI API configuration.
-        reload(openai)
-
-        # Set the OpenAI API configuration.
-        openai.api_key = self.api_key
-        openai.organization = self.organization
+        self.client = OpenAI(
+            http_client=httpx.Client(event_hooks={'response': [self.response_callback]}),
+            api_key=self.api_key,
+            organization=self.organization
+        )
 
     def get_base_api_kwargs(self):
         """
@@ -89,27 +94,38 @@ class AzureAPIConfiguration(APIConfiguration):
     def __init__(
             self,
             api_key: str,
-            api_base: str,
+            base_url: str = None,
             api_version: str = '2023-05-15',
-            deployment_id: str = 'gpt-3.5-turbo'
+            deployment_id: str = 'gpt-3.5-turbo',
+            api_base: str = None
     ):
         """
         Initializes the Azure API configuration.
 
         Args:
             api_key: The Azure API key.
-            api_base: The Azure API base.
+            base_url: The Azure API base URL.
             api_version: The Azure API version.
             deployment_id: The model deployment ID.
+            api_base: (DEPRECATED) The Azure API base.
 
         """
         super().__init__(model=deployment_id)
 
+        if api_base:
+            warn('The api_base argument is deprecated. Use base_url instead.', DeprecationWarning)
+
         self.api_key = api_key
-        self.api_base = api_base
         self.api_version = api_version
 
+        self.base_url = base_url
+        if api_base:
+            self.base_url = api_base
+        self.base_url = coerce_azure_base_url(self.base_url)
+
         self.deployment_id = deployment_id
+
+        self.response_callback = lambda response: None
 
     def __call__(self):
         """
@@ -119,13 +135,17 @@ class AzureAPIConfiguration(APIConfiguration):
 
         """
         # Reset the OpenAI API configuration.
-        reload(openai)
-
-        # Set the OpenAI API configuration.
-        openai.api_key = self.api_key
-        openai.api_type = self.name
-        openai.api_base = self.api_base
-        openai.api_version = self.api_version
+        self.client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            default_query={
+                'api-version': self.api_version
+            },
+            default_headers={
+                'api-key': self.api_key
+            },
+            http_client=httpx.Client(event_hooks={'response': [self.response_callback]}),
+        )
 
     def get_base_api_kwargs(self):
         """
@@ -136,7 +156,7 @@ class AzureAPIConfiguration(APIConfiguration):
 
         """
         return {
-            'deployment_id': self.deployment_id
+            'model': self.deployment_id
         }
 
 
@@ -145,9 +165,10 @@ class AzureActiveDirectoryConfiguration:
 
     def __init__(
             self,
-            api_base: str,
+            base_url: str,
             api_version: str = '2023-05-15',
-            deployment_id: str = 'gpt-3.5-turbo'
+            deployment_id: str = 'gpt-3.5-turbo',
+            api_base: str = None
     ):
         """
         Initializes the Azure Active Directory API configuration.
@@ -156,17 +177,26 @@ class AzureActiveDirectoryConfiguration:
         https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/switching-endpoints#azure-active-directory-authentication
 
         Args:
-            api_base: The Azure Active Directory API base.
+            base_url: The Azure Active Directory API base.
             api_version: The API version. https://learn.microsoft.com/en-us/azure/ai-services/openai/reference
             deployment_id: The model deployment ID
+            api_base: (DEPRECATED) The Azure Active Directory API base.
 
         """
         super().__init__(model=deployment_id)
 
-        self.api_base = api_base
-        self.api_version = api_version
+        if api_base:
+            warn('The api_base argument is deprecated. Use base_url instead.', DeprecationWarning)
 
+        self.base_url = base_url
+        if api_base:
+            self.base_url = api_base
+        self.base_url = coerce_azure_base_url(self.base_url)
+
+        self.api_version = api_version
         self.deployment_id = deployment_id
+
+        self.response_callback = lambda response: None
 
     def __call__(self):
         """
@@ -175,17 +205,20 @@ class AzureActiveDirectoryConfiguration:
         Returns:
 
         """
-        # Reset the OpenAI API configuration.
-        reload(openai)
 
         # Set the OpenAI API configuration.
         credential = DefaultAzureCredential()
         token = credential.get_token('https://cognitiveservices.azure.com/.default')
 
-        openai.api_type = self.name
-        openai.api_key = token.token
-        openai.api_base = self.api_base
-        openai.api_version = self.api_version
+        # Reset the OpenAI API configuration.
+        self.client = OpenAI(
+            api_key=token.token,
+            base_url=self.base_url,
+            http_client=httpx.Client(event_hooks={'response': [self.response_callback]}),
+            default_query={
+                'api-version': self.api_version
+            }
+        )
 
     def get_base_api_kwargs(self):
         """
