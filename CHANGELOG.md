@@ -2,6 +2,18 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.19 (2023-11-09)
+
+### New Features
+
+- `phasellm.logging` comes with `PhaseLogger`, a class that allows you to automatically send your chats to evals.phasellm.com for visual, no-code reviews later
+- PhaseLLM requests now contain the header information received from the APIs they are calling; you can review whatever information OpenAI, Anthropic, etc. are sending you
+
+### Fixes
+
+- `Claude 2` support is back! Older versions weren't parsing responses properly
+- Support for versions 1.x of OpenAI's `openai` Python SDK
+
 # 0.0.18 (2023-10-16)
 
 ### New Features
