@@ -63,4 +63,8 @@ class PhaseLogger:
         return data['chat_id']
     
     def logChatBot(self, chatbot:ChatBot, chat_id:Optional[int] = None, title:Optional[str] = None, source_id:Optional[str] = None) -> int:
-        return self.log(chatbot.messages, chat_id, title, source_id)
+        message_array = []
+        for m in chatbot.messages:
+            new_m = {"role": m["role"], "content":m["content"]}
+            message_array.append(new_m)
+        return self.log(message_array, chat_id, title, source_id)
