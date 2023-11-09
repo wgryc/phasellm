@@ -2,7 +2,7 @@ NAME = "phasellm"
 
 AUTHOR = "Wojciech Gryc"
 
-VERSION = "0.0.18"
+VERSION = "0.0.19"
 
 DESCRIPTION = (
     "Wrappers for common large language models (LLMs) with support for evaluation."
