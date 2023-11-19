@@ -1641,7 +1641,7 @@ Assistant: {msgs[2]['content']}</s>"""
         """
 
         if append_role is not None or prepend_role is not None:
-            warnings.warn("Warning: PhaseLLM's implementation of Llama 2 does not support changing roles. We will stick to 'user' and 'assistnat' roles.")
+            warnings.warn("Warning: PhaseLLM's implementation of Llama 2 does not support changing roles. We will stick to 'user' and 'assistant' roles.")
 
         chat_prompt = self.build_chat_completion_prompt(messages)
         output = replicate.run(
