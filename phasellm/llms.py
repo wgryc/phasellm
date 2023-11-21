@@ -1644,7 +1644,9 @@ Assistant: {msgs[2]['content']}</s>"""
             warnings.warn("Warning: PhaseLLM's implementation of Llama 2 does not support changing roles. We will stick to 'user' and 'assistant' roles.")
 
         chat_prompt = self.build_chat_completion_prompt(messages)
-        output = replicate.run(
+
+        client = replicate.Client(api_token = self.apikey)
+        output = client.run(
             "meta/llama-2-70b-chat:02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3",
             input={
                 "debug": False,
@@ -1679,7 +1681,8 @@ Assistant: {msgs[2]['content']}</s>"""
 
         """
 
-        output = replicate.run(
+        client = replicate.Client(api_token = self.apikey)
+        output = client.run(
             "meta/llama-2-70b-chat:02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3",
             input={
                 "debug": False,
