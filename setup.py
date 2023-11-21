@@ -29,7 +29,8 @@ setup(
         "fake-useragent>=1.2.1",
         "playwright>=1.35.0",
         "feedparser>=6.0.10",
-        "azure-identity>=1.14.0"
+        "azure-identity>=1.14.0",
+        "replicate==0.20.0",
     ],
     extras_require={
         "complete": [

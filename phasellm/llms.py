@@ -4,6 +4,7 @@ Abstract classes and wrappers for LLMs, chatbots, and prompts.
 import re
 import time
 import json
+import warnings
 
 import httpx
 import requests
@@ -25,6 +26,9 @@ from sseclient import SSEClient
 
 # Imports for external APIs
 import cohere
+
+# Support for Replicate
+import replicate
 
 # Precompiled regex for variables.
 variable_pattern = r'\{\s*[a-zA-Z0-9_]+\s*\}'
@@ -1530,6 +1534,178 @@ class DollyWrapper(LanguageModelWrapper):
         prompt = self.prep_prompt(prompt=prompt)
 
         return self._call_model(prompt=prompt)
+
+class ReplicateLlama2Wrapper(LanguageModelWrapper):
+
+    base_system_chat_prompt = "You are a friendly chatbot."
+    """str: Used in defining the system prompt for Llama 2 calls. Only used if a system prompt doesn't exist in the message stack provided."""
+
+    first_user_message = "Hi."
+    """str: Used as the first 'user' message in chat completions when the chat's first non-system message is from 'assistant'."""
+
+    def __init__(self, apikey: str, model: str = "meta/llama-2-70b-chat:02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3", temperature: float = None, **kwargs: Any):
+        """
+        Wrapper for Llama 2, provided via Replicate. See https://replicate.com/ for more information.
+
+        Args:
+            apikey: The Replicate API key to use.
+            model: The Llama 2 model to use.
+            temperature: The temperature to use for the language model.
+            **kwargs: Keyword arguments to pass to the API.
+        """
+        super().__init__(temperature=temperature, **kwargs)
+        self.model = model
+        self.apikey = apikey
+        self.temperature = temperature if temperature is not None else 0.5
+
+    def __repr__(self):
+        return f"ReplicateLlama2Wrapper(model={self.model})"
+
+    def build_chat_completion_prompt(self, messages: List[Message]):
+        """
+        Converts a list of messages into a properly structured Llama 2 prompt for chats, as outlined here: https://huggingface.co/blog/llama2#how-to-prompt-llama-2
+
+        Note that we make a few changes to the process above: (1) if a system prompt does not exist, we use a very basic default prompt. Otherwise, we convert the system prompt to the relevant instructions in the Llama 2 chat prompt.
+
+        Next, we iterate through the the rest of the message stack. We assume that the message stack contains alternating messages from a 'user' and 'assistant'. If your first messages outside of a system prompt is from the 'assistant', then we include a 'Hi.' messages from the user.
+
+        Please note that this is a work in progress. If you have feedback on the process about, email w --at-- phaseai --dot-- com
+
+        Args:
+            messages: The messages to generate a chat completion from.
+            append_role: The role to append to the end of the prompt. Defaults to None.
+            prepend_role: The role to prepend to the beginning of the prompt. Defaults to None.
+
+        Returns:
+            The chat completion.
+        
+        """
+
+        msgs = messages.copy()
+
+        if len(msgs) >= 1:
+            if not msgs[0]['role'] == 'system':
+                msgs.insert(0, {"role":"system", "content":self.base_system_chat_prompt})
+
+        if msgs[1]['role'].lower() == 'assistant':
+            msgs.insert(1, {"role":"user", "content":self.first_user_message})
+
+        completion_prompt = f"""<s>[INST] <<SYS>>{msgs[0]['content']}<</SYS>>"""
+
+        # This means we only have a system prompt and user message, so we need to provide a completion example.
+        if len(msgs) == 2:
+            completion_prompt += """User: Hello! [/INST]
+Assistant: Greetings! How are you doing today?</s>"""
+
+        else:
+
+            completion_prompt += f"""User: {msgs[1]['content']} [/INST]
+Assistant: {msgs[2]['content']}</s>"""
+
+            # Doesn't actually run if len(msgs) == 2
+            for i in range(3, len(msgs) - 1, 2):
+                completion_prompt += f"""<s>[INST]User: {msgs[i]['content']} [/INST]
+    Assistant: {msgs[i+1]['content']}?</s>"""
+                
+        completion_prompt += f"""<s>[INST]User: {messages[-1]['content']}[/INST]"""
+        
+        return completion_prompt
+
+    def _clean_response(self, assistant_message:str) -> str:
+        """
+        Cleans up the chat response, mainly by stripping whitespace and removing "Assistant:" prepends.
+
+        Args:
+            assistant_message: The message received from the API.
+
+        Returns:
+            The chat completion, cleaned up.
+
+        """
+        am = assistant_message.strip()
+        if am.find("Assistant:") == 0:
+            am = am[10:].strip()
+        return am
+
+    def complete_chat(self, messages: List[Message], append_role: str = None, prepend_role: str = None) -> str:
+
+        """
+        Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
+
+        Args:
+            messages: The messages to generate a chat completion from.
+
+        Returns:
+            The chat completion.
+
+        """
+
+        if append_role is not None or prepend_role is not None:
+            warnings.warn("Warning: PhaseLLM's implementation of Llama 2 does not support changing roles. We will stick to 'user' and 'assistant' roles.")
+
+        chat_prompt = self.build_chat_completion_prompt(messages)
+
+        client = replicate.Client(api_token = self.apikey)
+        output = client.run(
+            "meta/llama-2-70b-chat:02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3",
+            input={
+                "debug": False,
+                "top_k": 50,
+                "top_p": 1,
+                "prompt": chat_prompt,
+                "temperature": 0.5,
+                "system_prompt": "",
+                "max_new_tokens": 1000,
+                "min_new_tokens": -1,
+                "stop_sequences": "</s>"
+            }
+        )
+
+        new_text = ""
+        for x in output:
+            new_text += x
+        new_text = self._clean_response(new_text)
+
+        return new_text
+
+    def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> str:
+        """
+        Completes text via Replicate's Llama 2 service.
+
+        Args:
+            prompt: The prompt to generate a text completion from.
+            stop_sequences: The stop sequences to use. Defaults to None.
+
+        Returns:
+            The text completion.
+
+        """
+
+        input_call = {
+            "debug": False,
+            "top_k": 50,
+            "top_p": 1,
+            "prompt": prompt,
+            "temperature": self.temperature,
+            "system_prompt": "",
+            "max_new_tokens": 1000,
+            "min_new_tokens": -1,
+        }
+
+        if stop_sequences is not None:
+            input_call["stop_sequences"] = ",".join(stop_sequences)
+
+        client = replicate.Client(api_token = self.apikey)
+        output = client.run(
+            "meta/llama-2-70b-chat:02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3",
+            input=input_call
+        )
+
+        new_text = ""
+        for x in output:
+            new_text += x
+        
+        return new_text
 
 
 class CohereWrapper(LanguageModelWrapper):
