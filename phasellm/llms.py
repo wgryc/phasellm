@@ -1681,20 +1681,24 @@ Assistant: {msgs[2]['content']}</s>"""
 
         """
 
+        input_call = {
+            "debug": False,
+            "top_k": 50,
+            "top_p": 1,
+            "prompt": prompt,
+            "temperature": self.temperature,
+            "system_prompt": "",
+            "max_new_tokens": 1000,
+            "min_new_tokens": -1,
+        }
+
+        if stop_sequences is not None:
+            input_call["stop_sequences"] = ",".join(stop_sequences)
+
         client = replicate.Client(api_token = self.apikey)
         output = client.run(
             "meta/llama-2-70b-chat:02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3",
-            input={
-                "debug": False,
-                "top_k": 50,
-                "top_p": 1,
-                "prompt": prompt,
-                "temperature": self.temperature,
-                "system_prompt": "",
-                "max_new_tokens": 1000,
-                "min_new_tokens": -1,
-                "stop_sequences": ",".join(stop_sequences),
-            }
+            input=input_call
         )
 
         new_text = ""

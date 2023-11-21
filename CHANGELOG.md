@@ -2,6 +2,18 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.20 (2023-11-20)
+
+
+### New Features
+
+- `ReplicateLlama2Wrapper` to enable you to use Llama 2 via [Replicate](https://replicate.com/)
+- Note that the `ChatBot` class supports the `ReplicateLlama2Wrapper`, so you can plug and play the Llama 2 model just like any other chat models; same goes for text completions
+
+### Fixes
+
+- _None._
+
 # 0.0.19 (2023-11-09)
 
 ### New Features
