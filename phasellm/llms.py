@@ -11,18 +11,23 @@ import requests
 
 # Typing imports
 from typing_extensions import TypedDict
-from phasellm.types import CLAUDE_MODEL, OPENAI_API_CONFIG
+from phasellm.types import CLAUDE_MODEL, OPENAI_API_CONFIG, VERTEXAI_API_CONFIG
 from typing import Optional, List, Union, Generator, Any
 
 # Configuration imports
-from phasellm.configurations import OpenAIConfiguration
+from phasellm.configurations import OpenAIConfiguration, VertexAIConfiguration
 
 # Abstract class imports
 from abc import ABC, abstractmethod
 
 from warnings import warn
 from datetime import datetime
+from dataclasses import asdict
 from sseclient import SSEClient
+
+# Support for VertexAI
+from vertexai.generative_models import GenerationConfig, GenerativeModel
+from vertexai.language_models import TextGenerationModel
 
 # Imports for external APIs
 import cohere
@@ -1053,6 +1058,156 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
 
         """
         self.last_response_header = response.headers
+
+
+class StreamingVertexAIWrapper(StreamingLanguageModelWrapper):
+
+    def __init__(
+            self,
+            model: str = None,
+            format_sse: bool = False,
+            append_stop_token: bool = True,
+            stop_token: str = STOP_TOKEN,
+            temperature: float = None,
+            api_config: Optional[VERTEXAI_API_CONFIG] = None,
+            **kwargs: Any
+    ):
+        """
+        Streaming wrapper for Vertex AI's large language model.
+
+        Args:
+            model: The model to use. Defaults to "gpt-3.5-turbo".
+            format_sse: Whether to format the response as an SSE.
+            append_stop_token: Whether to append a stop token to the end of the prompt.
+            stop_token: The stop token to append to the end of the prompt.
+            temperature: The temperature to use for the language model.
+            api_config: The API configuration to use. Defaults to None. Takes precedence over model.
+            **kwargs: Keyword arguments to pass to the Vertex AI API.
+
+        """
+        super().__init__(
+            format_sse=format_sse,
+            append_stop_token=append_stop_token,
+            stop_token=stop_token,
+            temperature=temperature,
+            **kwargs
+        )
+
+        if api_config and model:
+            warn("api_config takes precedence over model arguments.")
+
+        # Default model to gemini-1.0-pro.
+        if not api_config and not model:
+            model = "gemini-1.0-pro-001"
+
+        if not api_config:
+            self.api_config = VertexAIConfiguration(model=model)
+        if api_config:
+            self.api_config = api_config
+
+        # Activate the configuration
+        self.api_config()
+
+    def __repr__(self):
+        return f"StreamingVertexAIWrapper(model={self.api_config.model})"
+
+    def _call_model(self, prompt: str, stop_sequences: List[str]) -> Generator:
+        """
+        Calls the model with the given prompt.
+
+        Args:
+            prompt: The prompt to generate a text completion from.
+            stop_sequences: The stop sequences to use. Defaults to None.
+
+        Returns:
+            The text completion generator.
+
+        """
+        if isinstance(self.api_config.client, TextGenerationModel):
+            response = self.api_config.client.predict_streaming(
+                prompt,
+                temperature=self.temperature,
+                stop_sequences=stop_sequences,
+                top_p=self.kwargs['top_p'] if 'top_p' in self.kwargs else None,
+                top_k=self.kwargs['top_k'] if 'top_k' in self.kwargs else None,
+                # max_output_tokens=self.kwargs['max_output_tokens'] if 'max_output_tokens' in self.kwargs else None,
+                logprobs=self.kwargs['logprobs'] if 'logprobs' in self.kwargs else None,
+                presence_penalty=self.kwargs['presence_penalty'] if 'presence_penalty' in self.kwargs else None,
+                frequency_penalty=self.kwargs['frequency_penalty'] if 'frequency_penalty' in self.kwargs else None,
+                logit_bias=self.kwargs['logit_bias'] if 'logit_bias' in self.kwargs else None
+            )
+        else:
+            response = self.api_config.client.generate_content(
+                contents=prompt,
+                generation_config=GenerationConfig(
+                    temperature=self.temperature,
+                    stop_sequences=stop_sequences,
+                    top_p=self.kwargs['top_p'] if 'top_p' in self.kwargs else None,
+                    top_k=self.kwargs['top_k'] if 'top_k' in self.kwargs else None,
+                    candidate_count=self.kwargs['candidate_count'] if 'candidate_count' in self.kwargs else None,
+                    max_output_tokens=self.kwargs['max_output_tokens'] if 'max_output_tokens' in self.kwargs else None
+                ),
+                stream=True
+            )
+
+        for chunk in response:
+            if hasattr(chunk, '_raw_response'):
+                self.last_response_header = {
+                    **chunk._raw_response.PromptFeedback.to_dict(chunk._raw_response.prompt_feedback),
+                    **chunk._raw_response.UsageMetadata.to_dict(chunk._raw_response.usage_metadata)
+                }
+            else:
+                self.last_response_header = {}
+            yield _conditional_format_sse_response(content=chunk.text, format_sse=self.format_sse)
+
+    def complete_chat(
+            self,
+            messages: List[Message],
+            append_role: str = None,
+            prepend_role: str = None
+    ) -> Generator:
+        """
+        Completes chat with Vertex AI.
+
+        Args:
+            messages: The messages to generate a chat completion from.
+            append_role: The role to append to the end of the prompt.
+            prepend_role: The role to prepend to the beginning of the prompt.
+
+        Returns:
+            The chat completion generator.
+
+        """
+        prompt_text = self.prep_prompt_from_messages(
+            messages=messages,
+            prepend_role=prepend_role,
+            append_role=append_role,
+            include_preamble=False
+        )
+
+        return self._call_model(
+            prompt=prompt_text,
+            stop_sequences=_get_stop_sequences_from_messages(messages)
+        )
+
+    def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> Generator:
+        """
+        Completes text based on provided prompt.
+
+        Yields the text as it is generated, rather than waiting for the entire completion.
+
+        Args:
+            prompt: The prompt to generate a text completion from.
+            stop_sequences: The stop sequences to use. Defaults to None.
+
+        Returns:
+            The text completion generator.
+
+        """
+        return self._call_model(
+            prompt=prompt,
+            stop_sequences=stop_sequences
+        )
 
 
 class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
