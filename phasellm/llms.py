@@ -1075,7 +1075,49 @@ class StreamingVertexAIWrapper(StreamingLanguageModelWrapper):
             **kwargs: Any
     ):
         """
-        Streaming wrapper for Vertex AI LLMs.
+        Streaming wrapper for Vertex AI LLMs. Supports all major text and chat completion models, including Gemeni.
+
+        This wrapper depends on Google's Application Default Credentials (ADC) to authenticate.
+
+        Setting up ADC:
+        1. Install the Google Cloud SDK: https://cloud.google.com/sdk/docs/install
+        2. Authenticate with gcloud: https://cloud.google.com/sdk/gcloud/reference/auth/application-default/login
+        >>> gcloud auth application-default login
+
+        Example:
+            >>> from phasellm.llms import StreamingVertexAIWrapper
+
+            Use Vertex AI's API:
+                >>> llm = StreamingVertexAIWrapper(model="gemini-1.0-pro-001")
+                >>> llm.text_completion(prompt="Hello, my name is")
+                "Hello, my name is Gemeni."
+            Note that when passing no model, the default model is "gemini-1.0-pro-001".
+
+            Use Vertex AI's API with api_config:
+                >>> from phasellm.configurations import VertexAIConfiguration
+                >>> llm = StreamingVertexAIWrapper(api_config=VertexAIConfiguration(
+                ...     model="gemini-1.0-pro-001"
+                ... ))
+
+            Use temperature parameter:
+                >>> llm = VertexAIWrapper(model="gemini-1.0-pro-001", temperature=0.5)
+                >>> llm.text_completion(prompt="Hello, my name is")
+                "Hello, my name is Gemeni."
+
+            Use max_output_tokens parameter:
+                >>> llm = VertexAIWrapper(model="gemini-1.0-pro-001", max_output_tokens=50)
+                >>> llm.text_completion(prompt="Hello, my name is")
+                "Hello, my name is Gemeni."
+
+            Potential parameters (model dependent):
+                - max_output_tokens
+                - candidate_count
+                - top_p
+                - top_k
+                - logprobs
+                - presence_penalty
+                - frequency_penalty
+                - logit_bias
 
         Args:
             model: The model to use. Defaults to "gemini-1.0-pro-001".
@@ -1244,7 +1286,49 @@ class VertexAIWrapper(LanguageModelWrapper):
             **kwargs: Any
     ):
         """
-        Wrapper for Vertex AI LLMs
+        Wrapper for Vertex AI LLMs. Supports all major text and chat completion models, including Gemeni.
+
+        This wrapper depends on Google's Application Default Credentials (ADC) to authenticate.
+
+        Setting up ADC:
+        1. Install the Google Cloud SDK: https://cloud.google.com/sdk/docs/install
+        2. Authenticate with gcloud: https://cloud.google.com/sdk/gcloud/reference/auth/application-default/login
+        >>> gcloud auth application-default login
+
+        Example:
+            >>> from phasellm.llms import VertexAIWrapper
+
+            Text completion:
+                >>> llm = VertexAIWrapper(model="gemini-1.0-pro-001")
+                >>> llm.text_completion(prompt="Hello, my name is")
+                "Hello, my name is Gemeni."
+            Note that when passing no model, the default model is "gemini-1.0-pro-001".
+
+            Configure with api_config:
+                >>> from phasellm.configurations import VertexAIConfiguration
+                >>> llm = VertexAIWrapper(api_config=VertexAIConfiguration(
+                ...     model="gemini-1.0-pro-001"
+                ... ))
+
+            Use temperature parameter:
+                >>> llm = VertexAIWrapper(model="gemini-1.0-pro-001", temperature=0.5)
+                >>> llm.text_completion(prompt="Hello, my name is")
+                "Hello, my name is Gemeni."
+
+            Use max_output_tokens parameter:
+                >>> llm = VertexAIWrapper(model="gemini-1.0-pro-001", max_output_tokens=50)
+                >>> llm.text_completion(prompt="Hello, my name is")
+                "Hello, my name is Gemeni."
+
+            Potential parameters (model dependent):
+                - max_output_tokens
+                - candidate_count
+                - top_p
+                - top_k
+                - logprobs
+                - presence_penalty
+                - frequency_penalty
+                - logit_bias
 
         Args:
             model: The model to use. Defaults to "gemini-1.0-pro-001".
