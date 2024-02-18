@@ -12,7 +12,7 @@ from phasellm.llms import \
     BloomWrapper, \
     OpenAIGPTWrapper, StreamingOpenAIGPTWrapper, \
     ClaudeWrapper, StreamingClaudeWrapper, \
-    StreamingVertexAIWrapper, \
+    VertexAIWrapper, StreamingVertexAIWrapper, \
     GPT2Wrapper, \
     DollyWrapper, \
     CohereWrapper, \
@@ -139,6 +139,36 @@ class E2ETestOpenAIGPTWrapper(TestCase):
         """
         fixture = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
         test_text_completion_failure(self, fixture, verbose=False)
+
+
+class E2ETestVertexAIWrapper(TestCase):
+
+    def setUp(self) -> None:
+        gc.collect()
+
+    def test_complete_chat_text(self):
+        fixture = VertexAIWrapper(model="text-bison@002")
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
+
+    def test_complete_chat_chat(self):
+        fixture = VertexAIWrapper(model="chat-bison@002")
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
+
+    def test_complete_chat_generative(self):
+        fixture = VertexAIWrapper(model="gemini-1.0-pro")
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
+
+    def test_complete_chat_kwargs(self):
+        fixture = VertexAIWrapper(temperature=0.9, top_k=2)
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
+
+    def test_text_completion_success(self):
+        fixture = VertexAIWrapper()
+        test_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
+
+    def test_text_completion_success_kwargs(self):
+        fixture = VertexAIWrapper(temperature=0.9, top_k=2)
+        test_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
 
 
 class E2ETestClaudeWrapper(TestCase):

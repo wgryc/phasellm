@@ -13,7 +13,7 @@ from typing import Optional
 
 from abc import ABC, abstractmethod
 
-from phasellm.utils import coerce_azure_base_url
+from phasellm.configurations_utils import coerce_azure_base_url
 
 from azure.identity import DefaultAzureCredential
 

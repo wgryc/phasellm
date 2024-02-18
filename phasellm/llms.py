@@ -9,6 +9,8 @@ import warnings
 import httpx
 import requests
 
+from phasellm.llms_utils import extract_vertex_ai_kwargs, extract_vertex_ai_response_metadata
+
 # Typing imports
 from typing_extensions import TypedDict
 from phasellm.types import CLAUDE_MODEL, OPENAI_API_CONFIG, VERTEXAI_API_CONFIG
@@ -1073,10 +1075,10 @@ class StreamingVertexAIWrapper(StreamingLanguageModelWrapper):
             **kwargs: Any
     ):
         """
-        Streaming wrapper for Vertex AI's large language model.
+        Streaming wrapper for Vertex AI LLMs.
 
         Args:
-            model: The model to use. Defaults to "gpt-3.5-turbo".
+            model: The model to use. Defaults to "gemini-1.0-pro-001".
             format_sse: Whether to format the response as an SSE.
             append_stop_token: Whether to append a stop token to the end of the prompt.
             stop_token: The stop token to append to the end of the prompt.
@@ -1123,51 +1125,44 @@ class StreamingVertexAIWrapper(StreamingLanguageModelWrapper):
             The text completion generator.
 
         """
-        max_output_tokens = self.kwargs['max_output_tokens'] if 'max_output_tokens' in self.kwargs else None
-        candidate_count = self.kwargs['candidate_count'] if 'candidate_count' in self.kwargs else None
-        top_p = self.kwargs['top_p'] if 'top_p' in self.kwargs else None
-        top_k = self.kwargs['top_k'] if 'top_k' in self.kwargs else None
-        logprobs = self.kwargs['logprobs'] if 'logprobs' in self.kwargs else None
-        presence_penalty = self.kwargs['presence_penalty'] if 'presence_penalty' in self.kwargs else None
-        frequency_penalty = self.kwargs['frequency_penalty'] if 'frequency_penalty' in self.kwargs else None
-        logit_bias = self.kwargs['logit_bias'] if 'logit_bias' in self.kwargs else None
+        kwargs = extract_vertex_ai_kwargs(self.kwargs)
 
         if isinstance(self.api_config.client, ChatModel):
             # Note that we instantiate a chat session every time since PhaseLLM manages history with the ChatBot class.
             chat_session = self.api_config.client.start_chat()
             response = chat_session.send_message_streaming(
                 message=prompt,
-                max_output_tokens=max_output_tokens,
+                max_output_tokens=kwargs['max_output_tokens'],
                 temperature=self.temperature,
-                top_k=top_k,
-                top_p=top_p,
+                top_k=kwargs['top_k'],
+                top_p=kwargs['top_p'],
                 stop_sequences=stop_sequences
             )
         elif isinstance(self.api_config.client, TextGenerationModel):
-            if max_output_tokens:
+            if kwargs['max_output_tokens']:
                 response = self.api_config.client.predict_streaming(
                     prompt,
                     temperature=self.temperature,
                     stop_sequences=stop_sequences,
-                    max_output_tokens=max_output_tokens,
-                    top_p=top_p,
-                    top_k=top_k,
-                    logprobs=logprobs,
-                    presence_penalty=presence_penalty,
-                    frequency_penalty=frequency_penalty,
-                    logit_bias=logit_bias
+                    max_output_tokens=kwargs['max_output_tokens'],
+                    top_p=kwargs['top_p'],
+                    top_k=kwargs['top_k'],
+                    logprobs=kwargs['logprobs'],
+                    presence_penalty=kwargs['presence_penalty'],
+                    frequency_penalty=kwargs['frequency_penalty'],
+                    logit_bias=kwargs['logit_bias']
                 )
             else:
                 response = self.api_config.client.predict_streaming(
                     prompt,
                     temperature=self.temperature,
                     stop_sequences=stop_sequences,
-                    top_p=top_p,
-                    top_k=top_k,
-                    logprobs=logprobs,
-                    presence_penalty=presence_penalty,
-                    frequency_penalty=frequency_penalty,
-                    logit_bias=logit_bias
+                    top_p=kwargs['top_p'],
+                    top_k=kwargs['top_k'],
+                    logprobs=kwargs['logprobs'],
+                    presence_penalty=kwargs['presence_penalty'],
+                    frequency_penalty=kwargs['frequency_penalty'],
+                    logit_bias=kwargs['logit_bias']
                 )
         else:
             response = self.api_config.client.generate_content(
@@ -1175,22 +1170,16 @@ class StreamingVertexAIWrapper(StreamingLanguageModelWrapper):
                 generation_config=GenerationConfig(
                     temperature=self.temperature,
                     stop_sequences=stop_sequences,
-                    top_p=top_p,
-                    top_k=top_k,
-                    candidate_count=candidate_count,
-                    max_output_tokens=max_output_tokens
+                    top_p=kwargs['top_p'],
+                    top_k=kwargs['top_k'],
+                    candidate_count=kwargs['candidate_count'],
+                    max_output_tokens=kwargs['max_output_tokens']
                 ),
                 stream=True
             )
 
         for chunk in response:
-            if hasattr(chunk, '_raw_response'):
-                self.last_response_header = {
-                    **chunk._raw_response.PromptFeedback.to_dict(chunk._raw_response.prompt_feedback),
-                    **chunk._raw_response.UsageMetadata.to_dict(chunk._raw_response.usage_metadata)
-                }
-            else:
-                self.last_response_header = {}
+            self.last_response_header = extract_vertex_ai_response_metadata(chunk)
             yield _conditional_format_sse_response(content=chunk.text, format_sse=self.format_sse)
         if self.format_sse and self.append_stop_token:
             yield _format_sse(content=self.stop_token)
@@ -1237,6 +1226,162 @@ class StreamingVertexAIWrapper(StreamingLanguageModelWrapper):
 
         Returns:
             The text completion generator.
+
+        """
+        return self._call_model(
+            prompt=prompt,
+            stop_sequences=stop_sequences
+        )
+
+
+class VertexAIWrapper(LanguageModelWrapper):
+
+    def __init__(
+            self,
+            model: str = None,
+            temperature: float = None,
+            api_config: Optional[VERTEXAI_API_CONFIG] = None,
+            **kwargs: Any
+    ):
+        """
+        Wrapper for Vertex AI LLMs
+
+        Args:
+            model: The model to use. Defaults to "gemini-1.0-pro-001".
+            temperature: The temperature to use for the language model.
+            api_config: The API configuration to use. Defaults to None. Takes precedence over model.
+            **kwargs: Keyword arguments to pass to the Vertex AI API.
+        """
+
+        super().__init__(temperature=temperature, **kwargs)
+
+        if api_config and model:
+            warn("api_config takes precedence over model arguments.")
+
+        # Default model to gemini-1.0-pro.
+        if not api_config and not model:
+            model = "gemini-1.0-pro-001"
+
+        if not api_config:
+            self.api_config = VertexAIConfiguration(model=model)
+        if api_config:
+            self.api_config = api_config
+
+        # Activate the configuration
+        self.api_config()
+
+    def __repr__(self):
+        return f"VertexAIWrapper(model={self.api_config.model})"
+
+    def _call_model(self, prompt: str, stop_sequences: List[str]) -> str:
+        """
+        Calls the model with the given prompt.
+
+        Args:
+            prompt: The prompt to generate a text completion from.
+            stop_sequences: The stop sequences to use. Defaults to None.
+
+        Returns:
+            The text completion.
+
+        """
+        kwargs = extract_vertex_ai_kwargs(self.kwargs)
+
+        if isinstance(self.api_config.client, ChatModel):
+            # Note that we instantiate a chat session every time since PhaseLLM manages history with the ChatBot class.
+            chat_session = self.api_config.client.start_chat()
+            response = chat_session.send_message(
+                message=prompt,
+                max_output_tokens=kwargs['max_output_tokens'],
+                temperature=self.temperature,
+                top_k=kwargs['top_k'],
+                top_p=kwargs['top_p'],
+                stop_sequences=stop_sequences
+            )
+        elif isinstance(self.api_config.client, TextGenerationModel):
+            if kwargs['max_output_tokens']:
+                response = self.api_config.client.predict(
+                    prompt,
+                    temperature=self.temperature,
+                    stop_sequences=stop_sequences,
+                    max_output_tokens=kwargs['max_output_tokens'],
+                    top_p=kwargs['top_p'],
+                    top_k=kwargs['top_k'],
+                    logprobs=kwargs['logprobs'],
+                    presence_penalty=kwargs['presence_penalty'],
+                    frequency_penalty=kwargs['frequency_penalty'],
+                    logit_bias=kwargs['logit_bias']
+                )
+            else:
+                response = self.api_config.client.predict(
+                    prompt,
+                    temperature=self.temperature,
+                    stop_sequences=stop_sequences,
+                    top_p=kwargs['top_p'],
+                    top_k=kwargs['top_k'],
+                    logprobs=kwargs['logprobs'],
+                    presence_penalty=kwargs['presence_penalty'],
+                    frequency_penalty=kwargs['frequency_penalty'],
+                    logit_bias=kwargs['logit_bias']
+                )
+        else:
+            response = self.api_config.client.generate_content(
+                contents=prompt,
+                generation_config=GenerationConfig(
+                    temperature=self.temperature,
+                    stop_sequences=stop_sequences,
+                    top_p=kwargs['top_p'],
+                    top_k=kwargs['top_k'],
+                    candidate_count=kwargs['candidate_count'],
+                    max_output_tokens=kwargs['max_output_tokens']
+                ),
+                stream=False
+            )
+
+        self.last_response_header = extract_vertex_ai_response_metadata(response)
+
+        return response.text
+
+    def complete_chat(
+            self,
+            messages: List[Message],
+            append_role: str = None,
+            prepend_role: str = None
+    ) -> str:
+        """
+        Completes chat.
+
+        Args:
+            messages: The messages to generate a chat completion from.
+            append_role: The role to append to the end of the prompt.
+            prepend_role: The role to prepend to the beginning of the prompt.
+
+        Returns:
+            The chat completion.
+
+        """
+        prompt_text = self.prep_prompt_from_messages(
+            messages=messages,
+            prepend_role=prepend_role,
+            append_role=append_role,
+            include_preamble=False
+        )
+
+        return self._call_model(
+            prompt=prompt_text,
+            stop_sequences=_get_stop_sequences_from_messages(messages)
+        )
+
+    def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> str:
+        """
+        Completes text based on provided prompt.
+
+        Args:
+            prompt: The prompt to generate a text completion from.
+            stop_sequences: The stop sequences to use. Defaults to None.
+
+        Returns:
+            The text completion.
 
         """
         return self._call_model(
