@@ -27,7 +27,7 @@ from sseclient import SSEClient
 
 # Support for VertexAI
 from vertexai.generative_models import GenerationConfig, GenerativeModel
-from vertexai.language_models import TextGenerationModel
+from vertexai.language_models import TextGenerationModel, ChatModel
 
 # Imports for external APIs
 import cohere
@@ -1123,29 +1123,62 @@ class StreamingVertexAIWrapper(StreamingLanguageModelWrapper):
             The text completion generator.
 
         """
-        if isinstance(self.api_config.client, TextGenerationModel):
-            response = self.api_config.client.predict_streaming(
-                prompt,
+        max_output_tokens = self.kwargs['max_output_tokens'] if 'max_output_tokens' in self.kwargs else None
+        candidate_count = self.kwargs['candidate_count'] if 'candidate_count' in self.kwargs else None
+        top_p = self.kwargs['top_p'] if 'top_p' in self.kwargs else None
+        top_k = self.kwargs['top_k'] if 'top_k' in self.kwargs else None
+        logprobs = self.kwargs['logprobs'] if 'logprobs' in self.kwargs else None
+        presence_penalty = self.kwargs['presence_penalty'] if 'presence_penalty' in self.kwargs else None
+        frequency_penalty = self.kwargs['frequency_penalty'] if 'frequency_penalty' in self.kwargs else None
+        logit_bias = self.kwargs['logit_bias'] if 'logit_bias' in self.kwargs else None
+
+        if isinstance(self.api_config.client, ChatModel):
+            # Note that we instantiate a chat session every time since PhaseLLM manages history with the ChatBot class.
+            chat_session = self.api_config.client.start_chat()
+            response = chat_session.send_message_streaming(
+                message=prompt,
+                max_output_tokens=max_output_tokens,
                 temperature=self.temperature,
-                stop_sequences=stop_sequences,
-                top_p=self.kwargs['top_p'] if 'top_p' in self.kwargs else None,
-                top_k=self.kwargs['top_k'] if 'top_k' in self.kwargs else None,
-                # max_output_tokens=self.kwargs['max_output_tokens'] if 'max_output_tokens' in self.kwargs else None,
-                logprobs=self.kwargs['logprobs'] if 'logprobs' in self.kwargs else None,
-                presence_penalty=self.kwargs['presence_penalty'] if 'presence_penalty' in self.kwargs else None,
-                frequency_penalty=self.kwargs['frequency_penalty'] if 'frequency_penalty' in self.kwargs else None,
-                logit_bias=self.kwargs['logit_bias'] if 'logit_bias' in self.kwargs else None
+                top_k=top_k,
+                top_p=top_p,
+                stop_sequences=stop_sequences
             )
+        elif isinstance(self.api_config.client, TextGenerationModel):
+            if max_output_tokens:
+                response = self.api_config.client.predict_streaming(
+                    prompt,
+                    temperature=self.temperature,
+                    stop_sequences=stop_sequences,
+                    max_output_tokens=max_output_tokens,
+                    top_p=top_p,
+                    top_k=top_k,
+                    logprobs=logprobs,
+                    presence_penalty=presence_penalty,
+                    frequency_penalty=frequency_penalty,
+                    logit_bias=logit_bias
+                )
+            else:
+                response = self.api_config.client.predict_streaming(
+                    prompt,
+                    temperature=self.temperature,
+                    stop_sequences=stop_sequences,
+                    top_p=top_p,
+                    top_k=top_k,
+                    logprobs=logprobs,
+                    presence_penalty=presence_penalty,
+                    frequency_penalty=frequency_penalty,
+                    logit_bias=logit_bias
+                )
         else:
             response = self.api_config.client.generate_content(
                 contents=prompt,
                 generation_config=GenerationConfig(
                     temperature=self.temperature,
                     stop_sequences=stop_sequences,
-                    top_p=self.kwargs['top_p'] if 'top_p' in self.kwargs else None,
-                    top_k=self.kwargs['top_k'] if 'top_k' in self.kwargs else None,
-                    candidate_count=self.kwargs['candidate_count'] if 'candidate_count' in self.kwargs else None,
-                    max_output_tokens=self.kwargs['max_output_tokens'] if 'max_output_tokens' in self.kwargs else None
+                    top_p=top_p,
+                    top_k=top_k,
+                    candidate_count=candidate_count,
+                    max_output_tokens=max_output_tokens
                 ),
                 stream=True
             )
@@ -1159,6 +1192,8 @@ class StreamingVertexAIWrapper(StreamingLanguageModelWrapper):
             else:
                 self.last_response_header = {}
             yield _conditional_format_sse_response(content=chunk.text, format_sse=self.format_sse)
+        if self.format_sse and self.append_stop_token:
+            yield _format_sse(content=self.stop_token)
 
     def complete_chat(
             self,
@@ -1690,6 +1725,7 @@ class DollyWrapper(LanguageModelWrapper):
 
         return self._call_model(prompt=prompt)
 
+
 class ReplicateLlama2Wrapper(LanguageModelWrapper):
 
     base_system_chat_prompt = "You are a friendly chatbot."
@@ -1761,9 +1797,9 @@ Assistant: {msgs[2]['content']}</s>"""
             for i in range(3, len(msgs) - 1, 2):
                 completion_prompt += f"""<s>[INST]User: {msgs[i]['content']} [/INST]
     Assistant: {msgs[i+1]['content']}?</s>"""
-                
+
         completion_prompt += f"""<s>[INST]User: {messages[-1]['content']}[/INST]"""
-        
+
         return completion_prompt
 
     def _clean_response(self, assistant_message:str) -> str:
@@ -1859,7 +1895,7 @@ Assistant: {msgs[2]['content']}</s>"""
         new_text = ""
         for x in output:
             new_text += x
-        
+
         return new_text
 
 

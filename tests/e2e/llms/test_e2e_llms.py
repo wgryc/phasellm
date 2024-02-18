@@ -435,6 +435,14 @@ class E2ETestStreamingVertexAIWrapper(TestCase):
     def setUp(self) -> None:
         gc.collect()
 
+    def test_complete_chat_chat(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform chat completion.
+        """
+        fixture = StreamingVertexAIWrapper(model="chat-bison@002")
+
+        test_streaming_complete_chat(self, fixture, check_last_response_header=False, verbose=False)
+
     def test_complete_chat_text(self):
         """
         Tests that the StreamingVertexAIWrapper can be used to perform chat completion.
@@ -449,7 +457,9 @@ class E2ETestStreamingVertexAIWrapper(TestCase):
         """
         fixture = StreamingVertexAIWrapper(model="gemini-1.0-pro")
 
-        test_streaming_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
+        test_streaming_complete_chat(
+            self, fixture, check_last_response_header=True, chunk_time_seconds_threshold=1, verbose=False
+        )
 
     def test_complete_chat_kwargs(self):
         """
@@ -457,7 +467,9 @@ class E2ETestStreamingVertexAIWrapper(TestCase):
         """
         fixture = StreamingVertexAIWrapper(temperature=0.9, top_k=2)
 
-        test_streaming_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
+        test_streaming_complete_chat(
+            self, fixture, check_last_response_header=True, chunk_time_seconds_threshold=1, verbose=False
+        )
 
     def test_complete_chat_sse(self):
         """
@@ -498,7 +510,9 @@ class E2ETestStreamingVertexAIWrapper(TestCase):
         """
         fixture = StreamingVertexAIWrapper()
 
-        test_streaming_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
+        test_streaming_text_completion_success(
+            self, fixture, check_last_response_header=True, verbose=False, prompt="Write 100 words of your choice."
+        )
 
     def test_text_completion_kwargs(self):
         """
@@ -506,7 +520,9 @@ class E2ETestStreamingVertexAIWrapper(TestCase):
         """
         fixture = StreamingVertexAIWrapper(temperature=0.9, top_k=2)
 
-        test_streaming_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
+        test_streaming_text_completion_success(
+            self, fixture, check_last_response_header=True, verbose=False, prompt="Write 100 words of your choice."
+        )
 
     def test_text_completion_sse(self):
         """
@@ -514,7 +530,9 @@ class E2ETestStreamingVertexAIWrapper(TestCase):
         """
         fixture = StreamingVertexAIWrapper(format_sse=True, append_stop_token=False)
 
-        test_streaming_text_completion_sse(self, fixture, check_stop=False, verbose=False)
+        test_streaming_text_completion_sse(
+            self, fixture, check_stop=False, verbose=False, prompt="Write 100 words of your choice."
+        )
 
     def test_text_completion_sse_kwargs(self):
         """
@@ -522,7 +540,9 @@ class E2ETestStreamingVertexAIWrapper(TestCase):
         """
         fixture = StreamingVertexAIWrapper(format_sse=True, append_stop_token=False, temperature=0.9, top_k=2)
 
-        test_streaming_text_completion_sse(self, fixture, check_stop=False, verbose=False)
+        test_streaming_text_completion_sse(
+            self, fixture, check_stop=False, verbose=False, prompt="Write 100 words of your choice."
+        )
 
     def test_text_completion_sse_with_stop(self):
         """

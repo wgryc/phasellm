@@ -2,7 +2,7 @@ import httpx
 
 import vertexai
 from vertexai.generative_models import GenerativeModel
-from vertexai.language_models import TextGenerationModel
+from vertexai.language_models import TextGenerationModel, ChatModel
 from google.cloud.aiplatform.initializer import global_config as vertexai_config
 
 from openai import OpenAI
@@ -283,17 +283,12 @@ class VertexAIConfiguration(APIConfiguration):
             experiment_description=self.experiment_description,
             credentials=self.credentials
         )
-        if 'text' in self.model or 'chat' in self.model:
-            self.client = TextGenerationModel(
-                model_id=self.model,
-                endpoint_name=f'projects/{vertexai_config.project}'
-                              f'/locations/{vertexai_config.location}'
-                              f'/publishers/google/models/{self.model}'
-            )
+        if 'text-' in self.model:
+            self.client = TextGenerationModel.from_pretrained(model_name=self.model)
+        elif 'chat-' in self.model:
+            self.client = ChatModel.from_pretrained(model_name=self.model)
         else:
             self.client = GenerativeModel(self.model)
 
     def get_base_api_kwargs(self):
-        return {
-            'model': self.model
-        }
+        return {}
