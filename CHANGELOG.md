@@ -2,8 +2,18 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
-# 0.0.20 (2023-11-20)
+# 0.0.21 (2024-02-20)
 
+### New Features
+
+- Support for Google's Gemini and related models: `VertexAIWrapper` and `StreamingVertexAIWrapper` for static and streaming queries, respectively
+- See [https://phasellm.com/google-gemini-phasellm](our tutorial) for more info
+
+### Fixes
+
+- _None._
+
+# 0.0.20 (2023-11-20)
 
 ### New Features
 
