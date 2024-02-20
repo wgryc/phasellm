@@ -1,4 +1,5 @@
-from phasellm.configurations import OpenAIConfiguration, AzureAPIConfiguration, AzureActiveDirectoryConfiguration
+from phasellm.configurations import OpenAIConfiguration, AzureAPIConfiguration, AzureActiveDirectoryConfiguration, \
+    VertexAIConfiguration
 
 from typing import Union, Literal
 
@@ -16,3 +17,5 @@ OPENAI_API_CONFIG = Union[
     AzureAPIConfiguration,
     AzureActiveDirectoryConfiguration
 ]
+
+VERTEXAI_API_CONFIG = VertexAIConfiguration

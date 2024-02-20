@@ -12,6 +12,7 @@ from phasellm.llms import \
     BloomWrapper, \
     OpenAIGPTWrapper, StreamingOpenAIGPTWrapper, \
     ClaudeWrapper, StreamingClaudeWrapper, \
+    VertexAIWrapper, StreamingVertexAIWrapper, \
     GPT2Wrapper, \
     DollyWrapper, \
     CohereWrapper, \
@@ -138,6 +139,36 @@ class E2ETestOpenAIGPTWrapper(TestCase):
         """
         fixture = OpenAIGPTWrapper(openai_api_key, model="gpt-3.5-turbo")
         test_text_completion_failure(self, fixture, verbose=False)
+
+
+class E2ETestVertexAIWrapper(TestCase):
+
+    def setUp(self) -> None:
+        gc.collect()
+
+    def test_complete_chat_text(self):
+        fixture = VertexAIWrapper(model="text-bison@002")
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
+
+    def test_complete_chat_chat(self):
+        fixture = VertexAIWrapper(model="chat-bison@002")
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
+
+    def test_complete_chat_generative(self):
+        fixture = VertexAIWrapper(model="gemini-1.0-pro")
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
+
+    def test_complete_chat_kwargs(self):
+        fixture = VertexAIWrapper(temperature=0.9, top_k=2)
+        test_complete_chat(self, fixture, check_last_response_header=True, verbose=False)
+
+    def test_text_completion_success(self):
+        fixture = VertexAIWrapper()
+        test_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
+
+    def test_text_completion_success_kwargs(self):
+        fixture = VertexAIWrapper(temperature=0.9, top_k=2)
+        test_text_completion_success(self, fixture, check_last_response_header=True, verbose=False)
 
 
 class E2ETestClaudeWrapper(TestCase):
@@ -425,6 +456,138 @@ class E2ETestStreamingOpenAIGPTWrapper(TestCase):
             openai_api_key, model="text-davinci-003", format_sse=True, append_stop_token=True, temperature=0.9,
             presence_penalty=2
         )
+
+        test_streaming_text_completion_sse(self, fixture, check_stop=True, verbose=False)
+
+
+class E2ETestStreamingVertexAIWrapper(TestCase):
+
+    def setUp(self) -> None:
+        gc.collect()
+
+    def test_complete_chat_chat(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform chat completion.
+        """
+        fixture = StreamingVertexAIWrapper(model="chat-bison@002")
+
+        test_streaming_complete_chat(self, fixture, check_last_response_header=False, verbose=False)
+
+    def test_complete_chat_text(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform chat completion.
+        """
+        fixture = StreamingVertexAIWrapper(model="text-bison@002")
+
+        test_streaming_complete_chat(self, fixture, check_last_response_header=False, verbose=False)
+
+    def test_complete_chat_generative(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform chat completion.
+        """
+        fixture = StreamingVertexAIWrapper(model="gemini-1.0-pro")
+
+        test_streaming_complete_chat(
+            self, fixture, check_last_response_header=True, chunk_time_seconds_threshold=1, verbose=False
+        )
+
+    def test_complete_chat_kwargs(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform chat completion with kwargs.
+        """
+        fixture = StreamingVertexAIWrapper(temperature=0.9, top_k=2)
+
+        test_streaming_complete_chat(
+            self, fixture, check_last_response_header=True, chunk_time_seconds_threshold=1, verbose=False
+        )
+
+    def test_complete_chat_sse(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform streaming chat completion.
+        """
+        fixture = StreamingVertexAIWrapper(format_sse=True, append_stop_token=False)
+
+        test_streaming_complete_chat_sse(self, fixture, check_stop=False, verbose=False)
+
+    def test_complete_chat_sse_kwargs(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform streaming chat completion with kwargs.
+        """
+        fixture = StreamingVertexAIWrapper(format_sse=True, append_stop_token=False, temperature=0.9, top_k=2)
+
+        test_streaming_complete_chat_sse(self, fixture, check_stop=False, verbose=False)
+
+    def test_complete_chat_sse_with_stop(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform streaming chat completion with a stop token.
+        """
+        fixture = StreamingVertexAIWrapper(format_sse=True, append_stop_token=True)
+
+        test_streaming_complete_chat_sse(self, fixture, check_stop=True, verbose=False)
+
+    def test_complete_chat_sse_with_stop_kwargs(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform streaming chat completion with a stop token and
+        kwargs.
+        """
+        fixture = StreamingVertexAIWrapper(format_sse=True, append_stop_token=True, temperature=0.9, top_k=2)
+
+        test_streaming_complete_chat_sse(self, fixture, check_stop=True, verbose=False)
+
+    def test_text_completion(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform text completion.
+        """
+        fixture = StreamingVertexAIWrapper()
+
+        test_streaming_text_completion_success(
+            self, fixture, check_last_response_header=True, verbose=False, prompt="Write 100 words of your choice."
+        )
+
+    def test_text_completion_kwargs(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform text completion with kwargs.
+        """
+        fixture = StreamingVertexAIWrapper(temperature=0.9, top_k=2)
+
+        test_streaming_text_completion_success(
+            self, fixture, check_last_response_header=True, verbose=False, prompt="Write 100 words of your choice."
+        )
+
+    def test_text_completion_sse(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform streaming text completion.
+        """
+        fixture = StreamingVertexAIWrapper(format_sse=True, append_stop_token=False)
+
+        test_streaming_text_completion_sse(
+            self, fixture, check_stop=False, verbose=False, prompt="Write 100 words of your choice."
+        )
+
+    def test_text_completion_sse_kwargs(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform streaming text completion with kwargs.
+        """
+        fixture = StreamingVertexAIWrapper(format_sse=True, append_stop_token=False, temperature=0.9, top_k=2)
+
+        test_streaming_text_completion_sse(
+            self, fixture, check_stop=False, verbose=False, prompt="Write 100 words of your choice."
+        )
+
+    def test_text_completion_sse_with_stop(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform streaming text completion with a stop token.
+        """
+        fixture = StreamingVertexAIWrapper(format_sse=True, append_stop_token=True)
+
+        test_streaming_text_completion_sse(self, fixture, check_stop=True, verbose=False)
+
+    def test_text_completion_sse_with_stop_kwargs(self):
+        """
+        Tests that the StreamingVertexAIWrapper can be used to perform streaming text completion with a stop token and
+        kwargs.
+        """
+        fixture = StreamingVertexAIWrapper(format_sse=True, append_stop_token=True, temperature=0.9, top_k=2)
 
         test_streaming_text_completion_sse(self, fixture, check_stop=True, verbose=False)
 

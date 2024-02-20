@@ -31,6 +31,7 @@ setup(
         "feedparser>=6.0.10",
         "azure-identity>=1.14.0",
         "replicate==0.20.0",
+        "google-cloud-aiplatform>=1.42.1"
     ],
     extras_require={
         "complete": [
