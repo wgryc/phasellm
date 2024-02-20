@@ -7,7 +7,7 @@ Have any questions? Need support? Please reach out on [Twitter (@phasellm)](http
 ### New Features
 
 - Support for Google's Gemini and related models: `VertexAIWrapper` and `StreamingVertexAIWrapper` for static and streaming queries, respectively
-- See [https://phasellm.com/google-gemini-phasellm](our tutorial) for more info
+- See https://phasellm.com/google-gemini-phasellm for more info on how to use the above
 
 ### Fixes
 
