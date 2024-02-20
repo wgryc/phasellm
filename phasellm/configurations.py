@@ -1,12 +1,19 @@
 import httpx
 
-from warnings import warn
+import vertexai
+from vertexai.generative_models import GenerativeModel
+from vertexai.language_models import TextGenerationModel, ChatModel
+from google.cloud.aiplatform.initializer import global_config as vertexai_config
 
 from openai import OpenAI
 
+from warnings import warn
+
+from typing import Optional
+
 from abc import ABC, abstractmethod
 
-from phasellm.utils import coerce_azure_base_url
+from phasellm.configurations_utils import coerce_azure_base_url
 
 from azure.identity import DefaultAzureCredential
 
@@ -19,7 +26,7 @@ class APIConfiguration(ABC):
     @abstractmethod
     def __call__(self):
         """
-        Abstract method to initialize the API configuration.
+        Abstract method to initialize the API configuration. Should set the client attribute.
 
         Returns:
 
@@ -231,3 +238,57 @@ class AzureActiveDirectoryConfiguration:
         return {
             'deployment_id': self.deployment_id
         }
+
+
+class VertexAIConfiguration(APIConfiguration):
+    name = 'vertex_ai'
+
+    def __init__(
+            self,
+            model: str,
+            project: Optional[str] = None,
+            location: Optional[str] = None,
+            experiment: Optional[str] = None,
+            experiment_description: Optional[str] = None,
+            credentials: Optional[str] = None,
+    ):
+        """
+        Initializes the VertexAI API configuration.
+
+        Args:
+            model: The model to use.
+            project: Google Cloud project ID or number. Environment default used if not provided.
+            location: Vertext AI region. Defaults to us-central1.
+            experiment: The VertexAI experiment.
+            experiment_description: The VertexAI experiment description.
+            credentials: Custom google.auth.credentials.Credentials. Defaults to environment default credentials.
+
+        """
+        super().__init__(model=model)
+
+        self.project = project
+        self.location = location
+        self.experiment = experiment
+        self.experiment_description = experiment_description
+        self.credentials = credentials
+
+    def __call__(self):
+        """
+        Calls the VertexAI API configuration to initialize the VertexAI API.
+        """
+        vertexai.init(
+            project=self.project,
+            location=self.location,
+            experiment=self.experiment,
+            experiment_description=self.experiment_description,
+            credentials=self.credentials
+        )
+        if 'text-' in self.model:
+            self.client = TextGenerationModel.from_pretrained(model_name=self.model)
+        elif 'chat-' in self.model:
+            self.client = ChatModel.from_pretrained(model_name=self.model)
+        else:
+            self.client = GenerativeModel(self.model)
+
+    def get_base_api_kwargs(self):
+        return {}

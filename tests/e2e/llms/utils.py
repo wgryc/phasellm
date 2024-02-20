@@ -396,6 +396,7 @@ def test_streaming_complete_chat(
         tester: TestCase,
         fixture: StreamingLanguageModelWrapper,
         check_last_response_header: bool = False,
+        chunk_time_seconds_threshold: float = 0.5,
         verbose: bool = False
 ) -> None:
     """
@@ -406,7 +407,12 @@ def test_streaming_complete_chat(
 
     results: StreamingChatCompletionProbe = probe_streaming_chat_completion(generator)
 
-    common_streaming_chat_assertions(tester=tester, probe=results, chunk_time_seconds_threshold=0.5, verbose=verbose)
+    common_streaming_chat_assertions(
+        tester=tester,
+        probe=results,
+        chunk_time_seconds_threshold=chunk_time_seconds_threshold,
+        verbose=verbose
+    )
 
     if check_last_response_header:
         common_last_response_header_assertion(tester=tester, fixture=fixture, verbose=verbose)
@@ -432,9 +438,9 @@ def test_streaming_text_completion_success(
         tester: TestCase,
         fixture: StreamingLanguageModelWrapper,
         check_last_response_header: bool = False,
-        verbose: bool = False
+        verbose: bool = False,
+        prompt: str = "Three countries in North America are: "
 ) -> None:
-    prompt = "Three countries in North America are: "
     generator = fixture.text_completion(prompt)
 
     result: StreamingTextCompletionProbe = probe_streaming_text_completion(generator)
@@ -472,9 +478,9 @@ def test_streaming_text_completion_sse(
         tester: TestCase,
         fixture: StreamingLanguageModelWrapper,
         check_stop: bool = False,
-        verbose: bool = False
+        verbose: bool = False,
+        prompt: str = "Three countries in North America are: "
 ) -> None:
-    prompt = "Three countries in North America are: "
     generator = fixture.text_completion(prompt)
 
     tester.assertTrue(isinstance(generator, Generator), "Expecting a generator.")
