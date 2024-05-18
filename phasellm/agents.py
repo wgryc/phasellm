@@ -52,7 +52,7 @@ from .exceptions import LLMCodeException
 class Agent(ABC):
 
     @abstractmethod
-    def __init__(self, name: str = ''):
+    def __init__(self, name: str = ""):
         """
         Abstract class for an agent.
 
@@ -85,7 +85,7 @@ def stdout_io(stdout=None):
 
 class CodeExecutionAgent(Agent):
 
-    def __init__(self, name: str = ''):
+    def __init__(self, name: str = ""):
         """
         Creates a new CodeExecutionAgent.
 
@@ -132,14 +132,14 @@ class ExecCommands(NamedTuple):
 
 
 class SandboxedCodeExecutionAgent(Agent):
-    CODE_FILENAME = 'sandbox_code.py'
+    CODE_FILENAME = "sandbox_code.py"
 
     def __init__(
-            self,
-            name: str = '',
-            docker_image: str = 'python:3',
-            scratch_dir: Union[Path, str] = None,
-            module_package_mappings: Dict[str, str] = None
+        self,
+        name: str = "",
+        docker_image: str = "python:3",
+        scratch_dir: Union[Path, str] = None,
+        module_package_mappings: Dict[str, str] = None,
     ):
         """
         Creates a new SandboxedCodeExecutionAgent.
@@ -222,11 +222,13 @@ class SandboxedCodeExecutionAgent(Agent):
         self.docker_image = docker_image
 
         if scratch_dir is None:
-            scratch_dir = f'.tmp/sandboxed_code_execution'
+            scratch_dir = f".tmp/sandboxed_code_execution"
         self.scratch_dir = scratch_dir
 
         # Pre-compile regexes for performance (helps if executing code in a loop).
-        self._module_regex = re.compile(r"(?:(?<=^import\s)|(?<=^from\s))\w+", flags=re.MULTILINE)
+        self._module_regex = re.compile(
+            r"(?:(?<=^import\s)|(?<=^from\s))\w+", flags=re.MULTILINE
+        )
 
         # Create the docker client.
         self._client: DockerClient = docker.from_env()
@@ -239,10 +241,12 @@ class SandboxedCodeExecutionAgent(Agent):
         self._container: Optional[Container] = None
 
     def __repr__(self):
-        return f"SandboxedCodeExecutionAgent(" \
-               f"name={self.name}, " \
-               f"docker_image={self.docker_image}, " \
-               f"scratch_dir={self.scratch_dir})"
+        return (
+            f"SandboxedCodeExecutionAgent("
+            f"name={self.name}, "
+            f"docker_image={self.docker_image}, "
+            f"scratch_dir={self.scratch_dir})"
+        )
 
     def __enter__(self):
         """
@@ -294,7 +298,7 @@ class SandboxedCodeExecutionAgent(Agent):
         Returns:
 
         """
-        with open(os.path.join(self.scratch_dir, self.CODE_FILENAME), 'w') as f:
+        with open(os.path.join(self.scratch_dir, self.CODE_FILENAME), "w") as f:
             f.write(code)
 
     def _write_requirements_file(self, packages: List[str]) -> None:
@@ -307,9 +311,9 @@ class SandboxedCodeExecutionAgent(Agent):
         Returns:
 
         """
-        with open(os.path.join(self.scratch_dir, 'requirements.txt'), 'w') as f:
+        with open(os.path.join(self.scratch_dir, "requirements.txt"), "w") as f:
             for package in packages:
-                f.write(f'{package}\n')
+                f.write(f"{package}\n")
 
     def _modules_to_packages(self, code: str) -> List[str]:
         """
@@ -349,9 +353,9 @@ class SandboxedCodeExecutionAgent(Agent):
         """
         requirements_command = None
         if len(packages) > 0:
-            requirements_command = 'pip install -r code/requirements.txt'
+            requirements_command = "pip install -r code/requirements.txt"
         # Note that -u is used to force unbuffered output.
-        python_command = f'python -u code/{self.CODE_FILENAME}'
+        python_command = f"python -u code/{self.CODE_FILENAME}"
 
         return ExecCommands(requirements=requirements_command, python=python_command)
 
@@ -402,22 +406,28 @@ class SandboxedCodeExecutionAgent(Agent):
             # Run the requirements command if it exists.
             if commands.requirements is not None:
                 res: ExecResult = self._container.exec_run(commands.requirements)
-                self._handle_exec_errors(output=res.output, exit_code=res.exit_code, code=code)
+                self._handle_exec_errors(
+                    output=res.output, exit_code=res.exit_code, code=code
+                )
 
             # Run the python command.
-            exec_handle = self._client.api.exec_create(container=self._container.name, cmd=commands.python)
-            res: ExecResult = self._client.api.exec_start(exec_handle['Id'], stream=True)
+            exec_handle = self._client.api.exec_create(
+                container=self._container.name, cmd=commands.python
+            )
+            res: ExecResult = self._client.api.exec_start(
+                exec_handle["Id"], stream=True
+            )
 
             # Yield the output of the python command.
             output = []
             for data in res:
-                chunk = data.decode('utf-8')
+                chunk = data.decode("utf-8")
                 output.append(chunk)
                 yield chunk
-            output = ''.join(output)
+            output = "".join(output)
 
             # Handle errors for streaming output.
-            exit_code = self._client.api.exec_inspect(exec_handle['Id'])['ExitCode']
+            exit_code = self._client.api.exec_inspect(exec_handle["Id"])["ExitCode"]
             self._handle_exec_errors(output=output, exit_code=exit_code, code=code)
         finally:
             if auto_stop_container:
@@ -445,11 +455,13 @@ class SandboxedCodeExecutionAgent(Agent):
 
         """
         if self._container is not None:
-            raise RuntimeError('Container is already running.')
+            raise RuntimeError("Container is already running.")
 
         container: Container = self._client.containers.create(
             image=self.docker_image,
-            volumes={Path(self.scratch_dir).absolute(): {'bind': '/code', 'mode': 'rw'}},
+            volumes={
+                Path(self.scratch_dir).absolute(): {"bind": "/code", "mode": "rw"}
+            },
             auto_remove=False,
             tty=True,
         )
@@ -468,7 +480,9 @@ class SandboxedCodeExecutionAgent(Agent):
             self._container.remove()
             self._container = None
 
-    def execute_code(self, code: str, stream: bool = True, auto_stop_container: bool = False) -> Union[str, Generator]:
+    def execute_code(
+        self, code: str, stream: bool = True, auto_stop_container: bool = False
+    ) -> Union[str, Generator]:
         """
         Executes the provided code inside a sandboxed container.
 
@@ -485,12 +499,20 @@ class SandboxedCodeExecutionAgent(Agent):
         generator = self._execute(code=code, auto_stop_container=auto_stop_container)
         if stream:
             return generator
-        return ''.join(list(generator))
+        return "".join(list(generator))
 
 
 class EmailSenderAgent(Agent):
 
-    def __init__(self, sender_name: str, smtp: str, sender_address: str, password: str, port: int, name: str = ''):
+    def __init__(
+        self,
+        sender_name: str,
+        smtp: str,
+        sender_address: str,
+        password: str,
+        port: int,
+        name: str = "",
+    ):
         """
         Create an EmailSenderAgent.
 
@@ -527,10 +549,14 @@ class EmailSenderAgent(Agent):
 
         """
         # TODO deprecating this to be more Pythonic with naming conventions.
-        warn('sendPlainEmail() is deprecated. Use send_plain_email() instead.')
-        self.send_plain_email(recipient_email=recipient_email, subject=subject, content=content)
+        warn("sendPlainEmail() is deprecated. Use send_plain_email() instead.")
+        self.send_plain_email(
+            recipient_email=recipient_email, subject=subject, content=content
+        )
 
-    def send_plain_email(self, recipient_email: str, subject: str, content: str) -> None:
+    def send_plain_email(
+        self, recipient_email: str, subject: str, content: str
+    ) -> None:
         """
         Sends an email encoded as plain text.
 
@@ -546,17 +572,17 @@ class EmailSenderAgent(Agent):
         s.login(self.sender_address, self.password)
 
         message = MIMEMultipart()
-        message['From'] = f"{self.sender_name} <{self.sender_address}>"
-        message['To'] = recipient_email
-        message['Subject'] = subject
-        message.attach(MIMEText(content, 'plain'))
+        message["From"] = f"{self.sender_name} <{self.sender_address}>"
+        message["To"] = recipient_email
+        message["Subject"] = subject
+        message.attach(MIMEText(content, "plain"))
 
         s.send_message(message)
 
 
 class NewsSummaryAgent(Agent):
 
-    def __init__(self, apikey: str = None, name: str = ''):
+    def __init__(self, apikey: str = None, name: str = ""):
         """
         Create a NewsSummaryAgent.
 
@@ -574,11 +600,11 @@ class NewsSummaryAgent(Agent):
         return f"NewsSummaryAgent(name={self.name})"
 
     def getQuery(
-            self,
-            query: str,
-            days_back: int = 1,
-            include_descriptions: bool = True,
-            max_articles: int = 25
+        self,
+        query: str,
+        days_back: int = 1,
+        include_descriptions: bool = True,
+        max_articles: int = 25,
     ) -> str:
         """
         DEPRECATED: see get_query
@@ -594,20 +620,20 @@ class NewsSummaryAgent(Agent):
 
         """
         # TODO deprecating this to be more Pythonic with naming conventions.
-        warn('getQuery() is deprecated. Use get_query() instead.')
+        warn("getQuery() is deprecated. Use get_query() instead.")
         return self.get_query(
             query=query,
             days_back=days_back,
             include_descriptions=include_descriptions,
-            max_articles=max_articles
+            max_articles=max_articles,
         )
 
     def get_query(
-            self,
-            query: str,
-            days_back: int = 1,
-            include_descriptions: bool = True,
-            max_articles: int = 25
+        self,
+        query: str,
+        days_back: int = 1,
+        include_descriptions: bool = True,
+        max_articles: int = 25,
     ) -> str:
         """
         Gets all articles for a query for the # of days back. Returns a String with all the information so that an LLM
@@ -624,20 +650,21 @@ class NewsSummaryAgent(Agent):
 
         """
 
-        start_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+        start_date = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
 
-        api_url = \
-            f"https://newsapi.org/v2/everything?" \
-            f"q={query}" \
-            f"&from={start_date}" \
-            f"&sortBy=publishedAt" \
+        api_url = (
+            f"https://newsapi.org/v2/everything?"
+            f"q={query}"
+            f"&from={start_date}"
+            f"&sortBy=publishedAt"
             f"&apiKey={self.apikey}"
+        )
 
-        headers = {'Accept': 'application/json'}
+        headers = {"Accept": "application/json"}
         r = requests.get(api_url, headers=headers)
         json_data = r.json()
 
-        articles = json_data['articles']
+        articles = json_data["articles"]
 
         return_me = f"'---------------\nNEWS ARTICLES ABOUT {query} SINCE {start_date}\n---------------\n'"
 
@@ -663,7 +690,7 @@ class NewsSummaryAgent(Agent):
 
 class WebpageAgent(Agent):
 
-    def __init__(self, name: str = ''):
+    def __init__(self, name: str = ""):
         """
         Create a WebpageAgent.
 
@@ -715,7 +742,7 @@ class WebpageAgent(Agent):
         """
         This method validates that a url can be used by the agent.
         """
-        if not url.startswith('http'):
+        if not url.startswith("http"):
             raise ValueError(f"Url must use HTTP(S). Invalid URL: {url}")
 
         # TODO consider adding more validations.
@@ -730,8 +757,10 @@ class WebpageAgent(Agent):
 
         """
         if res.status_code != 200:
-            raise Exception(f"WebpageAgent received a non-200 status code: {res.status_code}\n"
-                            f"{res.reason}")
+            raise Exception(
+                f"WebpageAgent received a non-200 status code: {res.status_code}\n"
+                f"{res.reason}"
+            )
 
     @staticmethod
     def _parse_html(html: str, text_only: bool = True, body_only: bool = False) -> str:
@@ -748,7 +777,7 @@ class WebpageAgent(Agent):
 
         """
         if text_only or body_only:
-            soup = BeautifulSoup(html, features='lxml')
+            soup = BeautifulSoup(html, features="lxml")
             if text_only and body_only:
                 text = soup.body.get_text()
             elif text_only:
@@ -774,22 +803,24 @@ class WebpageAgent(Agent):
         if headers is None:
             headers = {}
 
-        if 'Accept' not in headers:
-            headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-        if 'User-Agent' not in headers:
-            headers['User-Agent'] = UserAgent().chrome
-        if 'Referrer' not in headers:
-            headers['Referrer'] = 'https://www.google.com/'
-        if 'Accept-Encoding' not in headers:
-            headers['Accept-Encoding'] = 'gzip, deflate, br'
-        if 'Accept-Language' not in headers:
-            headers['Accept-Language'] = '*'
-        if 'Connection' not in headers:
-            headers['Connection'] = 'keep-alive'
-        if 'Upgrade-Insecure-Requests' not in headers:
-            headers['Upgrade-Insecure-Requests'] = '1'
-        if 'Cache-Control' not in headers:
-            headers['Cache-Control'] = 'max-age=0'
+        if "Accept" not in headers:
+            headers["Accept"] = (
+                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            )
+        if "User-Agent" not in headers:
+            headers["User-Agent"] = UserAgent().chrome
+        if "Referrer" not in headers:
+            headers["Referrer"] = "https://www.google.com/"
+        if "Accept-Encoding" not in headers:
+            headers["Accept-Encoding"] = "gzip, deflate, br"
+        if "Accept-Language" not in headers:
+            headers["Accept-Language"] = "*"
+        if "Connection" not in headers:
+            headers["Connection"] = "keep-alive"
+        if "Upgrade-Insecure-Requests" not in headers:
+            headers["Upgrade-Insecure-Requests"] = "1"
+        if "Cache-Control" not in headers:
+            headers["Cache-Control"] = "max-age=0"
 
         return headers
 
@@ -813,10 +844,14 @@ class WebpageAgent(Agent):
         try:
             return res.content.decode(res.encoding)
         except Exception as e:
-            raise Exception(f"WebpageAgent could not decode the response from the URL: {url}\n{e}")
+            raise Exception(
+                f"WebpageAgent could not decode the response from the URL: {url}\n{e}"
+            )
 
     @staticmethod
-    def _scrape_html_and_js(url: str, headers: Dict, wait_for_selector: str = None) -> str:
+    def _scrape_html_and_js(
+        url: str, headers: Dict, wait_for_selector: str = None
+    ) -> str:
         """
         This method scrapes a webpage and returns a string containing the html of the webpage. It uses a headless
         browser to render the webpage and execute javascript.
@@ -832,17 +867,15 @@ class WebpageAgent(Agent):
 
         """
         # Ensure chromium is installed for the headless browser.
-        subprocess.call('playwright install chromium')
+        subprocess.call("playwright install chromium")
 
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
-            page = browser.new_page(
-                extra_http_headers=headers
-            )
+            page = browser.new_page(extra_http_headers=headers)
             page.goto(url)
             if wait_for_selector is None:
                 # Wait until there are no network connections for at least `500` ms.
-                page.wait_for_load_state('networkidle')
+                page.wait_for_load_state("networkidle")
             else:
                 # Wait until the `selector` defined by 'wait_for_selector' is added to the DOM.
                 page.wait_for_selector(wait_for_selector)
@@ -851,13 +884,13 @@ class WebpageAgent(Agent):
         return data
 
     def scrape(
-            self,
-            url: str,
-            headers: Dict = None,
-            use_browser: bool = False,
-            wait_for_selector: str = None,
-            text_only: bool = True,
-            body_only: bool = True
+        self,
+        url: str,
+        headers: Dict = None,
+        use_browser: bool = False,
+        wait_for_selector: str = None,
+        text_only: bool = True,
+        body_only: bool = True,
     ) -> str:
         """
         This method scrapes a webpage and returns a string containing the html or text of the webpage.
@@ -883,7 +916,9 @@ class WebpageAgent(Agent):
         headers = self._prep_headers(headers=headers)
 
         if use_browser:
-            data = self._scrape_html_and_js(url=url, headers=headers, wait_for_selector=wait_for_selector)
+            data = self._scrape_html_and_js(
+                url=url, headers=headers, wait_for_selector=wait_for_selector
+            )
         else:
             data = self._scrape_html(url=url, headers=headers)
 
@@ -897,6 +932,7 @@ class WebSearchResult:
     """
     This dataclass represents a single search result.
     """
+
     title: str
     url: str
     description: str
@@ -906,14 +942,14 @@ class WebSearchResult:
 class WebSearchAgent(Agent):
 
     def __init__(
-            self,
-            name: str = '',
-            api_key: str = None,
-            rate_limit: float = 1,
-            text_only: bool = True,
-            body_only: bool = True,
-            use_browser: bool = False,
-            wait_for_selector: str = None
+        self,
+        name: str = "",
+        api_key: str = None,
+        rate_limit: float = 1,
+        text_only: bool = True,
+        body_only: bool = True,
+        use_browser: bool = False,
+        wait_for_selector: str = None,
     ):
         """
         Create a WebSearchAgent.
@@ -991,10 +1027,7 @@ class WebSearchAgent(Agent):
 
         """
         req = requests.PreparedRequest()
-        req.prepare_url(
-            url=base_url,
-            params=params
-        )
+        req.prepare_url(url=base_url, params=params)
         return req.url
 
     @staticmethod
@@ -1007,10 +1040,14 @@ class WebSearchAgent(Agent):
 
         """
         if res.status_code != 200:
-            raise Exception(f"WebSearchAgent received a non-200 status code: {res.status_code}\n"
-                            f"{res.reason}")
+            raise Exception(
+                f"WebSearchAgent received a non-200 status code: {res.status_code}\n"
+                f"{res.reason}"
+            )
 
-    def _send_request(self, base_url: str, headers: Dict = None, params: Dict = None) -> Dict:
+    def _send_request(
+        self, base_url: str, headers: Dict = None, params: Dict = None
+    ) -> Dict:
         """
         This method sends a request to a URL.
 
@@ -1023,15 +1060,9 @@ class WebSearchAgent(Agent):
             The response from the request.
 
         """
-        url = self._prepare_url(
-            base_url=base_url,
-            params=params
-        )
+        url = self._prepare_url(base_url=base_url, params=params)
 
-        res = self.session.get(
-            url=url,
-            headers=headers
-        )
+        res = self.session.get(url=url, headers=headers)
 
         self._handle_errors(res=res)
 
@@ -1055,41 +1086,44 @@ class WebSearchAgent(Agent):
         if kwargs is None:
             kwargs = {}
 
-        headers = {
-            'X-Subscription-Token': self.api_key,
-            'Accept': 'application/json'
-        }
-        params = {
-            'q': query,
-            **kwargs
-        }
+        headers = {"X-Subscription-Token": self.api_key, "Accept": "application/json"}
+        params = {"q": query, **kwargs}
 
         res = self._send_request(
-            base_url='https://api.search.brave.com/res/v1/web/search',
+            base_url="https://api.search.brave.com/res/v1/web/search",
             headers=headers,
-            params=params
+            params=params,
         )
 
         # https://api.search.brave.com/app/documentation/query
-        categories = ['discussions', 'faq', 'infobox', 'news', 'query', 'videos', 'web', 'mixed']
+        categories = [
+            "discussions",
+            "faq",
+            "infobox",
+            "news",
+            "query",
+            "videos",
+            "web",
+            "mixed",
+        ]
         results = []
         for category in categories:
             if category not in res:
                 continue
-            if 'results' not in res[category]:
+            if "results" not in res[category]:
                 continue
-            for result in res[category]['results']:
+            for result in res[category]["results"]:
                 # Rate limit
                 time.sleep(self.rate_limit)
 
                 # Get the content of the webpage
                 try:
                     content = self.webpage_agent.scrape(
-                        url=result['url'],
+                        url=result["url"],
                         text_only=self.text_only,
                         body_only=self.body_only,
                         use_browser=self.use_browser,
-                        wait_for_selector=self.wait_for_selector
+                        wait_for_selector=self.wait_for_selector,
                     )
                 except Exception:
                     # Skip when the webpage cannot be scraped.
@@ -1097,15 +1131,17 @@ class WebSearchAgent(Agent):
 
                 results.append(
                     WebSearchResult(
-                        title=result['title'],
-                        url=result['url'],
-                        description=result['description'],
-                        content=content
+                        title=result["title"],
+                        url=result["url"],
+                        description=result["description"],
+                        content=content,
                     )
                 )
         return results
 
-    def search_google(self, query: str, custom_search_engine_id: str = None, **kwargs) -> List[WebSearchResult]:
+    def search_google(
+        self, query: str, custom_search_engine_id: str = None, **kwargs
+    ) -> List[WebSearchResult]:
         """
         This method performs a web search using Google.
 
@@ -1127,55 +1163,55 @@ class WebSearchAgent(Agent):
         if kwargs is None:
             kwargs = {}
 
-        headers = {
-            'Accept': 'application/json'
-        }
+        headers = {"Accept": "application/json"}
 
         params = {
-            'q': query,
-            'key': self.api_key,
-            'cx': custom_search_engine_id,
-            **kwargs
+            "q": query,
+            "key": self.api_key,
+            "cx": custom_search_engine_id,
+            **kwargs,
         }
 
         res = self._send_request(
-            base_url='https://www.googleapis.com/customsearch/v1',
+            base_url="https://www.googleapis.com/customsearch/v1",
             headers=headers,
-            params=params
+            params=params,
         )
 
         results = []
-        for item in res['items']:
-            # Rate limit
-            time.sleep(self.rate_limit)
+        if "items" in res:
+            for item in res["items"]:
+                # Rate limit
+                time.sleep(self.rate_limit)
 
-            # Get the content of the webpage.
-            try:
-                content = self.webpage_agent.scrape(
-                    url=item['link'],
-                    text_only=self.text_only,
-                    body_only=self.body_only,
-                    use_browser=self.use_browser,
-                    wait_for_selector=self.wait_for_selector
-                )
-            except Exception:
-                # Skip when the webpage cannot be scraped.
-                continue
+                # Get the content of the webpage.
+                try:
+                    content = self.webpage_agent.scrape(
+                        url=item["link"],
+                        text_only=self.text_only,
+                        body_only=self.body_only,
+                        use_browser=self.use_browser,
+                        wait_for_selector=self.wait_for_selector,
+                    )
+                except Exception:
+                    # Skip when the webpage cannot be scraped.
+                    continue
 
-            results.append(
-                WebSearchResult(
-                    title=item['title'],
-                    url=item['link'],
-                    description=item['snippet'],
-                    content=content
+                results.append(
+                    WebSearchResult(
+                        title=item["title"],
+                        url=item["link"],
+                        description=item["snippet"],
+                        content=content,
+                    )
                 )
-            )
+
         return results
 
 
 class RSSAgent(Agent):
 
-    def __init__(self, name: str = '', url: str = None, **kwargs):
+    def __init__(self, name: str = "", url: str = None, **kwargs):
         """
         Create a RSSAgent
 
@@ -1223,7 +1259,7 @@ class RSSAgent(Agent):
 
         """
         if not url:
-            raise Exception('Must provide a URL for the RSSAgent.')
+            raise Exception("Must provide a URL for the RSSAgent.")
 
         super().__init__(name=name)
 
@@ -1295,10 +1331,12 @@ class RSSAgent(Agent):
             A list of dictionaries containing the data from the RSS feed.
 
         """
-        return feedparser.parse(self.url, **self.kwargs)['entries']
+        return feedparser.parse(self.url, **self.kwargs)["entries"]
 
     @contextmanager
-    def poll(self, interval: int = 60) -> Generator[Callable[[], Generator[List[str], None, None]], None, None]:
+    def poll(
+        self, interval: int = 60
+    ) -> Generator[Callable[[], Generator[List[str], None, None]], None, None]:
         """
         This method polls an RSS feed for new data.
 
@@ -1314,8 +1352,7 @@ class RSSAgent(Agent):
             queue = Queue()
             self._polling = True
             thread = Thread(
-                target=self._poll_thread,
-                kwargs={'queue': queue, 'interval': interval}
+                target=self._poll_thread, kwargs={"queue": queue, "interval": interval}
             )
             thread.start()
             self._poll_start_time = datetime.now()
