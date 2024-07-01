@@ -2,6 +2,16 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.22 and 0.0.23 (2024-07-01)
+
+### New Features
+
+- _None._
+
+### Fixes
+
+- Fixes to Google SERP API -- making it more resilient to errors and ensuring it doesn't error out if no results are obtained.
+
 # 0.0.21 (2024-02-20)
 
 ### New Features
