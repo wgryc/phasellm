@@ -1,6 +1,7 @@
 """
 Abstract classes and wrappers for LLMs, chatbots, and prompts.
 """
+
 import re
 import time
 import json
@@ -9,7 +10,10 @@ import warnings
 import httpx
 import requests
 
-from phasellm.llms_utils import extract_vertex_ai_kwargs, extract_vertex_ai_response_metadata
+from phasellm.llms_utils import (
+    extract_vertex_ai_kwargs,
+    extract_vertex_ai_response_metadata,
+)
 
 # Typing imports
 from typing_extensions import TypedDict
@@ -38,7 +42,7 @@ import cohere
 import replicate
 
 # Precompiled regex for variables.
-variable_pattern = r'\{\s*[a-zA-Z0-9_]+\s*\}'
+variable_pattern = r"\{\s*[a-zA-Z0-9_]+\s*\}"
 variable_regex = re.compile(variable_pattern)
 
 STOP_TOKEN = "<|END|>"
@@ -48,6 +52,7 @@ class Message(TypedDict):
     """
     Message type for chat messages.
     """
+
     role: str
     content: str
 
@@ -56,6 +61,7 @@ class EnhancedMessage(Message):
     """
     Message type for chat messages with additional metadata.
     """
+
     timestamp_utc: datetime
     log_time_seconds: float
 
@@ -130,7 +136,7 @@ def _remove_prompt_from_completion(prompt: str, completion: str) -> str:
     """
     if not completion.startswith(prompt):
         return completion
-    return completion[len(prompt):]
+    return completion[len(prompt) :]
 
 
 def _get_stop_sequences_from_messages(messages: List[Message]) -> List[str]:
@@ -256,10 +262,10 @@ class LanguageModelWrapper(ABC):
 
     @abstractmethod
     def complete_chat(
-            self,
-            messages: List[Message],
-            append_role: Optional[str] = None,
-            prepend_role: Optional[str] = None
+        self,
+        messages: List[Message],
+        append_role: Optional[str] = None,
+        prepend_role: Optional[str] = None,
     ) -> Union[str, Generator]:
         """
         Takes an array of messages in the form {"role": <str>, "content":<str>} and generate a response.
@@ -294,11 +300,11 @@ class LanguageModelWrapper(ABC):
         pass
 
     def prep_prompt_from_messages(
-            self,
-            messages: List[Message] = None,
-            prepend_role: Optional[str] = None,
-            append_role: Optional[str] = None,
-            include_preamble: Optional[bool] = False
+        self,
+        messages: List[Message] = None,
+        prepend_role: Optional[str] = None,
+        append_role: Optional[str] = None,
+        include_preamble: Optional[bool] = False,
     ) -> str:
         """
         Prepares the prompt for an LLM API call.
@@ -332,7 +338,11 @@ class LanguageModelWrapper(ABC):
         return prompt_text.strip()
 
     @staticmethod
-    def prep_prompt(prompt: str, prepend_role: Optional[str] = None, append_role: Optional[str] = None) -> str:
+    def prep_prompt(
+        prompt: str,
+        prepend_role: Optional[str] = None,
+        append_role: Optional[str] = None,
+    ) -> str:
         """
         Prepares the prompt for an LLM API call.
 
@@ -384,12 +394,12 @@ class StreamingLanguageModelWrapper(LanguageModelWrapper):
 
     @abstractmethod
     def __init__(
-            self,
-            temperature: float,
-            format_sse: bool,
-            append_stop_token: bool = True,
-            stop_token: str = STOP_TOKEN,
-            **kwargs: Any
+        self,
+        temperature: float,
+        format_sse: bool,
+        append_stop_token: bool = True,
+        stop_token: str = STOP_TOKEN,
+        **kwargs: Any,
     ):
         """
         Abstract class for streaming language models. Extends the regular LanguageModelWrapper.
@@ -508,11 +518,11 @@ class Prompt:
 class HuggingFaceInferenceWrapper(LanguageModelWrapper):
 
     def __init__(
-            self,
-            apikey: str,
-            model_url: str = "https://api-inference.huggingface.co/models/bigscience/bloom",
-            temperature: float = None,
-            **kwargs: Any
+        self,
+        apikey: str,
+        model_url: str = "https://api-inference.huggingface.co/models/bigscience/bloom",
+        temperature: float = None,
+        **kwargs: Any,
     ):
         """
         Wrapper for Hugging Face's Inference API. Requires access to Hugging Face's inference API.
@@ -545,10 +555,7 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
         """
         # https://huggingface.co/docs/api-inference/detailed_parameters#text-generation-task
         headers = {"Authorization": f"Bearer {self.apikey}"}
-        payload = {
-            "inputs": prompt,
-            **self.kwargs
-        }
+        payload = {"inputs": prompt, **self.kwargs}
         if self.temperature is not None:
             payload["temperature"] = self.temperature
 
@@ -558,11 +565,12 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
 
         response_json = response.json()
         return _remove_prompt_from_completion(
-            prompt=prompt,
-            completion=response_json[0]['generated_text']
+            prompt=prompt, completion=response_json[0]["generated_text"]
         )
 
-    def complete_chat(self, messages: List[Message], append_role: str = None, prepend_role: str = None) -> str:
+    def complete_chat(
+        self, messages: List[Message], append_role: str = None, prepend_role: str = None
+    ) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
 
@@ -580,7 +588,7 @@ class HuggingFaceInferenceWrapper(LanguageModelWrapper):
             messages=messages,
             prepend_role=prepend_role,
             append_role=append_role,
-            include_preamble=True
+            include_preamble=True,
         )
 
         res = self._call_model(prompt=prompt)
@@ -637,10 +645,7 @@ class BloomWrapper(LanguageModelWrapper):
         """
         # https://huggingface.co/docs/api-inference/detailed_parameters#text-generation-task
         headers = {"Authorization": f"Bearer {self.apikey}"}
-        payload = {
-            "inputs": prompt,
-            **self.kwargs
-        }
+        payload = {"inputs": prompt, **self.kwargs}
         if self.temperature is not None:
             payload["temperature"] = self.temperature
 
@@ -650,11 +655,12 @@ class BloomWrapper(LanguageModelWrapper):
 
         response_json = response.json()
         return _remove_prompt_from_completion(
-            prompt=prompt,
-            completion=response_json[0]['generated_text']
+            prompt=prompt, completion=response_json[0]["generated_text"]
         )
 
-    def complete_chat(self, messages: List[Message], append_role: str = None, prepend_role: str = None) -> str:
+    def complete_chat(
+        self, messages: List[Message], append_role: str = None, prepend_role: str = None
+    ) -> str:
         """
         Mimics a chat scenario with BLOOM, via a list of {"role": <str>, "content":<str>} objects.
 
@@ -672,7 +678,7 @@ class BloomWrapper(LanguageModelWrapper):
             messages=messages,
             prepend_role=prepend_role,
             append_role=append_role,
-            include_preamble=True
+            include_preamble=True,
         )
 
         res = self._call_model(prompt=prompt)
@@ -698,15 +704,15 @@ class BloomWrapper(LanguageModelWrapper):
 class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
 
     def __init__(
-            self,
-            apikey: Optional[str] = None,
-            model: str = "gpt-3.5-turbo",
-            format_sse: bool = False,
-            append_stop_token: bool = True,
-            stop_token: str = STOP_TOKEN,
-            temperature: float = None,
-            api_config: Optional[OPENAI_API_CONFIG] = None,
-            **kwargs: Any
+        self,
+        apikey: Optional[str] = None,
+        model: str = "gpt-3.5-turbo",
+        format_sse: bool = False,
+        append_stop_token: bool = True,
+        stop_token: str = STOP_TOKEN,
+        temperature: float = None,
+        api_config: Optional[OPENAI_API_CONFIG] = None,
+        **kwargs: Any,
     ):
         """
         Streaming compliant wrapper for the OpenAI API. Supports all major text and chat completion models by OpenAI.
@@ -768,22 +774,21 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             append_stop_token=append_stop_token,
             stop_token=stop_token,
             temperature=temperature,
-            **kwargs
+            **kwargs,
         )
 
         if api_config and apikey:
             warn("api_config takes precedence over apikey and model arguments.")
 
         if apikey:
-            self.api_config = OpenAIConfiguration(
-                api_key=apikey,
-                model=model
-            )
+            self.api_config = OpenAIConfiguration(api_key=apikey, model=model)
         if api_config:
             self.api_config = api_config
 
-        if not hasattr(self, 'api_config'):
-            raise Exception('Must pass apikey or api_config. If using kwargs, check capitalization.')
+        if not hasattr(self, "api_config"):
+            raise Exception(
+                "Must pass apikey or api_config. If using kwargs, check capitalization."
+            )
 
         self.api_config.response_callback = self._set_last_response_header
 
@@ -807,19 +812,27 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
         for chunk in response:
             text = None
             if not chunk.choices:
-                text = ''
-            elif hasattr(chunk.choices[0], 'text'):
+                text = ""
+            elif hasattr(chunk.choices[0], "text"):
                 text = chunk.choices[0].text
-            elif hasattr(chunk.choices[0], 'delta') and hasattr(chunk.choices[0].delta, 'text'):
+            elif hasattr(chunk.choices[0], "delta") and hasattr(
+                chunk.choices[0].delta, "text"
+            ):
                 text = chunk.choices[0].delta.text
-            elif hasattr(chunk.choices[0], 'delta') and hasattr(chunk.choices[0].delta, 'content'):
+            elif hasattr(chunk.choices[0], "delta") and hasattr(
+                chunk.choices[0].delta, "content"
+            ):
                 text = chunk.choices[0].delta.content
             if text:
-                yield _conditional_format_sse_response(content=text, format_sse=self.format_sse)
+                yield _conditional_format_sse_response(
+                    content=text, format_sse=self.format_sse
+                )
         if self.format_sse and self.append_stop_token:
             yield _format_sse(content=self.stop_token)
 
-    def complete_chat(self, messages: List[Message], append_role: str = None, prepend_role: str = None) -> Generator:
+    def complete_chat(
+        self, messages: List[Message], append_role: str = None, prepend_role: str = None
+    ) -> Generator:
         """
         Completes chat with OpenAI. If using GPT 3.5 or 4, will simply send the list of {"role": <str>, "content":<str>}
         objects to the API.
@@ -839,9 +852,9 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
         """
 
         kwargs = self._prep_common_kwargs(self.api_config)
-        kwargs['stream'] = True
+        kwargs["stream"] = True
 
-        if ('gpt-4' in self.api_config.model) or ('gpt-3.5' in self.api_config.model):
+        if ("gpt-4" in self.api_config.model) or ("gpt-3.5" in self.api_config.model):
             kwargs["messages"] = messages
             response = self.api_config.client.chat.completions.create(**kwargs)
             yield from self._yield_response(response)
@@ -850,7 +863,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
                 messages=messages,
                 prepend_role=prepend_role,
                 append_role=append_role,
-                include_preamble=False
+                include_preamble=False,
             )
             kwargs["prompt"] = prompt_text
             kwargs["stop"] = _get_stop_sequences_from_messages(messages)
@@ -858,7 +871,9 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             yield from self._yield_response(response)
 
     # TODO Consider error handling for chat models.
-    def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> Generator:
+    def text_completion(
+        self, prompt: str, stop_sequences: List[str] = None
+    ) -> Generator:
         """
         Completes text via OpenAI. Note that this doesn't support GPT 3.5 or later, as they are chat models.
 
@@ -874,11 +889,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
         """
         kwargs = self._prep_common_kwargs(self.api_config)
 
-        kwargs = {
-            "prompt": prompt,
-            "stream": True,
-            **kwargs
-        }
+        kwargs = {"prompt": prompt, "stream": True, **kwargs}
 
         if stop_sequences:
             kwargs["stop"] = stop_sequences
@@ -907,12 +918,12 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
     """
 
     def __init__(
-            self,
-            apikey: Optional[str] = None,
-            model: str = "gpt-3.5-turbo",
-            temperature: float = None,
-            api_config: Optional[OPENAI_API_CONFIG] = None,
-            **kwargs: Any
+        self,
+        apikey: Optional[str] = None,
+        model: str = "gpt-3.5-turbo",
+        temperature: float = None,
+        api_config: Optional[OPENAI_API_CONFIG] = None,
+        **kwargs: Any,
     ):
         """
         Wrapper for the OpenAI API. Supports all major text and chat completion models by OpenAI.
@@ -972,15 +983,14 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             warn("api_config takes precedence over apikey and model arguments.")
 
         if apikey:
-            self.api_config = OpenAIConfiguration(
-                api_key=apikey,
-                model=model
-            )
+            self.api_config = OpenAIConfiguration(api_key=apikey, model=model)
         if api_config:
             self.api_config = api_config
 
-        if not hasattr(self, 'api_config'):
-            raise Exception('Must pass apikey or api_config. If using kwargs, check capitalization.')
+        if not hasattr(self, "api_config"):
+            raise Exception(
+                "Must pass apikey or api_config. If using kwargs, check capitalization."
+            )
 
         self.api_config.response_callback = self._set_last_response_header
 
@@ -990,7 +1000,9 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
     def __repr__(self):
         return f"OpenAIGPTWrapper(model={self.api_config.model})"
 
-    def complete_chat(self, messages: List[Message], append_role: str = None, prepend_role: str = None) -> str:
+    def complete_chat(
+        self, messages: List[Message], append_role: str = None, prepend_role: str = None
+    ) -> str:
         """
         Completes chat with OpenAI. If using GPT 3.5 or 4, will simply send the list of {"role": <str>, "content":<str>}
         objects to the API.
@@ -1008,7 +1020,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
         """
         kwargs = self._prep_common_kwargs(self.api_config)
 
-        if ('gpt-4' in self.api_config.model) or ('gpt-3.5' in self.api_config.model):
+        if ("gpt-4" in self.api_config.model) or ("gpt-3.5" in self.api_config.model):
             kwargs["messages"] = messages
             response = self.api_config.client.chat.completions.create(**kwargs)
             return response.choices[0].message.content
@@ -1017,7 +1029,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
                 messages=messages,
                 prepend_role=prepend_role,
                 append_role=append_role,
-                include_preamble=False
+                include_preamble=False,
             )
             kwargs["prompt"] = prompt_text
             response = self.api_config.client.completions.create(**kwargs)
@@ -1039,7 +1051,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
 
         kwargs = self._prep_common_kwargs(self.api_config)
 
-        kwargs['prompt'] = self.prep_prompt(prompt=prompt)
+        kwargs["prompt"] = self.prep_prompt(prompt=prompt)
 
         if stop_sequences:
             kwargs["stop"] = stop_sequences
@@ -1065,14 +1077,14 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
 class StreamingVertexAIWrapper(StreamingLanguageModelWrapper):
 
     def __init__(
-            self,
-            model: str = None,
-            format_sse: bool = False,
-            append_stop_token: bool = True,
-            stop_token: str = STOP_TOKEN,
-            temperature: float = None,
-            api_config: Optional[VERTEXAI_API_CONFIG] = None,
-            **kwargs: Any
+        self,
+        model: str = None,
+        format_sse: bool = False,
+        append_stop_token: bool = True,
+        stop_token: str = STOP_TOKEN,
+        temperature: float = None,
+        api_config: Optional[VERTEXAI_API_CONFIG] = None,
+        **kwargs: Any,
     ):
         """
         Streaming wrapper for Vertex AI LLMs. Supports all major text and chat completion models, including Gemeni.
@@ -1134,7 +1146,7 @@ class StreamingVertexAIWrapper(StreamingLanguageModelWrapper):
             append_stop_token=append_stop_token,
             stop_token=stop_token,
             temperature=temperature,
-            **kwargs
+            **kwargs,
         )
 
         if api_config and model:
@@ -1174,37 +1186,37 @@ class StreamingVertexAIWrapper(StreamingLanguageModelWrapper):
             chat_session = self.api_config.client.start_chat()
             response = chat_session.send_message_streaming(
                 message=prompt,
-                max_output_tokens=kwargs['max_output_tokens'],
+                max_output_tokens=kwargs["max_output_tokens"],
                 temperature=self.temperature,
-                top_k=kwargs['top_k'],
-                top_p=kwargs['top_p'],
-                stop_sequences=stop_sequences
+                top_k=kwargs["top_k"],
+                top_p=kwargs["top_p"],
+                stop_sequences=stop_sequences,
             )
         elif isinstance(self.api_config.client, TextGenerationModel):
-            if kwargs['max_output_tokens']:
+            if kwargs["max_output_tokens"]:
                 response = self.api_config.client.predict_streaming(
                     prompt,
                     temperature=self.temperature,
                     stop_sequences=stop_sequences,
-                    max_output_tokens=kwargs['max_output_tokens'],
-                    top_p=kwargs['top_p'],
-                    top_k=kwargs['top_k'],
-                    logprobs=kwargs['logprobs'],
-                    presence_penalty=kwargs['presence_penalty'],
-                    frequency_penalty=kwargs['frequency_penalty'],
-                    logit_bias=kwargs['logit_bias']
+                    max_output_tokens=kwargs["max_output_tokens"],
+                    top_p=kwargs["top_p"],
+                    top_k=kwargs["top_k"],
+                    logprobs=kwargs["logprobs"],
+                    presence_penalty=kwargs["presence_penalty"],
+                    frequency_penalty=kwargs["frequency_penalty"],
+                    logit_bias=kwargs["logit_bias"],
                 )
             else:
                 response = self.api_config.client.predict_streaming(
                     prompt,
                     temperature=self.temperature,
                     stop_sequences=stop_sequences,
-                    top_p=kwargs['top_p'],
-                    top_k=kwargs['top_k'],
-                    logprobs=kwargs['logprobs'],
-                    presence_penalty=kwargs['presence_penalty'],
-                    frequency_penalty=kwargs['frequency_penalty'],
-                    logit_bias=kwargs['logit_bias']
+                    top_p=kwargs["top_p"],
+                    top_k=kwargs["top_k"],
+                    logprobs=kwargs["logprobs"],
+                    presence_penalty=kwargs["presence_penalty"],
+                    frequency_penalty=kwargs["frequency_penalty"],
+                    logit_bias=kwargs["logit_bias"],
                 )
         else:
             response = self.api_config.client.generate_content(
@@ -1212,25 +1224,24 @@ class StreamingVertexAIWrapper(StreamingLanguageModelWrapper):
                 generation_config=GenerationConfig(
                     temperature=self.temperature,
                     stop_sequences=stop_sequences,
-                    top_p=kwargs['top_p'],
-                    top_k=kwargs['top_k'],
-                    candidate_count=kwargs['candidate_count'],
-                    max_output_tokens=kwargs['max_output_tokens']
+                    top_p=kwargs["top_p"],
+                    top_k=kwargs["top_k"],
+                    candidate_count=kwargs["candidate_count"],
+                    max_output_tokens=kwargs["max_output_tokens"],
                 ),
-                stream=True
+                stream=True,
             )
 
         for chunk in response:
             self.last_response_header = extract_vertex_ai_response_metadata(chunk)
-            yield _conditional_format_sse_response(content=chunk.text, format_sse=self.format_sse)
+            yield _conditional_format_sse_response(
+                content=chunk.text, format_sse=self.format_sse
+            )
         if self.format_sse and self.append_stop_token:
             yield _format_sse(content=self.stop_token)
 
     def complete_chat(
-            self,
-            messages: List[Message],
-            append_role: str = None,
-            prepend_role: str = None
+        self, messages: List[Message], append_role: str = None, prepend_role: str = None
     ) -> Generator:
         """
         Completes chat with Vertex AI.
@@ -1248,15 +1259,17 @@ class StreamingVertexAIWrapper(StreamingLanguageModelWrapper):
             messages=messages,
             prepend_role=prepend_role,
             append_role=append_role,
-            include_preamble=False
+            include_preamble=False,
         )
 
         return self._call_model(
             prompt=prompt_text,
-            stop_sequences=_get_stop_sequences_from_messages(messages)
+            stop_sequences=_get_stop_sequences_from_messages(messages),
         )
 
-    def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> Generator:
+    def text_completion(
+        self, prompt: str, stop_sequences: List[str] = None
+    ) -> Generator:
         """
         Completes text based on provided prompt.
 
@@ -1270,20 +1283,17 @@ class StreamingVertexAIWrapper(StreamingLanguageModelWrapper):
             The text completion generator.
 
         """
-        return self._call_model(
-            prompt=prompt,
-            stop_sequences=stop_sequences
-        )
+        return self._call_model(prompt=prompt, stop_sequences=stop_sequences)
 
 
 class VertexAIWrapper(LanguageModelWrapper):
 
     def __init__(
-            self,
-            model: str = None,
-            temperature: float = None,
-            api_config: Optional[VERTEXAI_API_CONFIG] = None,
-            **kwargs: Any
+        self,
+        model: str = None,
+        temperature: float = None,
+        api_config: Optional[VERTEXAI_API_CONFIG] = None,
+        **kwargs: Any,
     ):
         """
         Wrapper for Vertex AI LLMs. Supports all major text and chat completion models, including Gemeni.
@@ -1376,37 +1386,37 @@ class VertexAIWrapper(LanguageModelWrapper):
             chat_session = self.api_config.client.start_chat()
             response = chat_session.send_message(
                 message=prompt,
-                max_output_tokens=kwargs['max_output_tokens'],
+                max_output_tokens=kwargs["max_output_tokens"],
                 temperature=self.temperature,
-                top_k=kwargs['top_k'],
-                top_p=kwargs['top_p'],
-                stop_sequences=stop_sequences
+                top_k=kwargs["top_k"],
+                top_p=kwargs["top_p"],
+                stop_sequences=stop_sequences,
             )
         elif isinstance(self.api_config.client, TextGenerationModel):
-            if kwargs['max_output_tokens']:
+            if kwargs["max_output_tokens"]:
                 response = self.api_config.client.predict(
                     prompt,
                     temperature=self.temperature,
                     stop_sequences=stop_sequences,
-                    max_output_tokens=kwargs['max_output_tokens'],
-                    top_p=kwargs['top_p'],
-                    top_k=kwargs['top_k'],
-                    logprobs=kwargs['logprobs'],
-                    presence_penalty=kwargs['presence_penalty'],
-                    frequency_penalty=kwargs['frequency_penalty'],
-                    logit_bias=kwargs['logit_bias']
+                    max_output_tokens=kwargs["max_output_tokens"],
+                    top_p=kwargs["top_p"],
+                    top_k=kwargs["top_k"],
+                    logprobs=kwargs["logprobs"],
+                    presence_penalty=kwargs["presence_penalty"],
+                    frequency_penalty=kwargs["frequency_penalty"],
+                    logit_bias=kwargs["logit_bias"],
                 )
             else:
                 response = self.api_config.client.predict(
                     prompt,
                     temperature=self.temperature,
                     stop_sequences=stop_sequences,
-                    top_p=kwargs['top_p'],
-                    top_k=kwargs['top_k'],
-                    logprobs=kwargs['logprobs'],
-                    presence_penalty=kwargs['presence_penalty'],
-                    frequency_penalty=kwargs['frequency_penalty'],
-                    logit_bias=kwargs['logit_bias']
+                    top_p=kwargs["top_p"],
+                    top_k=kwargs["top_k"],
+                    logprobs=kwargs["logprobs"],
+                    presence_penalty=kwargs["presence_penalty"],
+                    frequency_penalty=kwargs["frequency_penalty"],
+                    logit_bias=kwargs["logit_bias"],
                 )
         else:
             response = self.api_config.client.generate_content(
@@ -1414,12 +1424,12 @@ class VertexAIWrapper(LanguageModelWrapper):
                 generation_config=GenerationConfig(
                     temperature=self.temperature,
                     stop_sequences=stop_sequences,
-                    top_p=kwargs['top_p'],
-                    top_k=kwargs['top_k'],
-                    candidate_count=kwargs['candidate_count'],
-                    max_output_tokens=kwargs['max_output_tokens']
+                    top_p=kwargs["top_p"],
+                    top_k=kwargs["top_k"],
+                    candidate_count=kwargs["candidate_count"],
+                    max_output_tokens=kwargs["max_output_tokens"],
                 ),
-                stream=False
+                stream=False,
             )
 
         self.last_response_header = extract_vertex_ai_response_metadata(response)
@@ -1427,10 +1437,7 @@ class VertexAIWrapper(LanguageModelWrapper):
         return response.text
 
     def complete_chat(
-            self,
-            messages: List[Message],
-            append_role: str = None,
-            prepend_role: str = None
+        self, messages: List[Message], append_role: str = None, prepend_role: str = None
     ) -> str:
         """
         Completes chat.
@@ -1448,12 +1455,12 @@ class VertexAIWrapper(LanguageModelWrapper):
             messages=messages,
             prepend_role=prepend_role,
             append_role=append_role,
-            include_preamble=False
+            include_preamble=False,
         )
 
         return self._call_model(
             prompt=prompt_text,
-            stop_sequences=_get_stop_sequences_from_messages(messages)
+            stop_sequences=_get_stop_sequences_from_messages(messages),
         )
 
     def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> str:
@@ -1468,25 +1475,22 @@ class VertexAIWrapper(LanguageModelWrapper):
             The text completion.
 
         """
-        return self._call_model(
-            prompt=prompt,
-            stop_sequences=stop_sequences
-        )
+        return self._call_model(prompt=prompt, stop_sequences=stop_sequences)
 
 
 class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
     API_URL = "https://api.anthropic.com/v1/complete"
 
     def __init__(
-            self,
-            apikey: str,
-            model: CLAUDE_MODEL = "claude-2",
-            format_sse: bool = False,
-            append_stop_token: bool = True,
-            stop_token: str = STOP_TOKEN,
-            temperature: float = None,
-            anthropic_version: str = "2023-06-01",
-            **kwargs: Any
+        self,
+        apikey: str,
+        model: CLAUDE_MODEL = "claude-2",
+        format_sse: bool = False,
+        append_stop_token: bool = True,
+        stop_token: str = STOP_TOKEN,
+        temperature: float = None,
+        anthropic_version: str = "2023-06-01",
+        **kwargs: Any,
     ):
         """
         Streaming wrapper for Anthropic's Claude large language model.
@@ -1511,7 +1515,7 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
             append_stop_token=append_stop_token,
             stop_token=stop_token,
             temperature=temperature,
-            **kwargs
+            **kwargs,
         )
         self.apikey = apikey
         self.model = model
@@ -1536,7 +1540,7 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
         headers = {
             "X-API-Key": self.apikey,
             "Accept": "text/event-stream",
-            "anthropic-version": self.anthropic_version
+            "anthropic-version": self.anthropic_version,
         }
 
         kwargs = self._prep_common_kwargs()
@@ -1547,7 +1551,7 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
             "max_tokens_to_sample": 500,
             "stop_sequences": stop_sequences,
             "stream": True,
-            **kwargs
+            **kwargs,
         }
 
         resp = requests.post(self.API_URL, headers=headers, json=kwargs, stream=True)
@@ -1563,7 +1567,7 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
                 data = json.loads(event.data)
 
                 # Extract the completion if it is present.
-                completion = ''
+                completion = ""
                 if "completion" in data:
                     completion = data["completion"]
 
@@ -1573,15 +1577,17 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
                     strip_index += len(completion)
 
                 # If format_sse is True, we need to yield with SSE formatting.
-                yield _conditional_format_sse_response(content=completion, format_sse=self.format_sse)
+                yield _conditional_format_sse_response(
+                    content=completion, format_sse=self.format_sse
+                )
         if self.format_sse and self.append_stop_token:
             yield _format_sse(content=self.stop_token)
 
     def complete_chat(
-            self,
-            messages: List[Message],
-            append_role: str = "Assistant",
-            prepend_role: str = "Human"
+        self,
+        messages: List[Message],
+        append_role: str = "Assistant",
+        prepend_role: str = "Human",
     ) -> Generator:
         """
         Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via a
@@ -1607,15 +1613,17 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
             messages=messages,
             prepend_role=prepend_role,
             append_role=append_role,
-            include_preamble=False
+            include_preamble=False,
         )
 
         return self._call_model(
             prompt=prompt_text,
-            stop_sequences=_get_stop_sequences_from_messages(messages)
+            stop_sequences=_get_stop_sequences_from_messages(messages),
         )
 
-    def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> Generator:
+    def text_completion(
+        self, prompt: str, stop_sequences: List[str] = None
+    ) -> Generator:
         """
         Completes text based on provided prompt.
 
@@ -1633,24 +1641,23 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
         if stop_sequences is None:
             stop_sequences = []
 
-        prompt = self.prep_prompt(prompt=prompt, prepend_role="Human", append_role="Assistant")
-
-        return self._call_model(
-            prompt=prompt,
-            stop_sequences=stop_sequences
+        prompt = self.prep_prompt(
+            prompt=prompt, prepend_role="Human", append_role="Assistant"
         )
+
+        return self._call_model(prompt=prompt, stop_sequences=stop_sequences)
 
 
 class ClaudeWrapper(LanguageModelWrapper):
     API_URL = "https://api.anthropic.com/v1/complete"
 
     def __init__(
-            self,
-            apikey: str,
-            model: CLAUDE_MODEL = "claude-2",
-            temperature: float = None,
-            anthropic_version: str = "2023-06-01",
-            **kwargs: Any
+        self,
+        apikey: str,
+        model: CLAUDE_MODEL = "claude-2",
+        temperature: float = None,
+        anthropic_version: str = "2023-06-01",
+        **kwargs: Any,
     ):
         """
         Wrapper for Anthropic's Claude large language model.
@@ -1691,7 +1698,7 @@ class ClaudeWrapper(LanguageModelWrapper):
         headers = {
             "X-API-Key": self.apikey,
             "Accept": "application/json",
-            "anthropic-version": self.anthropic_version
+            "anthropic-version": self.anthropic_version,
         }
 
         kwargs = self._prep_common_kwargs()
@@ -1701,20 +1708,23 @@ class ClaudeWrapper(LanguageModelWrapper):
             "model": self.model,
             "max_tokens_to_sample": 500,
             "stop_sequences": _get_stop_sequences_from_messages(messages),
-            **kwargs
+            **kwargs,
         }
 
-        resp = requests.post("https://api.anthropic.com/v1/complete", headers=headers, json=kwargs)
+        resp = requests.post(
+            "https://api.anthropic.com/v1/complete", headers=headers, json=kwargs
+        )
 
         self.last_response_header = resp.headers
 
+        # print(resp.text)
         return json.loads(resp.text)["completion"].strip()
 
     def complete_chat(
-            self,
-            messages: List[Message],
-            append_role: str = "Assistant",
-            prepend_role: str = "Human"
+        self,
+        messages: List[Message],
+        append_role: str = "Assistant",
+        prepend_role: str = "Human",
     ) -> str:
         """
         Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via a
@@ -1740,7 +1750,7 @@ class ClaudeWrapper(LanguageModelWrapper):
             messages=messages,
             prepend_role=prepend_role,
             append_role=append_role,
-            include_preamble=False
+            include_preamble=False,
         )
 
         return self._call_model(prompt_text, messages)
@@ -1761,7 +1771,9 @@ class ClaudeWrapper(LanguageModelWrapper):
         if stop_sequences is None:
             stop_sequences = []
 
-        prompt = self.prep_prompt(prompt=prompt, prepend_role="Human", append_role="Assistant")
+        prompt = self.prep_prompt(
+            prompt=prompt, prepend_role="Human", append_role="Assistant"
+        )
 
         return self._call_model(prompt, stop_sequences)
 
@@ -1786,7 +1798,7 @@ class GPT2Wrapper(LanguageModelWrapper):
         from transformers import pipeline
 
         self.model_name = "GPT-2"
-        self.pipeline = pipeline('text-generation', model='gpt2')
+        self.pipeline = pipeline("text-generation", model="gpt2")
 
     def __repr__(self):
         return f"GPT2Wrapper({self.model_name})"
@@ -1810,19 +1822,19 @@ class GPT2Wrapper(LanguageModelWrapper):
             "text_inputs": prompt,
             "max_length": max_length,
             "num_return_sequences": 1,
-            **kwargs
+            **kwargs,
         }
 
         res = self.pipeline(**kwargs)
 
-        return _remove_prompt_from_completion(prompt, res[0]['generated_text'])
+        return _remove_prompt_from_completion(prompt, res[0]["generated_text"])
 
     def complete_chat(
-            self,
-            messages: List[Message],
-            append_role: str = None,
-            max_length: int = 300,
-            prepend_role: str = None
+        self,
+        messages: List[Message],
+        append_role: str = None,
+        max_length: int = 300,
+        prepend_role: str = None,
     ) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
@@ -1842,7 +1854,7 @@ class GPT2Wrapper(LanguageModelWrapper):
             messages=messages,
             prepend_role=prepend_role,
             append_role=append_role,
-            include_preamble=True
+            include_preamble=True,
         )
         return self._call_model(prompt=prompt, max_length=max_length)
 
@@ -1882,13 +1894,13 @@ class DollyWrapper(LanguageModelWrapper):
         from transformers import pipeline
         import torch
 
-        self.model_name = 'dolly-v2-12b'
+        self.model_name = "dolly-v2-12b"
         self.pipeline = pipeline(
             "text-generation",
             model="databricks/dolly-v2-12b",
             torch_dtype=torch.bfloat16,
             trust_remote_code=True,
-            device_map="auto"
+            device_map="auto",
         )
 
     def __repr__(self):
@@ -1907,17 +1919,15 @@ class DollyWrapper(LanguageModelWrapper):
         """
         kwargs = self._prep_common_kwargs()
 
-        kwargs = {
-            "inputs": prompt,
-            "num_return_sequences": 1,
-            **kwargs
-        }
+        kwargs = {"inputs": prompt, "num_return_sequences": 1, **kwargs}
 
         res = self.pipeline(**kwargs)
 
-        return _remove_prompt_from_completion(prompt, res[0]['generated_text'])
+        return _remove_prompt_from_completion(prompt, res[0]["generated_text"])
 
-    def complete_chat(self, messages: List[Message], append_role: str = None, prepend_role: str = None) -> str:
+    def complete_chat(
+        self, messages: List[Message], append_role: str = None, prepend_role: str = None
+    ) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
 
@@ -1935,7 +1945,7 @@ class DollyWrapper(LanguageModelWrapper):
             messages=messages,
             prepend_role=prepend_role,
             append_role=append_role,
-            include_preamble=True
+            include_preamble=True,
         )
         return self._call_model(prompt=prompt)
 
@@ -1963,7 +1973,13 @@ class ReplicateLlama2Wrapper(LanguageModelWrapper):
     first_user_message = "Hi."
     """str: Used as the first 'user' message in chat completions when the chat's first non-system message is from 'assistant'."""
 
-    def __init__(self, apikey: str, model: str = "meta/llama-2-70b-chat:02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3", temperature: float = None, **kwargs: Any):
+    def __init__(
+        self,
+        apikey: str,
+        model: str = "meta/llama-2-70b-chat:02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3",
+        temperature: float = None,
+        **kwargs: Any,
+    ):
         """
         Wrapper for Llama 2, provided via Replicate. See https://replicate.com/ for more information.
 
@@ -1998,17 +2014,19 @@ class ReplicateLlama2Wrapper(LanguageModelWrapper):
 
         Returns:
             The chat completion.
-        
+
         """
 
         msgs = messages.copy()
 
         if len(msgs) >= 1:
-            if not msgs[0]['role'] == 'system':
-                msgs.insert(0, {"role":"system", "content":self.base_system_chat_prompt})
+            if not msgs[0]["role"] == "system":
+                msgs.insert(
+                    0, {"role": "system", "content": self.base_system_chat_prompt}
+                )
 
-        if msgs[1]['role'].lower() == 'assistant':
-            msgs.insert(1, {"role":"user", "content":self.first_user_message})
+        if msgs[1]["role"].lower() == "assistant":
+            msgs.insert(1, {"role": "user", "content": self.first_user_message})
 
         completion_prompt = f"""<s>[INST] <<SYS>>{msgs[0]['content']}<</SYS>>"""
 
@@ -2031,7 +2049,7 @@ Assistant: {msgs[2]['content']}</s>"""
 
         return completion_prompt
 
-    def _clean_response(self, assistant_message:str) -> str:
+    def _clean_response(self, assistant_message: str) -> str:
         """
         Cleans up the chat response, mainly by stripping whitespace and removing "Assistant:" prepends.
 
@@ -2047,8 +2065,9 @@ Assistant: {msgs[2]['content']}</s>"""
             am = am[10:].strip()
         return am
 
-    def complete_chat(self, messages: List[Message], append_role: str = None, prepend_role: str = None) -> str:
-
+    def complete_chat(
+        self, messages: List[Message], append_role: str = None, prepend_role: str = None
+    ) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
 
@@ -2061,11 +2080,13 @@ Assistant: {msgs[2]['content']}</s>"""
         """
 
         if append_role is not None or prepend_role is not None:
-            warnings.warn("Warning: PhaseLLM's implementation of Llama 2 does not support changing roles. We will stick to 'user' and 'assistant' roles.")
+            warnings.warn(
+                "Warning: PhaseLLM's implementation of Llama 2 does not support changing roles. We will stick to 'user' and 'assistant' roles."
+            )
 
         chat_prompt = self.build_chat_completion_prompt(messages)
 
-        client = replicate.Client(api_token = self.apikey)
+        client = replicate.Client(api_token=self.apikey)
         output = client.run(
             "meta/llama-2-70b-chat:02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3",
             input={
@@ -2077,8 +2098,8 @@ Assistant: {msgs[2]['content']}</s>"""
                 "system_prompt": "",
                 "max_new_tokens": 1000,
                 "min_new_tokens": -1,
-                "stop_sequences": "</s>"
-            }
+                "stop_sequences": "</s>",
+            },
         )
 
         new_text = ""
@@ -2115,10 +2136,10 @@ Assistant: {msgs[2]['content']}</s>"""
         if stop_sequences is not None:
             input_call["stop_sequences"] = ",".join(stop_sequences)
 
-        client = replicate.Client(api_token = self.apikey)
+        client = replicate.Client(api_token=self.apikey)
         output = client.run(
             "meta/llama-2-70b-chat:02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3",
-            input=input_call
+            input=input_call,
         )
 
         new_text = ""
@@ -2130,7 +2151,13 @@ Assistant: {msgs[2]['content']}</s>"""
 
 class CohereWrapper(LanguageModelWrapper):
 
-    def __init__(self, apikey: str, model: str = "xlarge", temperature: float = None, **kwargs: Any):
+    def __init__(
+        self,
+        apikey: str,
+        model: str = "xlarge",
+        temperature: float = None,
+        **kwargs: Any,
+    ):
         """
         Wrapper for Cohere's API.
 
@@ -2167,14 +2194,16 @@ class CohereWrapper(LanguageModelWrapper):
             "prompt": prompt,
             "max_tokens": 300,
             "stop_sequences": stop_sequences,
-            **kwargs
+            **kwargs,
         }
 
         response = self.co.generate(**kwargs)
 
         return response.generations[0].text
 
-    def complete_chat(self, messages: List[Message], append_role: str = None, prepend_role: str = None) -> str:
+    def complete_chat(
+        self, messages: List[Message], append_role: str = None, prepend_role: str = None
+    ) -> str:
         """
         Mimics a chat scenario via a list of {"role": <str>, "content":<str>} objects.
 
@@ -2192,7 +2221,7 @@ class CohereWrapper(LanguageModelWrapper):
             messages=messages,
             prepend_role=prepend_role,
             append_role=append_role,
-            include_preamble=False
+            include_preamble=False,
         )
         stop_sequences = _get_stop_sequences_from_messages(messages)
 
@@ -2226,7 +2255,11 @@ class CohereWrapper(LanguageModelWrapper):
 
 class ChatBot:
 
-    def __init__(self, llm: LanguageModelWrapper, initial_system_prompt: str = "You are a friendly chatbot assistant."):
+    def __init__(
+        self,
+        llm: LanguageModelWrapper,
+        initial_system_prompt: str = "You are a friendly chatbot assistant.",
+    ):
         """
         Allows you to have a chat conversation with an LLM wrapper.
 
@@ -2242,7 +2275,7 @@ class ChatBot:
         """
         self.llm: LanguageModelWrapper = llm
         self.messages: List[EnhancedMessage] = []
-        self.append_message('system', initial_system_prompt)
+        self.append_message("system", initial_system_prompt)
 
     def _response(self, response: str, start_time: float) -> str:
         """
@@ -2256,7 +2289,9 @@ class ChatBot:
             The response.
 
         """
-        self.append_message('assistant', response, log_time_seconds=time.time() - start_time)
+        self.append_message(
+            "assistant", response, log_time_seconds=time.time() - start_time
+        )
         return response
 
     def _streaming_response(self, response: Generator, start_time: float) -> Generator:
@@ -2274,13 +2309,17 @@ class ChatBot:
             The response.
 
         """
-        full_response = ''
+        full_response = ""
         for chunk in response:
             full_response += chunk
             yield chunk
-        self.append_message('assistant', full_response, log_time_seconds=time.time() - start_time)
+        self.append_message(
+            "assistant", full_response, log_time_seconds=time.time() - start_time
+        )
 
-    def append_message(self, role: str, message: str, log_time_seconds: float = None) -> None:
+    def append_message(
+        self, role: str, message: str, log_time_seconds: float = None
+    ) -> None:
         """
         Saves a message to the ChatBot message stack.
 
@@ -2295,7 +2334,7 @@ class ChatBot:
         append_me: EnhancedMessage = {
             "role": role,
             "content": message,
-            "timestamp_utc": datetime.now()
+            "timestamp_utc": datetime.now(),
         }
 
         # Save how long it took to generate the message, if provided.
@@ -2319,8 +2358,8 @@ class ChatBot:
         """
         # TODO consider if this is necessary, given the TODO suggestion in self.chat().
         last_message = self.messages.pop()
-        if last_message['role'] == 'user':
-            return self.chat(last_message['content'])
+        if last_message["role"] == "user":
+            return self.chat(last_message["content"])
         else:
             self.messages.append(last_message)
 
@@ -2337,15 +2376,17 @@ class ChatBot:
 
         """
         # TODO consider appending user message only after a successful call to self.llm.complete_chat().
-        self.append_message('user', message)
+        self.append_message("user", message)
         start_time = time.time()
 
-        clean_messages = []  # We remove fields that the ChatBot class specifically tracks.
+        clean_messages = (
+            []
+        )  # We remove fields that the ChatBot class specifically tracks.
         for m in self.messages:
             m_copy = {"role": m["role"], "content": m["content"]}
             clean_messages.append(m_copy)
 
-        response = self.llm.complete_chat(clean_messages, append_role='Assistant')
+        response = self.llm.complete_chat(clean_messages, append_role="Assistant")
 
         if isinstance(response, Generator):
             return self._streaming_response(response=response, start_time=start_time)

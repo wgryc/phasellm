@@ -1185,6 +1185,7 @@ class WebSearchAgent(Agent):
                 time.sleep(self.rate_limit)
 
                 # Get the content of the webpage.
+                content = "No content."
                 try:
                     content = self.webpage_agent.scrape(
                         url=item["link"],
@@ -1197,11 +1198,19 @@ class WebSearchAgent(Agent):
                     # Skip when the webpage cannot be scraped.
                     continue
 
+                title = "Untitled"
+                if "title" in item:
+                    title = item["title"]
+
+                description = "No description available."
+                if "snippet" in item:
+                    description = item["snippet"]
+
                 results.append(
                     WebSearchResult(
-                        title=item["title"],
+                        title=title,
                         url=item["link"],
-                        description=item["snippet"],
+                        description=description,
                         content=content,
                     )
                 )
