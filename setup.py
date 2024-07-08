@@ -31,7 +31,8 @@ setup(
         "feedparser>=6.0.10",
         "azure-identity>=1.14.0",
         "replicate==0.20.0",
-        "google-cloud-aiplatform>=1.42.1"
+        "google-cloud-aiplatform>=1.42.1",
+        "anthropic>=0.30.1",
     ],
     extras_require={
         "complete": [
@@ -45,7 +46,7 @@ setup(
             "myst_parser>=2.0.0",
             "sphinx-autoapi>=2.1.1",
             "sphinx-autobuild>=2021.3.14",
-        ]
+        ],
     },
     python_requires=">=3.8.0",
     keywords="llm, nlp, evaluation, ai",

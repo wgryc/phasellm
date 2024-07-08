@@ -41,6 +41,9 @@ import cohere
 # Support for Replicate
 import replicate
 
+# Support for Anthropic's Messages API
+import anthropic
+
 # Precompiled regex for variables.
 variable_pattern = r"\{\s*[a-zA-Z0-9_]+\s*\}"
 variable_regex = re.compile(variable_pattern)
@@ -1646,6 +1649,189 @@ class StreamingClaudeWrapper(StreamingLanguageModelWrapper):
         )
 
         return self._call_model(prompt=prompt, stop_sequences=stop_sequences)
+
+
+class ClaudeMessagesWrapper(LanguageModelWrapper):
+
+    def __init__(
+        self,
+        apikey: str,
+        model: str = "claude-3-5-sonnet-20240620",
+        max_tokens: int = 4096,
+        temperature: float = None,
+        **kwargs: Any,
+    ):
+        super().__init__(temperature=temperature, **kwargs)
+        self.apikey = apikey
+        self.model = model
+        self.max_tokens = max_tokens
+
+    def __repr__(self):
+        return f"ClaudeMessagesWrapper(model={self.model})"
+
+    def complete_chat(
+        self,
+        messages: List[Message],
+    ) -> str:
+        """
+        Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via a
+        prompt.
+
+        Args:
+            messages: The messages to generate a chat completion from.
+        Returns:
+            The chat completion.
+
+        """
+
+        new_messages = []
+        for m in messages:
+            new_message = m
+            if m["role"] == "System":
+                new_message["role"] = "User"
+            new_messages.append(new_message)
+
+        client = anthropic.Anthropic(api_key=self.apikey)
+        message = client.messages.create(
+            model=self.model, messages=new_messages, max_tokens=self.max_tokens
+        )
+        return message.content[0].text
+
+    def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> str:
+        """
+        Completes text based on provided prompt.
+
+        Args:
+            prompt: The prompt to generate a text completion from.
+            stop_sequences: The stop sequences to use. Defaults to None.
+
+        Returns:
+            Error; ClaudeMessagesWrapper does not support text completion.
+
+        """
+
+        raise NotImplementedError(
+            "ClaudeMessagesWrapper does not support text completion."
+        )
+
+
+class StreamingClaudeMessagesWrapper(StreamingLanguageModelWrapper):
+
+    def __init__(
+        self,
+        apikey: str,
+        model: str = "claude-3-5-sonnet-20240620",
+        format_sse: bool = False,
+        append_stop_token: bool = True,
+        stop_token: str = STOP_TOKEN,
+        max_tokens: int = 4096,
+        temperature: float = None,
+        **kwargs: Any,
+    ):
+        """
+        Streaming wrapper for Anthropic's Claude large language model.
+
+        We've opted to call Anthropic's API directly rather than using their Python offering.
+
+        Yields the text as it is generated, rather than waiting for the entire completion.
+
+        Args:
+            apikey: The API key to access the Anthropic API.
+            model: The model to use. Defaults to "claude-2".
+            format_sse: Whether to format the SSE response. Defaults to False.
+            append_stop_token: Whether to append the stop token to the end of the prompt. Defaults to True.
+            stop_token: The stop token to use. Defaults to <|END|>.
+            temperature: The temperature to use for the language model.
+            **kwargs: Keyword arguments to pass to the Anthropic API.
+
+        """
+        super().__init__(
+            format_sse=format_sse,
+            append_stop_token=append_stop_token,
+            stop_token=stop_token,
+            temperature=temperature,
+            **kwargs,
+        )
+        self.apikey = apikey
+        self.model = model
+        self.max_tokens = max_tokens
+
+    def __repr__(self):
+        return f"StreamingClaudeMessagesWrapper(model={self.model})"
+
+    def _call_model(self, messages: List[Message]) -> Generator:
+        """
+        Calls the model with the given prompt.
+
+        Args:
+            messages: The messages to generate a chat completion from.
+
+        Returns:
+            The text completion generator.
+
+        """
+
+        client = anthropic.Anthropic(api_key=self.apikey)
+        with client.messages.stream(
+            max_tokens=self.max_tokens, messages=messages, model=self.model
+        ) as stream:
+            for response in stream:
+                if isinstance(response, anthropic.types.RawContentBlockDeltaEvent):
+                    yield _conditional_format_sse_response(
+                        response.delta.text, self.format_sse
+                    )
+                if isinstance(response, anthropic.types.MessageStopEvent):
+                    yield _conditional_format_sse_response(
+                        self.stop_token, self.format_sse
+                    )
+
+    def complete_chat(
+        self,
+        messages: List[Message],
+    ) -> Generator:
+        """
+        Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via a
+        prompt.
+
+        Args:
+            messages: The messages to generate a chat completion from.
+            append_role: The role to append to the end of the prompt. Defaults to "Assistant:".
+            prepend_role: The role to prepend to the beginning of the prompt. Defaults to "Human:".
+
+        Returns:
+            The chat completion generator.
+
+        """
+
+        new_messages = []
+        for m in messages:
+            new_message = m
+            if m["role"] == "System":
+                new_message["role"] = "User"
+            new_messages.append(new_message)
+
+        yield from self._call_model(messages=new_messages)
+
+    def text_completion(
+        self, prompt: str, stop_sequences: List[str] = None
+    ) -> Generator:
+        """
+        Completes text based on provided prompt.
+
+        Yields the text as it is generated, rather than waiting for the entire completion.
+
+        Args:
+            prompt: The prompt to generate a text completion from.
+            stop_sequences: The stop sequences to use. Defaults to None.
+
+        Returns:
+            Error; StreamingClaudeMessagesWrapper does not support text completion.
+
+        """
+
+        raise NotImplementedError(
+            "ClaudeMessagesWrapper does not support text completion."
+        )
 
 
 class ClaudeWrapper(LanguageModelWrapper):
