@@ -1672,6 +1672,8 @@ class ClaudeMessagesWrapper(LanguageModelWrapper):
     def complete_chat(
         self,
         messages: List[Message],
+        append_role: str = "Assistant",
+        prepend_role: str = "User",
     ) -> str:
         """
         Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via a
@@ -1684,17 +1686,29 @@ class ClaudeMessagesWrapper(LanguageModelWrapper):
 
         """
 
+        system_prompt = None
         new_messages = []
-        for m in messages:
-            new_message = m
-            if m["role"] == "System":
-                new_message["role"] = "User"
-            new_messages.append(new_message)
+        for i, m in enumerate(messages):
+            if i == 0 and m["role"].lower() == "system":
+                system_prompt = m["content"]
+            else:
+                new_message = m
+                if m["role"].lower() == "system":
+                    new_message["role"] = "User"
+                new_messages.append(new_message)
 
         client = anthropic.Anthropic(api_key=self.apikey)
-        message = client.messages.create(
-            model=self.model, messages=new_messages, max_tokens=self.max_tokens
-        )
+        if system_prompt is not None:
+            message = client.messages.create(
+                model=self.model,
+                system=system_prompt,
+                messages=new_messages,
+                max_tokens=self.max_tokens,
+            )
+        else:
+            message = client.messages.create(
+                model=self.model, messages=new_messages, max_tokens=self.max_tokens
+            )
         return message.content[0].text
 
     def text_completion(self, prompt: str, stop_sequences: List[str] = None) -> str:
@@ -1759,7 +1773,7 @@ class StreamingClaudeMessagesWrapper(StreamingLanguageModelWrapper):
     def __repr__(self):
         return f"StreamingClaudeMessagesWrapper(model={self.model})"
 
-    def _call_model(self, messages: List[Message]) -> Generator:
+    def _call_model(self, messages: List[Message], system_prompt=None) -> Generator:
         """
         Calls the model with the given prompt.
 
@@ -1771,23 +1785,53 @@ class StreamingClaudeMessagesWrapper(StreamingLanguageModelWrapper):
 
         """
 
+        new_messages = []
+        system_prompt = None
+        for i, m in enumerate(messages):
+            if i == 0 and m["role"].lower() == "system":
+                system_prompt = m["content"]
+            else:
+                new_message = m
+                if m["role"].lower() == "system":
+                    new_message["role"] = "User"
+                new_messages.append(new_message)
+
         client = anthropic.Anthropic(api_key=self.apikey)
-        with client.messages.stream(
-            max_tokens=self.max_tokens, messages=messages, model=self.model
-        ) as stream:
-            for response in stream:
-                if isinstance(response, anthropic.types.RawContentBlockDeltaEvent):
-                    yield _conditional_format_sse_response(
-                        response.delta.text, self.format_sse
-                    )
-                if isinstance(response, anthropic.types.MessageStopEvent):
-                    yield _conditional_format_sse_response(
-                        self.stop_token, self.format_sse
-                    )
+        if system_prompt is None:
+            with client.messages.stream(
+                max_tokens=self.max_tokens, messages=new_messages, model=self.model
+            ) as stream:
+                for response in stream:
+                    if isinstance(response, anthropic.types.RawContentBlockDeltaEvent):
+                        yield _conditional_format_sse_response(
+                            response.delta.text, self.format_sse
+                        )
+                    if isinstance(response, anthropic.types.MessageStopEvent):
+                        yield _conditional_format_sse_response(
+                            self.stop_token, self.format_sse
+                        )
+        else:
+            with client.messages.stream(
+                max_tokens=self.max_tokens,
+                messages=new_messages,
+                model=self.model,
+                system=system_prompt,
+            ) as stream:
+                for response in stream:
+                    if isinstance(response, anthropic.types.RawContentBlockDeltaEvent):
+                        yield _conditional_format_sse_response(
+                            response.delta.text, self.format_sse
+                        )
+                    if isinstance(response, anthropic.types.MessageStopEvent):
+                        yield _conditional_format_sse_response(
+                            self.stop_token, self.format_sse
+                        )
 
     def complete_chat(
         self,
         messages: List[Message],
+        append_role: str = "Assistant",
+        prepend_role: str = "User",
     ) -> Generator:
         """
         Completes chat with Claude. Since Claude doesn't support a chat interface via API, we mimic the chat via a
@@ -1804,13 +1848,17 @@ class StreamingClaudeMessagesWrapper(StreamingLanguageModelWrapper):
         """
 
         new_messages = []
-        for m in messages:
-            new_message = m
-            if m["role"] == "System":
-                new_message["role"] = "User"
-            new_messages.append(new_message)
+        system_prompt = None
+        for i, m in enumerate(messages):
+            if i == 0 and m["role"].lower() == "system":
+                system_prompt = m["content"]
+            else:
+                new_message = m
+                if m["role"].lower() == "system":
+                    new_message["role"] = "User"
+                new_messages.append(new_message)
 
-        yield from self._call_model(messages=new_messages)
+        yield from self._call_model(messages=new_messages, system_prompt=system_prompt)
 
     def text_completion(
         self, prompt: str, stop_sequences: List[str] = None

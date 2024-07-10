@@ -2,6 +2,16 @@
 
 Have any questions? Need support? Please reach out on [Twitter (@phasellm)](https://twitter.com/phasellm) or via email: w (at) phaseai (dot) com
 
+# 0.0.24 (2024-07-10)
+
+### New Features
+
+- Adding support for Anthropic's Messages API. You can use Claude 3.5 Sonnet and other models via `ClaudeMessagesWrapper` and `StreamingClaudeMessagesWrapper`.
+
+### Fixes
+
+- _None._
+
 # 0.0.22 and 0.0.23 (2024-07-01)
 
 ### New Features
