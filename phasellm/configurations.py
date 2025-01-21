@@ -51,7 +51,8 @@ class OpenAIConfiguration(APIConfiguration):
             self,
             api_key: str,
             organization: str = None,
-            model: str = 'gpt-3.5-turbo'
+            model: str = 'gpt-3.5-turbo',
+            base_url: str = None
     ):
         """
         Initializes the OpenAI API configuration.
@@ -60,12 +61,14 @@ class OpenAIConfiguration(APIConfiguration):
             api_key: The OpenAI API key.
             organization: The OpenAI organization.
             model: The model to use.
+            base_url: The OpenAI API base URL (or other endpoint).
 
         """
         super().__init__(model=model)
 
         self.api_key = api_key
         self.organization = organization
+        self.base_url = base_url
 
         self.response_callback = lambda response: None
 
@@ -76,11 +79,19 @@ class OpenAIConfiguration(APIConfiguration):
         Returns:
 
         """
-        self.client = OpenAI(
-            http_client=httpx.Client(event_hooks={'response': [self.response_callback]}),
-            api_key=self.api_key,
-            organization=self.organization
-        )
+        if self.base_url is None:
+            self.client = OpenAI(
+                http_client=httpx.Client(event_hooks={'response': [self.response_callback]}),
+                api_key=self.api_key,
+                organization=self.organization
+            )
+        else:
+            self.client = OpenAI(
+                http_client=httpx.Client(event_hooks={'response': [self.response_callback]}),
+                api_key=self.api_key,
+                organization=self.organization,
+                base_url=self.base_url
+            )
 
     def get_base_api_kwargs(self):
         """

@@ -715,6 +715,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
         stop_token: str = STOP_TOKEN,
         temperature: float = None,
         api_config: Optional[OPENAI_API_CONFIG] = None,
+        base_url:str = None,
         **kwargs: Any,
     ):
         """
@@ -769,6 +770,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             stop_token: The stop token to use. Defaults to <|END|>.
             temperature: The temperature to use for the language model.
             api_config: The API configuration to use. Defaults to None. Takes precedence over apikey and model.
+            base_url: The API endpoint, if you want to override it.
             **kwargs: Keyword arguments to pass to the OpenAI API.
 
         """
@@ -780,11 +782,14 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
             **kwargs,
         )
 
+        if base_url is None and model.find("deepseek") != -1:
+            base_url="https://api.deepseek.com"
+
         if api_config and apikey:
             warn("api_config takes precedence over apikey and model arguments.")
 
         if apikey:
-            self.api_config = OpenAIConfiguration(api_key=apikey, model=model)
+            self.api_config = OpenAIConfiguration(api_key=apikey, model=model, base_url=base_url)
         if api_config:
             self.api_config = api_config
 
@@ -857,7 +862,7 @@ class StreamingOpenAIGPTWrapper(StreamingLanguageModelWrapper):
         kwargs = self._prep_common_kwargs(self.api_config)
         kwargs["stream"] = True
 
-        if ("gpt-4" in self.api_config.model) or ("gpt-3.5" in self.api_config.model):
+        if ("gpt-4" in self.api_config.model) or ("gpt-3.5" in self.api_config.model) or ("deepseek" in self.api_config.model):
             kwargs["messages"] = messages
             response = self.api_config.client.chat.completions.create(**kwargs)
             yield from self._yield_response(response)
@@ -926,6 +931,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
         model: str = "gpt-3.5-turbo",
         temperature: float = None,
         api_config: Optional[OPENAI_API_CONFIG] = None,
+        base_url:str = None,
         **kwargs: Any,
     ):
         """
@@ -977,16 +983,20 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
             model: The model to use. Defaults to "gpt-3.5-turbo".
             temperature: The temperature to use for the language model.
             api_config: The API configuration to use. Defaults to None. Takes precedence over apikey and model.
+            base_url: The API endpoint, if you want to override it.
             **kwargs: Keyword arguments to pass to the OpenAI API.
 
         """
         super().__init__(temperature=temperature, **kwargs)
 
+        if base_url is None and model.find("deepseek") != -1:
+            base_url="https://api.deepseek.com"
+
         if api_config and apikey:
             warn("api_config takes precedence over apikey and model arguments.")
 
         if apikey:
-            self.api_config = OpenAIConfiguration(api_key=apikey, model=model)
+            self.api_config = OpenAIConfiguration(api_key=apikey, model=model, base_url=base_url)
         if api_config:
             self.api_config = api_config
 
@@ -1023,7 +1033,7 @@ class OpenAIGPTWrapper(LanguageModelWrapper):
         """
         kwargs = self._prep_common_kwargs(self.api_config)
 
-        if ("gpt-4" in self.api_config.model) or ("gpt-3.5" in self.api_config.model):
+        if ("gpt-4" in self.api_config.model) or ("gpt-3.5" in self.api_config.model) or ("deepseek" in self.api_config.model):
             kwargs["messages"] = messages
             response = self.api_config.client.chat.completions.create(**kwargs)
             return response.choices[0].message.content
